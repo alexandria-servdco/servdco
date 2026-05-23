@@ -21,6 +21,7 @@ export default function Contact() {
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <Navbar />
+      <div className="h-[85px]" />
 
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-start">

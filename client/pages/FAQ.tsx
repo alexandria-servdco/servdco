@@ -53,6 +53,7 @@ export default function FAQ() {
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <Navbar />
+      <div className="h-[85px]" />
 
       {/* Hero */}
       <section className="py-20 bg-[#161616] border-b border-white/5 relative overflow-hidden text-center space-y-4">

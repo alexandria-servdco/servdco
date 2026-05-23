@@ -53,7 +53,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
-      className="w-full h-full"
+      className="w-full min-h-screen flex flex-col"
     >
       {children}
     </motion.div>

@@ -265,9 +265,9 @@ export default function Footer() {
             <p className="text-[11px] font-extrabold text-white uppercase tracking-widest border-l-2 border-[#FF7A59] pl-3.5">Legal</p>
             <ul className="space-y-3 pl-3.5">
               {[
-                { label: "Privacy Policy", path: "#" },
-                { label: "Terms of Service", path: "#" },
-                { label: "Cookie Settings", path: "#" }
+                { label: "Privacy Policy", path: "/privacy-policy" },
+                { label: "Terms of Service", path: "/terms" },
+                { label: "Cookie Policy", path: "/cookie-policy" }
               ].map((link) => (
                 <li key={link.label}>
                   <Link 

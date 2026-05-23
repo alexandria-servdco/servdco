@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Menu, X, Users, ChefHat, ShieldAlert, LogOut, ChevronUp } from "lucide-react";
+import { Menu, X, Users, ChefHat, ShieldAlert, LogOut, ChevronUp, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthService } from "@/services/auth.service";
 
@@ -41,6 +41,15 @@ export default function Navbar() {
     { label: "Pricing", path: "/pricing" },
     { label: "Blog", path: "/blog" },
     { label: "Contact", path: "/contact" },
+    {
+      label: "Legal",
+      path: "/legal",
+      submenu: [
+        { label: "Privacy Policy", path: "/privacy-policy" },
+        { label: "Terms of Service", path: "/terms" },
+        { label: "Cookie Policy", path: "/cookie-policy" },
+      ],
+    },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -83,6 +92,51 @@ export default function Navbar() {
           {/* ── CENTER NAV LINKS (desktop) ────────────────────────────────── */}
           <div className="hidden lg:flex items-center gap-1 xl:gap-2">
             {navLinks.map((link) => {
+              if ("submenu" in link && link.submenu) {
+                const subActive = link.submenu.some(sub => isActive(sub.path)) || isActive(link.path);
+                return (
+                  <div key={link.label} className="relative group/menu py-2">
+                    <button
+                      className={cn(
+                        "flex items-center gap-1 px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 rounded-lg",
+                        subActive ? "text-[#FF7A59]" : "text-white/90 hover:text-white"
+                      )}
+                    >
+                      {link.label}
+                      <ChevronDown size={12} className="opacity-60 transition-transform duration-200 group-hover/menu:rotate-180" />
+                    </button>
+                    {/* Hover Dropdown panel */}
+                    <div className="absolute top-full left-0 mt-1 w-48 rounded-xl bg-[#0B0B0D]/98 border border-white/10 backdrop-blur-2xl p-1.5 shadow-2xl opacity-0 scale-95 pointer-events-none group-hover/menu:opacity-100 group-hover/menu:scale-100 group-hover/menu:pointer-events-auto transition-all duration-200 origin-top-left z-50">
+                      {link.submenu.map((sub) => {
+                        const active = isActive(sub.path);
+                        return (
+                          <Link
+                            key={sub.label}
+                            to={sub.path}
+                            className={cn(
+                              "block px-4 py-2.5 rounded-lg text-xs font-semibold transition-all mb-0.5 last:mb-0",
+                              active
+                                ? "bg-[#FF7A59]/10 text-[#FF7A59]"
+                                : "text-white/80 hover:text-white hover:bg-white/[0.04]"
+                            )}
+                          >
+                            {sub.label}
+                          </Link>
+                        );
+                      })}
+                      <div className="border-t border-white/[0.05] mt-1 pt-1">
+                        <Link
+                          to={link.path}
+                          className="block px-4 py-2 rounded-lg text-[10px] text-center font-bold text-white/50 hover:text-white transition-colors"
+                        >
+                          Legal Dashboard
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               const active = isActive(link.path);
               return (
                 <Link
@@ -232,6 +286,44 @@ export default function Navbar() {
               {/* Nav links */}
               <nav className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-1">
                 {navLinks.map((link, idx) => {
+                  if ("submenu" in link && link.submenu) {
+                    return (
+                      <motion.div
+                        key={link.label}
+                        initial={{ opacity: 0, x: 18 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.04 + 0.05, duration: 0.25 }}
+                        className="space-y-1"
+                      >
+                        <div
+                          className="flex items-center w-full px-4 py-2 text-[10px] font-bold text-white/30 uppercase tracking-widest pt-4 pb-1"
+                        >
+                          {link.label}
+                        </div>
+                        <div className="pl-2 space-y-1 border-l border-white/[0.06] ml-4">
+                          {link.submenu.map((sub) => {
+                            const active = isActive(sub.path);
+                            return (
+                              <Link
+                                key={sub.label}
+                                to={sub.path}
+                                onClick={() => setMobileOpen(false)}
+                                className={cn(
+                                  "flex items-center w-full px-4 py-3 rounded-xl text-[13px] font-semibold transition-all",
+                                  active
+                                    ? "text-[#FF7A59] bg-[#FF7A59]/10 border border-[#FF7A59]/15"
+                                    : "text-white/80 hover:text-white hover:bg-white/[0.03]"
+                                )}
+                              >
+                                {sub.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    );
+                  }
+
                   const active = isActive(link.path);
                   return (
                     <motion.div

@@ -122,7 +122,7 @@ export default function Index() {
             </h1>
             
             <p className="text-[#A8A8A8] text-base sm:text-lg leading-relaxed max-w-lg font-medium">
-              Empowering local chefs. Nourishing local families. Servd Co is the affordable way to bring professional home cooking to your table. You provide the ingredients you trust, and chefs handle everything from prep through basic kitchen cleanup.
+              Servd Co. makes having a home-cooked meal affordable for everyone. We aren't a high-end agency for professional chefs. Instead, we give everyday people who love to cook a platform to share their passion and earn extra income. You provide the ingredients you trust, and a local cook takes care of the prep, cooking, and cleanup.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">

@@ -29,6 +29,10 @@ import FAQ from "./pages/FAQ";
 import Pricing from "./pages/Pricing";
 import Blog from "./pages/Blog";
 import Unauthorized from "./pages/Unauthorized";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
+import CookiePolicy from "./pages/CookiePolicy";
+import LegalHub from "./pages/LegalHub";
 import { GuestGuard, AuthGuard, RoleGuard } from "./components/Guards";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 
@@ -82,6 +86,10 @@ const App = () => (
           <Route path="/blog" element={<PageWrapper><Blog /></PageWrapper>} />
           <Route path="/unauthorized" element={<PageWrapper><Unauthorized /></PageWrapper>} />
           <Route path="/waitlist" element={<PageWrapper><WaitlistPage /></PageWrapper>} />
+          <Route path="/privacy-policy" element={<PageWrapper><PrivacyPolicy /></PageWrapper>} />
+          <Route path="/terms" element={<PageWrapper><Terms /></PageWrapper>} />
+          <Route path="/cookie-policy" element={<PageWrapper><CookiePolicy /></PageWrapper>} />
+          <Route path="/legal" element={<PageWrapper><LegalHub /></PageWrapper>} />
 
           {/* Guest-only pages (redirects if already authenticated) */}
           <Route element={<GuestGuard />}>

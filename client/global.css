@@ -12,89 +12,73 @@
    * A different format will require also updating the theme in tailwind.config.ts.
   */
   :root {
-    --background: 30 100% 99%;
-    --foreground: 0 0% 10%;
+    --background: 0 0% 7%; /* #111111 Primary Dark */
+    --foreground: 0 0% 96%; /* #F5F5F5 Light Text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card: 0 0% 16.5%; /* #2A2A2A Card Gray */
+    --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 0 0% 10%; /* #1A1A1A Secondary Dark */
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 14 93% 61%;
+    --primary: 14 100% 67%; /* #FF7A59 Brand Primary */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 20 100% 95%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 0 0% 10%; /* #1A1A1A Secondary Dark */
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 30 60% 92%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 0 0% 16.5%;
+    --muted-foreground: 0 0% 66%; /* #A8A8A8 Muted Text */
 
-    --accent: 163 58% 43%;
+    --accent: 14 100% 67%; /* #FF7A59 */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 30 50% 93%;
-    --input: 30 60% 97%;
-    --ring: 14 93% 61%;
+    --border: 0 0% 18%; /* Dark border HSL */
+    --input: 0 0% 15%;
+    --ring: 14 100% 67%;
 
-    --radius: 1rem;
+    --radius: 1.5rem; /* 24px rounded corners */
 
-    --sidebar-background: 30 100% 99%;
+    /* Design spacing tokens */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
 
-    --sidebar-foreground: 0 0% 10%;
-
-    --sidebar-primary: 14 93% 61%;
-
+    --sidebar-background: 0 0% 10%; /* #1A1A1A */
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 14 100% 67%;
     --sidebar-primary-foreground: 0 0% 100%;
-
-    --sidebar-accent: 20 100% 95%;
-
-    --sidebar-accent-foreground: 0 0% 10%;
-
-    --sidebar-border: 30 50% 93%;
-
-    --sidebar-ring: 14 93% 61%;
+    --sidebar-accent: 0 0% 16.5%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 14 100% 67%;
   }
 
   .dark {
-    --background: 20 20% 12%;
-    --foreground: 0 0% 95%;
-
-    --card: 20 15% 18%;
-    --card-foreground: 0 0% 95%;
-
-    --popover: 20 15% 18%;
-    --popover-foreground: 0 0% 95%;
-
-    --primary: 16 100% 57%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 16.5%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 14 100% 67%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 20 30% 25%;
-    --secondary-foreground: 0 0% 95%;
-
-    --muted: 20 20% 30%;
-    --muted-foreground: 0 0% 60%;
-
-    --accent: 154 42% 49%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 0% 16.5%;
+    --muted-foreground: 0 0% 66%;
+    --accent: 14 100% 67%;
     --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 20 20% 25%;
-    --input: 20 20% 25%;
-    --ring: 16 100% 57%;
-    --sidebar-background: 20 15% 18%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 16 100% 57%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 20 30% 25%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 20 20% 25%;
-    --sidebar-ring: 16 100% 57%;
+    --border: 0 0% 18%;
+    --input: 0 0% 15%;
+    --ring: 14 100% 67%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 96%;
   }
 }
 
@@ -132,9 +116,173 @@
   }
 
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-white/10;
+    box-shadow: 0px 10px 40px rgba(0,0,0,.25);
+  }
+
+  .glass-panel {
+    @apply backdrop-blur-md bg-[#161616]/75 border border-white/5;
+  }
+
+  .premium-shadow {
+    box-shadow: 0px 10px 40px rgba(0,0,0,.35);
+  }
+
+  .orange-glow {
+    box-shadow: 0 0 80px rgba(255, 122, 89, 0.08);
+  }
+
+  .velvet-tactile {
+    background: linear-gradient(180deg, #FF8F73 0%, #FF7A59 100%);
+    background-image: 
+      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08) 0.5px, transparent 0.5px),
+      linear-gradient(180deg, #FF8F73 0%, #FF7A59 100%);
+    background-size: 2px 2px, 100% 100%;
+    border-radius: 24px;
+    border: none;
+    box-shadow: 
+      0 10px 30px rgba(0,0,0,.25),
+      inset 0 1px 2px rgba(255,255,255,.2),
+      inset 0 -4px 8px rgba(0,0,0,.12),
+      0 0 20px rgba(255,122,89,.18);
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0) scale(1);
+    cursor: pointer;
+  }
+
+  .velvet-tactile:hover {
+    transform: translateY(-3px);
+    background-image: 
+      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.12) 0.5px, transparent 0.5px),
+      linear-gradient(180deg, #FFA08B 0%, #FF8668 100%);
+    box-shadow: 
+      0 14px 35px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2.5px rgba(255, 255, 255, 0.25),
+      inset 0 -4px 10px rgba(0, 0, 0, 0.15),
+      0 0 25px rgba(255, 122, 89, 0.28);
+  }
+
+  .velvet-tactile:active {
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.2),
+      inset 0 1px 1px rgba(255, 255, 255, 0.15),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.1),
+      0 0 15px rgba(255, 122, 89, 0.12);
+  }
+
+  .velvet-icon-container {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: linear-gradient(180deg, #FF8F73 0%, #FF7A59 100%);
+    background-image: 
+      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08) 0.5px, transparent 0.5px),
+      linear-gradient(180deg, #FF8F73 0%, #FF7A59 100%);
+    background-size: 2px 2px, 100% 100%;
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.25),
+      inset 0 1px 1.5px rgba(255, 255, 255, 0.25),
+      inset 0 -3px 6px rgba(0, 0, 0, 0.15),
+      0 0 16px rgba(255, 122, 89, 0.15);
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .velvet-icon-container:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 
+      0 12px 28px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.3),
+      inset 0 -3px 8px rgba(0, 0, 0, 0.18),
+      0 0 20px rgba(255, 122, 89, 0.24);
+  }
+
+  .velvet-card {
+    background: #1A1A1A;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .velvet-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 }
+
+/* ── DARK REGISTRATION LAYOUT OVERRIDES ────────────────────────────── */
+.dark-registration-page {
+  background-color: #111111 !important;
+  color: #F5F5F5 !important;
+}
+.dark-registration-page h1,
+.dark-registration-page h2,
+.dark-registration-page h3,
+.dark-registration-page label {
+  color: #F5F5F5 !important;
+}
+.dark-registration-page input,
+.dark-registration-page select,
+.dark-registration-page textarea {
+  background-color: #161616 !important;
+  color: #F5F5F5 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+.dark-registration-page input::placeholder {
+  color: rgba(255,255,255,0.2) !important;
+}
+.dark-registration-page button:not(.bg-primary):not(.bg-\[\#FF7A59\]) {
+  background-color: rgba(255,255,255,0.05) !important;
+  color: #F5F5F5 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+.dark-registration-page button:not(.bg-primary):not(.bg-\[\#FF7A59\]):hover {
+  background-color: rgba(255,255,255,0.1) !important;
+}
+.dark-registration-page .bg-white {
+  background-color: #2A2A2A !important;
+  color: #F5F5F5 !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+.dark-registration-page .text-\[\#1A1A1A\] {
+  color: #F5F5F5 !important;
+}
+.dark-registration-page .text-\[\#1A1A1A\]\/70,
+.dark-registration-page .text-\[\#1A1A1A\]\/60,
+.dark-registration-page .text-\[\#1A1A1A\]\/55,
+.dark-registration-page .text-\[\#1A1A1A\]\/40 {
+  color: #A8A8A8 !important;
+}
+.dark-registration-page .border-\[\#F0E7E2\] {
+  border-color: rgba(255,255,255,0.08) !important;
+}
+.dark-registration-page .border-2 {
+  border-color: rgba(255,255,255,0.08) !important;
+}
+.dark-registration-page .bg-\[\#FFF0EB\],
+.dark-registration-page .bg-\[\#FFF5F2\] {
+  background-color: rgba(255,122,89,0.1) !important;
+}
+.dark-registration-page .bg-secondary {
+  background-color: #161616 !important;
+}
+.dark-registration-page header {
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+.dark-registration-page header button {
+  background-color: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  color: #F5F5F5 !important;
+}
+
 
 @keyframes fadeIn {
   from {
@@ -155,3 +303,104 @@
     transform: translateY(0);
   }
 }
+
+/* Global Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Sketch Underline Animation */
+@keyframes drawUnderline {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.animate-draw-underline {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: drawUnderline 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Floating Label & Premium Form Input Styles */
+.form-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.floating-input {
+  width: 100%;
+  height: 52px;
+  background-color: #161616;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 22px 16px 6px 16px;
+  font-size: 14px;
+  color: #ffffff;
+  outline: none;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-input:focus {
+  border-color: #FF7A59;
+  box-shadow: 0 0 20px rgba(255, 122, 89, 0.15);
+}
+
+.floating-label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* If input is focused or has content (using JS validation) or matches floating rule */
+.floating-input:focus ~ .floating-label,
+.floating-input:not(:placeholder-shown) ~ .floating-label,
+.floating-input-active ~ .floating-label {
+  top: 14px;
+  font-size: 9px;
+  color: #FF7A59;
+}
+
+/* When input has icon, shift padding and label left */
+.floating-input-icon {
+  padding-left: 48px;
+}
+
+.floating-label-icon {
+  left: 48px;
+}
+
+.floating-input-icon:focus ~ .floating-label-icon,
+.floating-input-icon:not(:placeholder-shown) ~ .floating-label-icon,
+.floating-input-active.floating-input-icon ~ .floating-label-icon {
+  left: 48px;
+  top: 14px;
+  font-size: 9px;
+  color: #FF7A59;
+}
+
+/* Stepper horizontal line animation */
+@keyframes drawStepperLine {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+.stepper-progress-fill {
+  height: 100%;
+  background-color: #FF7A59;
+  animation: drawStepperLine 0.5s ease-out forwards;
+}
+

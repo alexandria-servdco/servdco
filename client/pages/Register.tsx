@@ -2,19 +2,18 @@ import { Link } from "react-router-dom";
 import { CheckCircle, Users, ChefHat, Shield, Lock, Heart, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Servd Logo Component
-function ServdLogo({ className }: { className?: string }) {
+function ServdLogo() {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-sm">
-        <svg viewBox="0 0 100 100" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round">
+    <div className="flex items-center gap-2.5">
+      <div className="w-8 h-8 rounded-full bg-[#FF7A59] flex items-center justify-center shadow-md">
+        <svg viewBox="0 0 100 100" className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round">
           <circle cx="50" cy="50" r="35" />
           <circle cx="50" cy="50" r="22" />
           <circle cx="50" cy="50" r="9" />
         </svg>
       </div>
-      <span className="text-xl font-bold text-[#1A1A1A]">
-        Servd <span className="text-primary">co.</span>
+      <span className="text-base font-bold text-white tracking-tight">
+        Servd <span className="text-[#FF7A59]">co.</span>
       </span>
     </div>
   );
@@ -30,11 +29,7 @@ interface RegistrationCardProps {
   features: string[];
   ctaLabel: string;
   ctaHref: string;
-  iconBgColor: string;
-  ctaBgColor: string;
-  ctaHoverColor: string;
-  cardBg: string;
-  accentColor: string;
+  ctaBgClass: string;
 }
 
 function RegistrationCard({
@@ -46,74 +41,49 @@ function RegistrationCard({
   features,
   ctaLabel,
   ctaHref,
-  iconBgColor,
-  ctaBgColor,
-  cardBg,
-  accentColor,
+  ctaBgClass
 }: RegistrationCardProps) {
   return (
     <div
       className={cn(
-        "group relative flex flex-col rounded-[24px] overflow-hidden border border-[#F0E7E2] transition-all duration-300 ease-out",
-        "hover:-translate-y-2 hover:shadow-2xl shadow-[0_4px_24px_rgba(0,0,0,0.07)]",
-        cardBg
+        "group relative flex flex-col rounded-[24px] overflow-hidden border border-white/5 bg-[#1A1A1A] transition-all duration-300 ease-out h-full",
+        "hover:-translate-y-1.5 hover:scale-[1.01] hover:border-[#FF7A59]/30 hover:shadow-[0_15px_35px_rgba(0,0,0,0.4),0_0_20px_rgba(255,122,89,0.06)] shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
       )}
     >
-      {/* Floating heart decorations */}
-      <div className="absolute top-5 left-5 z-10 pointer-events-none">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-            stroke={accentColor}
-            strokeWidth="1.8"
-            fill="none"
-          />
-        </svg>
-      </div>
-      <div className="absolute top-5 right-5 z-10 pointer-events-none">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-            stroke={accentColor}
-            strokeWidth="1.8"
-            fill="none"
-          />
-        </svg>
+      {/* Floating heart decoration */}
+      <div className="absolute top-4 left-4 z-10 pointer-events-none text-[#FF7A59]/40 group-hover:text-[#FF7A59] transition-colors">
+        <Heart size={16} />
       </div>
 
       {/* Image */}
-      <div className="relative w-full h-56 overflow-hidden">
+      <div className="relative w-full h-36 overflow-hidden bg-black/10">
         <img
           src={imageSrc}
           alt={imageAlt}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover opacity-70 transition-transform duration-500 group-hover:scale-102"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent" />
       </div>
 
-      {/* Icon badge — centered, overlapping image/content boundary */}
+      {/* Icon badge */}
       <div className="flex justify-center -mt-6 relative z-10">
-        <div
-          className={cn(
-            "w-12 h-12 rounded-full flex items-center justify-center shadow-md ring-4 ring-white",
-            iconBgColor
-          )}
-        >
+        <div className="w-10 h-10 rounded-full bg-[#111111] border border-white/10 flex items-center justify-center shadow-md">
           {icon}
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex flex-col flex-1 px-7 pb-7 pt-4 gap-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">{title}</h2>
-          <p className="text-sm text-[#1A1A1A]/60 leading-relaxed">{description}</p>
+      <div className="flex flex-col flex-1 p-5 gap-4 justify-between">
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-bold font-serif text-white">{title}</h2>
+          <p className="text-[11px] text-[#A8A8A8] leading-relaxed font-medium">{description}</p>
         </div>
 
-        <ul className="space-y-2.5">
+        <ul className="space-y-2">
           {features.map((feature, idx) => (
-            <li key={idx} className="flex items-center gap-2.5 text-sm text-[#1A1A1A]/80">
-              <CheckCircle size={16} className="text-[#2E7D66] flex-shrink-0" strokeWidth={2.5} />
-              <span>{feature}</span>
+            <li key={idx} className="flex items-start gap-2 text-[11px] text-[#A8A8A8]">
+              <CheckCircle size={13} className="text-[#FF7A59] flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+              <span className="font-medium">{feature}</span>
             </li>
           ))}
         </ul>
@@ -121,12 +91,12 @@ function RegistrationCard({
         <Link
           to={ctaHref}
           className={cn(
-            "mt-2 flex items-center justify-center gap-2 py-3.5 rounded-full text-white font-semibold text-sm transition-all duration-200 hover:opacity-90 hover:shadow-lg active:scale-95",
-            ctaBgColor
+            "flex items-center justify-center gap-2 py-3 rounded-3xl text-white font-bold text-xs transition-all duration-200 shadow-md hover:scale-[1.01] active:scale-[0.98]",
+            ctaBgClass
           )}
         >
           {ctaLabel}
-          <ArrowRight size={16} strokeWidth={2.5} />
+          <ArrowRight size={12} strokeWidth={2.5} />
         </Link>
       </div>
     </div>
@@ -135,94 +105,80 @@ function RegistrationCard({
 
 export default function Register() {
   return (
-    <div className="min-h-screen bg-[#FFF9F6] flex flex-col">
+    <div className="h-screen w-screen bg-[#111111] text-[#F5F5F5] font-sans flex flex-col selection:bg-[#FF7A59]/20 selection:text-[#FF7A59] overflow-hidden">
+      
       {/* Header */}
-      <header className="flex justify-center pt-8 pb-2">
+      <header className="flex justify-center py-6 relative z-10">
         <Link to="/">
           <ServdLogo />
         </Link>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-8 relative z-10 max-w-4xl mx-auto w-full max-h-[85vh]">
+        {/* Glow effect */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-[#FF7A59]/3 blur-[120px] pointer-events-none" />
+
         {/* Heading */}
-        <div className="text-center mb-10 max-w-lg">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#1A1A1A] leading-tight mb-3">
-            Let's get you started!{" "}
-            <span className="inline-block">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" className="inline -mt-1" aria-hidden>
-                <path
-                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                  stroke="#FF7A59"
-                  strokeWidth="1.8"
-                  fill="none"
-                />
-              </svg>
-            </span>
+        <div className="text-center mb-8 max-w-lg space-y-2 relative z-10">
+          <h1 className="text-3xl md:text-4xl font-bold font-serif text-white leading-tight">
+            Let's get you started!
           </h1>
-          <p className="text-[#1A1A1A]/55 text-base">
-            Choose the option that best describes you to create your account.
+          <p className="text-[11px] text-[#A8A8A8] font-medium leading-relaxed">
+            Choose the option that best describes you to create your secure private dining account.
           </p>
         </div>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl relative z-10">
           <RegistrationCard
             type="family"
-            imageSrc="/family-illustration.png"
+            imageSrc="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&fit=crop"
             imageAlt="Happy family enjoying a homemade meal together"
-            icon={<Users size={22} className="text-[#FF7A59]" />}
-            iconBgColor="bg-[#FFE7DF]"
+            icon={<Users size={18} className="text-[#FF7A59]" />}
             title="Join as Family"
-            description="Discover trusted local chefs and enjoy homemade meals made with love."
+            description="Discover trusted local chefs and enjoy customized dinners cooked directly in your private kitchen."
             features={[
-              "Find chefs near you",
-              "Book and schedule meals",
-              "Safe, secure & family-focused",
+              "Find verified chefs near you",
+              "Book and schedule custom meals",
+              "100% allergy & grocery control"
             ]}
             ctaLabel="Join as Family"
             ctaHref="/register/family"
-            ctaBgColor="bg-[#FF7A59]"
-            ctaHoverColor="hover:bg-[#e96a49]"
-            cardBg="bg-white"
-            accentColor="#FF7A59"
+            ctaBgClass="velvet-tactile"
           />
 
           <RegistrationCard
             type="chef"
-            imageSrc="/chef-illustration.png"
+            imageSrc="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&fit=crop"
             imageAlt="Professional chef plating a beautiful homemade dish"
-            icon={<ChefHat size={22} className="text-[#2E7D66]" />}
-            iconBgColor="bg-[#E8F5F0]"
+            icon={<ChefHat size={18} className="text-[#FF7A59]" />}
             title="Join as Chef"
-            description="Share your passion, grow your business and impact families in your community."
+            description="Share your culinary passion, grow your business, and serve families in your local community."
             features={[
-              "Grow your local presence",
-              "Set your own schedule",
-              "Earn doing what you love",
+              "Set your own flexible schedules",
+              "Keep 100% of your earnings & tips",
+              "Secure transaction platforms"
             ]}
             ctaLabel="Join as Chef"
             ctaHref="/register/chef"
-            ctaBgColor="bg-[#2E7D66]"
-            ctaHoverColor="hover:bg-[#256b57]"
-            cardBg="bg-[#F4FAF7]"
-            accentColor="#2E7D66"
+            ctaBgClass="bg-white/5 border border-white/10 hover:bg-white/10"
           />
         </div>
 
         {/* Trust Badges */}
-        <div className="flex flex-wrap justify-center gap-8 mt-10 text-sm text-[#1A1A1A]/55">
+        <div className="flex flex-wrap justify-center gap-6 md:gap-10 mt-8 text-[10px] text-[#A8A8A8] text-center font-bold uppercase tracking-wider relative z-10">
           <div className="flex items-center gap-2">
-            <Shield size={18} className="text-[#FF7A59]" />
-            <span>Background checked<br />local chefs</span>
+            <Shield size={14} className="text-[#FF7A59]" />
+            <span>Trusted & vetted<br />local private chefs</span>
           </div>
           <div className="flex items-center gap-2">
-            <Lock size={18} className="text-[#FF7A59]" />
-            <span>Secure platform<br />you can trust</span>
+            <Lock size={14} className="text-[#FF7A59]" />
+            <span>Secure platform<br />transacting rails</span>
           </div>
           <div className="flex items-center gap-2">
-            <Heart size={18} className="text-[#FF7A59]" />
-            <span>Built for families.<br />Powered by community.</span>
+            <Heart size={14} className="text-[#FF7A59]" />
+            <span>Built for families.<br />Powered by chefs.</span>
           </div>
         </div>
       </main>

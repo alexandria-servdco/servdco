@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, Mail, Phone, MapPin, ShieldCheck, ArrowLeft, ArrowRight, HelpCircle, Users, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { FormInput } from "@/components/ui/FormInput";
+import { Button } from "@/components/ui/button";
+import { AuthService } from "@/services/auth.service";
 
-// Logo Component
 function ServdLogo({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -15,7 +16,7 @@ function ServdLogo({ className }: { className?: string }) {
           <circle cx="50" cy="50" r="9" />
         </svg>
       </div>
-      <span className="text-lg font-bold text-[#1A1A1A]">
+      <span className="text-base font-bold text-white tracking-tight">
         Servd <span className="text-[#FF7A59]">co.</span>
       </span>
     </div>
@@ -26,13 +27,14 @@ export default function FamilyRegistration() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [emailValid, setEmailValid] = useState(true);
 
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
     city: "",
-    state: "Ohio", // default state
+    state: "Ohio",
     zip: ""
   });
 
@@ -41,15 +43,19 @@ export default function FamilyRegistration() {
     setError("");
 
     if (!formData.fullName || !formData.email || !formData.phone || !formData.city || !formData.state || !formData.zip) {
-      setError("Please fill out all fields.");
+      setError("Please complete all required fields.");
+      return;
+    }
+
+    if (!emailValid) {
+      setError("Please provide a valid email address.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Direct call to local mock Launch Control database via unified API
-      const result = await api.registerUser({
+      const result = await AuthService.register({
         name: formData.fullName,
         email: formData.email,
         role: "family",
@@ -58,15 +64,12 @@ export default function FamilyRegistration() {
         zip: formData.zip
       });
 
-      // Simulate a brief premium loading animation experience
       await new Promise((resolve) => setTimeout(resolve, 800));
       setLoading(false);
 
       if (result.status === "active") {
-        // Allowed access: redirect to regular active dashboard
         navigate("/dashboard");
       } else {
-        // Blocked: redirect to waitlist page
         navigate(`/waitlist?role=family&state=${encodeURIComponent(formData.state)}&email=${encodeURIComponent(formData.email)}`);
       }
     } catch (err) {
@@ -77,142 +80,110 @@ export default function FamilyRegistration() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF9F6] flex flex-col font-sans">
+    <div className="h-screen w-screen bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-hidden">
       {/* Navigation */}
-      <header className="flex justify-between items-center px-8 py-5">
+      <header className="flex justify-between items-center px-8 py-3 border-b border-white/5 flex-shrink-0">
         <Link to="/">
           <ServdLogo />
         </Link>
         <div className="flex items-center gap-6">
-          <div className="text-sm text-[#1A1A1A]">
-            Already have an account? <Link to="/login" className="text-[#FF7A59] font-semibold hover:underline">Log in</Link>
+          <div className="text-xs text-[#A8A8A8]">
+            Already have an account? <Link to="/login" className="text-[#FF7A59] font-bold hover:underline">Log in</Link>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-[#F0E7E2] rounded-full text-sm font-medium text-[#1A1A1A] hover:bg-gray-50 transition-colors shadow-sm">
-            <HelpCircle size={16} />
+          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[11px] font-bold text-[#F5F5F5] hover:bg-white/10 transition-colors shadow-sm">
+            <HelpCircle size={13} />
             Need help?
           </button>
         </div>
       </header>
 
       {/* Split Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row px-8 pb-8 gap-12 max-w-[1600px] mx-auto w-full">
+      <div className="flex-1 flex flex-col lg:flex-row px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full overflow-hidden">
         {/* Form Container */}
-        <div className="flex-1 flex flex-col max-w-2xl pt-4">
-          <div className="mb-8">
-            <h1 className="text-[40px] font-bold text-[#1A1A1A] font-serif tracking-tight mb-2">
+        <div className="flex-1 flex flex-col justify-between max-w-2xl overflow-y-auto lg:overflow-hidden pr-2">
+          
+          {/* Header Title */}
+          <div className="mb-4">
+            <h1 className="text-3xl lg:text-4xl font-bold text-white font-serif tracking-tight mb-1">
               Join as a Family
             </h1>
-            <p className="text-[#1A1A1A]/70 text-[15px]">
+            <p className="text-[#A8A8A8] text-xs">
               Access premium chefs, personalize meal plans, and keep complete control over ingredients and cleanup.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6 flex-1 flex flex-col justify-between">
-            <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto lg:overflow-hidden min-h-[300px]">
+            <div className="space-y-4">
               {error && (
-                <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 font-medium">
+                <div className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold animate-fadeIn">
                   {error}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Name */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[#1A1A1A]">Full Name</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#1A1A1A]/40">
-                      <User size={18} />
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Jane Doe"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="w-full pl-11 pr-4 py-3 bg-white border border-[#F0E7E2] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#FF7A59]/20 focus:border-[#FF7A59] transition-all"
-                    />
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Full Name */}
+                <FormInput
+                  type="text"
+                  label="Full Name"
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  icon={<User size={16} />}
+                  required
+                />
 
-                {/* Email */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[#1A1A1A]">Email Address</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#1A1A1A]/40">
-                      <Mail size={18} />
-                    </div>
-                    <input
-                      type="email"
-                      required
-                      placeholder="jane@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full pl-11 pr-4 py-3 bg-white border border-[#F0E7E2] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#FF7A59]/20 focus:border-[#FF7A59] transition-all"
-                    />
-                  </div>
-                </div>
+                {/* Email Address */}
+                <FormInput
+                  type="email"
+                  label="Email Address"
+                  id="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  icon={<Mail size={16} />}
+                  required
+                  onValidationChange={(isValid) => setEmailValid(isValid)}
+                  error={!emailValid && formData.email.length > 0 ? "Invalid email address format." : ""}
+                />
 
-                {/* Phone */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[#1A1A1A]">Phone Number</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#1A1A1A]/40">
-                      <Phone size={18} />
-                    </div>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="(555) 123-4567"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full pl-11 pr-4 py-3 bg-white border border-[#F0E7E2] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#FF7A59]/20 focus:border-[#FF7A59] transition-all"
-                    />
-                  </div>
-                </div>
+                {/* Phone Number */}
+                <FormInput
+                  type="tel"
+                  label="Phone Number"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  icon={<Phone size={16} />}
+                  required
+                />
 
-                {/* ZIP code */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[#1A1A1A]">ZIP Code</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#1A1A1A]/40">
-                      <MapPin size={18} />
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      placeholder="43016"
-                      value={formData.zip}
-                      onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
-                      className="w-full pl-11 pr-4 py-3 bg-white border border-[#F0E7E2] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#FF7A59]/20 focus:border-[#FF7A59] transition-all"
-                    />
-                  </div>
-                </div>
+                {/* ZIP Code */}
+                <FormInput
+                  type="text"
+                  label="ZIP Code"
+                  id="zip"
+                  value={formData.zip}
+                  onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
+                  icon={<MapPin size={16} />}
+                  required
+                />
 
                 {/* City */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[#1A1A1A]">City</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#1A1A1A]/40">
-                      <MapPin size={18} />
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Columbus"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full pl-11 pr-4 py-3 bg-white border border-[#F0E7E2] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#FF7A59]/20 focus:border-[#FF7A59] transition-all"
-                    />
-                  </div>
-                </div>
+                <FormInput
+                  type="text"
+                  label="City"
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  icon={<MapPin size={16} />}
+                  required
+                />
 
                 {/* State selector */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[#1A1A1A]">State</label>
+                <div className="relative">
                   <select
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-[#F0E7E2] rounded-xl text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#FF7A59]/20 focus:border-[#FF7A59] transition-all"
+                    className="w-full h-[52px] px-4 py-1.5 bg-[#161616] border border-white/5 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-[#FF7A59] focus:ring-1 focus:ring-[#FF7A59] transition-all"
                   >
                     <option value="Ohio">Ohio</option>
                     <option value="Texas">Texas</option>
@@ -222,79 +193,80 @@ export default function FamilyRegistration() {
                     <option value="Georgia">Georgia</option>
                     <option value="Washington">Washington</option>
                   </select>
+                  <label className="absolute left-4 top-1.5 text-[9px] text-[#FF7A59] font-bold uppercase tracking-wider">State</label>
                 </div>
               </div>
 
               {/* Safety Shield */}
-              <div className="p-5 bg-[#F4FAF7] border border-[#E8F5F0] rounded-2xl flex gap-4 mt-6">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm text-[#2E7D66]">
-                  <ShieldCheck size={24} />
+              <div className="p-4 bg-[#2E7D66]/5 border border-[#2E7D66]/10 rounded-2xl flex gap-3.5 mt-2">
+                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 text-[#2E7D66] shadow-sm">
+                  <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-[#1A1A1A] mb-1">Secure & certified platform</h4>
-                  <p className="text-sm text-[#1A1A1A]/70 leading-relaxed">
-                    All culinary professionals are background-checked and ServSafe verified to deliver a premium, worry-free cooking experience in your home.
+                  <h4 className="text-xs font-bold text-white mb-0.5">Secure & certified platform</h4>
+                  <p className="text-[11px] text-[#A8A8A8] leading-relaxed">
+                    All culinary professionals are fully verified, ServSafe credentialed, and platform-insured to deliver a premium, worry-free cooking experience directly in your home.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Submit */}
-            <div className="mt-12 flex items-center justify-between">
+            {/* Submit Actions */}
+            <div className="py-4 border-t border-white/5 mt-4 flex items-center justify-between flex-shrink-0">
               <Link
                 to="/register"
-                className="flex items-center gap-2 px-6 py-3.5 bg-white border border-[#F0E7E2] rounded-xl text-sm font-semibold text-[#1A1A1A] hover:bg-gray-50 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-5 py-3 bg-white/5 border border-white/10 rounded-3xl text-xs font-bold text-white hover:bg-white/10 transition-colors shadow-sm"
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={14} />
                 Back
               </Link>
 
-              <button
+              <Button
                 type="submit"
-                disabled={loading}
-                className="flex items-center gap-2 px-8 py-3.5 bg-[#FF7A59] text-white rounded-xl text-sm font-semibold hover:bg-[#e96a49] hover:shadow-lg transition-all active:scale-95 ml-auto"
+                isLoading={loading}
+                className="w-auto ml-auto text-xs font-bold"
               >
-                {loading ? "Registering..." : "Create Account"}
-                {!loading && <ArrowRight size={18} />}
-              </button>
+                Create Account
+                {!loading && <ArrowRight size={14} />}
+              </Button>
             </div>
           </form>
         </div>
 
         {/* Brand Showcase Right side */}
-        <div className="hidden lg:block lg:w-[45%] relative">
-          <div className="w-full h-full min-h-[600px] rounded-3xl overflow-hidden relative">
+        <div className="hidden lg:block lg:w-[45%] relative h-full flex-shrink-0">
+          <div className="w-full h-full rounded-2xl overflow-hidden relative border border-white/5 shadow-2xl">
             <img
-              src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&fit=crop"
+              src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&fit=crop"
               alt="Family cooking meal"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover opacity-80"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#FF7A59]/40 via-transparent to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#FF7A59]/30 via-transparent to-transparent"></div>
           </div>
 
           {/* Floating benefit card */}
-          <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-4 bg-white rounded-2xl p-6 shadow-xl border border-[#F0E7E2] w-[280px]">
-            <h3 className="font-bold text-[#1A1A1A] text-sm mb-4">
+          <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-3 bg-[#1A1A1A] border border-white/10 rounded-2xl p-5 shadow-2xl w-[250px]">
+            <h3 className="font-bold text-white text-xs mb-3 font-serif">
               Your benefits include:
             </h3>
-            <ul className="space-y-5">
-              <li className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#FFF0EB] flex items-center justify-center flex-shrink-0 text-[#FF7A59]">
-                  <Users size={16} />
+            <ul className="space-y-3.5">
+              <li className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-[#FF7A59]/10 flex items-center justify-center flex-shrink-0 text-[#FF7A59]">
+                  <Users size={14} />
                 </div>
-                <span className="text-xs font-medium text-[#1A1A1A]/80 font-semibold">Vetted, background-checked chefs</span>
+                <span className="text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">Vetted local chefs</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#FFF0EB] flex items-center justify-center flex-shrink-0 text-[#FF7A59]">
-                  <Heart size={16} />
+              <li className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-[#FF7A59]/10 flex items-center justify-center flex-shrink-0 text-[#FF7A59]">
+                  <Heart size={14} />
                 </div>
-                <span className="text-xs font-medium text-[#1A1A1A]/80 font-semibold">100% custom dietary menus</span>
+                <span className="text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">Custom dietary menus</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#FFF0EB] flex items-center justify-center flex-shrink-0 text-[#FF7A59]">
-                  <ShieldCheck size={16} />
+              <li className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-[#FF7A59]/10 flex items-center justify-center flex-shrink-0 text-[#FF7A59]">
+                  <ShieldCheck size={14} />
                 </div>
-                <span className="text-xs font-medium text-[#1A1A1A]/80 font-semibold">Insurance & cleanup included</span>
+                <span className="text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">Cleanup is included</span>
               </li>
             </ul>
           </div>

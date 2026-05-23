@@ -60,6 +60,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        brandPrimary: "#FF7A59",
+        brandDarkSec: "#111111",
+        brandDarkCard: "#1A1A1A",
+        brandLightBg: "#F8F5F1",
+        brandGrayCard: "#EDEBE7",
+        brandAccent: "#2E7D66",
       },
       borderRadius: {
         lg: "var(--radius)",

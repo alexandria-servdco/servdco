@@ -1,4 +1,4 @@
-import { mockLaunchControl, LaunchRegion, WaitlistUser, SimulatedNotification } from "./mockLaunchControl";
+import { mockLaunchControl, LaunchRegion, WaitlistUser, SimulatedNotification, InterestRequest, User, Chef, Booking, ChefDocument } from "./mockLaunchControl";
 import { apiConfig } from "./apiConfig";
 
 /**
@@ -109,6 +109,171 @@ export const api = {
     const response = await fetch(`${apiConfig.API_BASE_URL}/waitlist-stats.php?state=${encodeURIComponent(state)}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch waitlist stats: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  /**
+   * Retrieves all cities interest requests.
+   */
+  async getInterestRequests(): Promise<InterestRequest[]> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.getInterestRequests();
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/interest-requests.php`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch interest requests: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  /**
+   * Registers a user's interest for Bringing Servd Co to their city.
+   */
+  async registerInterest(params: {
+    name: string;
+    email: string;
+    city: string;
+    state: string;
+    role: "family" | "chef" | "both";
+  }): Promise<{ success: boolean; message: string }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.registerInterest(params);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/register-interest.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params)
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to register interest request: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  // ─── Users Management ──────────────────────────────────────────────────────────
+
+  async getUsers(): Promise<User[]> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.getUsers();
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/users.php`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch users: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async updateUserStatus(id: string, status: "active" | "suspended"): Promise<{ success: boolean; user: User }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.updateUserStatus(id, status);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/update-user-status.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status })
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update user status: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async updateUser(id: string, data: Partial<User>): Promise<{ success: boolean; user: User }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.updateUser(id, data);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/update-user.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...data })
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update user: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  // ─── Chefs Management ──────────────────────────────────────────────────────────
+
+  async getChefs(): Promise<Chef[]> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.getChefs();
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/chefs.php`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch chefs: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async updateChefStatus(id: string, status: "approved" | "pending" | "rejected" | "suspended"): Promise<{ success: boolean; chef: Chef }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.updateChefStatus(id, status);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/update-chef-status.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status })
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update chef status: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  // ─── Bookings Management ───────────────────────────────────────────────────────
+
+  async getBookings(): Promise<Booking[]> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.getBookings();
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/bookings.php`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch bookings: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async updateBookingStatus(id: string, status: "pending" | "confirmed" | "completed" | "cancelled"): Promise<{ success: boolean; booking: Booking }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.updateBookingStatus(id, status);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/update-booking-status.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status })
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update booking status: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  // ─── Documents Management ──────────────────────────────────────────────────────
+
+  async getDocuments(): Promise<ChefDocument[]> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.getDocuments();
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/documents.php`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch documents: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async updateDocumentStatus(id: string, status: "pending" | "approved" | "rejected"): Promise<{ success: boolean; document: ChefDocument }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.updateDocumentStatus(id, status);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/update-document-status.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status })
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update document status: ${response.statusText}`);
     }
     return response.json();
   }

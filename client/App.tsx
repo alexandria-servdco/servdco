@@ -30,6 +30,7 @@ import Pricing from "./pages/Pricing";
 import Blog from "./pages/Blog";
 import Unauthorized from "./pages/Unauthorized";
 import { GuestGuard, AuthGuard, RoleGuard } from "./components/Guards";
+import ScrollToTopButton from "./components/ScrollToTopButton";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
+        <ScrollToTopButton />
         <Routes>
           {/* Public pages accessible to everyone */}
           <Route path="/" element={<PageWrapper><Index /></PageWrapper>} />

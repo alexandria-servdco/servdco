@@ -17,7 +17,7 @@ export default function Pricing() {
         <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">Simple & Transparent</p>
         <h1 className="text-4xl lg:text-5xl font-bold font-serif text-white tracking-tight">Flat Rates. No Hidden Fees.</h1>
         <p className="text-[#A8A8A8] text-sm max-w-xl mx-auto">
-          You provide the ingredients you trust, and pay standard flat fees for the chef's professional cooking time and kitchen cleanup.
+          You provide the ingredients you trust, and pay standard flat fees for the cook's professional cooking time and kitchen cleanup.
         </p>
       </section>
 
@@ -31,9 +31,9 @@ export default function Pricing() {
                 title: "Breakfast Booking",
                 price: "$40",
                 duration: "per session",
-                desc: "Wake up to fresh aromas. The chef handles custom breakfast preparation and complete kitchen reset.",
+                desc: "Wake up to fresh aromas. The cook handles custom breakfast preparation and complete kitchen reset.",
                 features: [
-                  "Professional chef cooking",
+                  "Professional home cooking",
                   "Travel to your home included",
                   "Custom recipe planning",
                   "Full basic kitchen cleanup",
@@ -48,7 +48,7 @@ export default function Pricing() {
                 duration: "per session",
                 desc: "Elevate your family evenings. Gourmet fresh cooking prepared and served directly at your dining table.",
                 features: [
-                  "Professional chef cooking",
+                  "Professional home cooking",
                   "Travel to your home included",
                   "Gourmet customized menus",
                   "Full basic kitchen cleanup",
@@ -64,7 +64,7 @@ export default function Pricing() {
                 duration: "per session",
                 desc: "Get ahead of a busy week. Bulk custom meal preparation portioned and ready in your refrigerator.",
                 features: [
-                  "Professional chef cooking",
+                  "Professional home cooking",
                   "Travel to your home included",
                   "Up to 5 custom recipe meals",
                   "Tupperware portion pack support",
@@ -128,7 +128,7 @@ export default function Pricing() {
             <div className="space-y-2">
               <h3 className="text-lg font-bold text-white font-serif">What about extra guests or larger families?</h3>
               <p className="text-xs text-[#A8A8A8] leading-relaxed font-medium">
-                Our base rates fully cover dinner and breakfast sessions for up to 4 people. For larger groups or events, we add a flat **+$10 per cooking session for each additional guest**, compensating our private chefs for extra preparation and cleaning labor.
+                Our base rates fully cover dinner and breakfast sessions for up to 4 people. For larger groups or events, we add a flat **+$10 per cooking session for each additional guest**, compensating our private cooks for extra preparation and cleaning labor.
               </p>
             </div>
           </div>

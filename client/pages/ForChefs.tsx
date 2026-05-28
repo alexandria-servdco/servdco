@@ -54,7 +54,7 @@ export default function ForChefs() {
                 into real <span className="text-[#FF7A59]">income.</span>
               </h1>
               <p className="text-[#A8A8A8] text-base lg:text-lg leading-relaxed max-w-lg">
-                Join a growing network of elite local chefs who prepare fresh
+                Join a growing network of elite local cooks who prepare fresh
                 home-cooked meals directly in family kitchens. Set your own
                 hours, design your own menus, and keep 100% of your tips.
               </p>
@@ -83,7 +83,7 @@ export default function ForChefs() {
               <div className="w-full aspect-[4/3] rounded-[32px] overflow-hidden shadow-2xl border border-white/5 relative">
                 <img
                   src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=800&auto=format&fit=crop&q=80"
-                  alt="Professional Chef plated meal"
+                  alt="Professional Cook plated meal"
                   className="w-full h-full object-cover object-center"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />

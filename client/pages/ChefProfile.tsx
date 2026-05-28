@@ -21,7 +21,7 @@ import { calculatePlatformFee, calculateCookPayout } from "@/utils/platformFee";
 // Mock chefs list
 const CHEFS_DATA: Record<string, any> = {
   sarah: {
-    name: "Chef Sarah Johnson",
+    name: "Cook Sarah Johnson",
     image:
       "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&auto=format&fit=crop&q=80",
     rating: "4.9",
@@ -63,7 +63,7 @@ const CHEFS_DATA: Record<string, any> = {
     ],
   },
   michael: {
-    name: "Chef Michael Brown",
+    name: "Cook Michael Brown",
     image:
       "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&auto=format&fit=crop&q=80",
     rating: "4.8",
@@ -98,7 +98,7 @@ const CHEFS_DATA: Record<string, any> = {
     ],
   },
   priya: {
-    name: "Chef Priya Patel",
+    name: "Cook Priya Patel",
     image:
       "https://images.unsplash.com/photo-1595273670150-db0d3c67adb8?w=600&auto=format&fit=crop&q=80",
     rating: "4.9",
@@ -185,7 +185,7 @@ export default function ChefProfile() {
             to="/browse-chefs"
             className="inline-flex items-center gap-2 text-xs font-bold text-[#A8A8A8] hover:text-[#FF7A59] mb-8 transition-colors"
           >
-            &larr; Back to Browse Chefs
+            &larr; Back to Browse Cooks
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
@@ -211,7 +211,7 @@ export default function ChefProfile() {
                       <div className="flex flex-col gap-1.5">
                         {chef.premium_status && (
                           <span className="w-max bg-gradient-to-r from-[#FF7A59] to-[#FF8F73] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/20">
-                            Featured Premium Chef
+                            Featured Premium Cook
                           </span>
                         )}
                         <h1 className="text-3xl font-bold text-white font-serif">
@@ -277,7 +277,7 @@ export default function ChefProfile() {
               {/* Bio description */}
               <div className="space-y-4">
                 <h2 className="text-xl font-bold font-serif text-white border-b border-white/5 pb-3">
-                  About the Chef
+                  About the Cook
                 </h2>
                 <p className="text-sm text-[#A8A8A8] leading-relaxed font-medium">
                   {chef.bio}

@@ -137,9 +137,9 @@ export default function Register() {
             imageAlt="Happy family enjoying a homemade meal together"
             icon={<Users size={18} className="text-[#FF7A59]" />}
             title="Join as Family"
-            description="Discover trusted local chefs and enjoy customized dinners cooked directly in your private kitchen."
+            description="Discover trusted local cooks and enjoy customized dinners cooked directly in your private kitchen."
             features={[
-              "Find verified chefs near you",
+              "Find verified cooks near you",
               "Book and schedule custom meals",
               "100% allergy & grocery control"
             ]}
@@ -151,16 +151,16 @@ export default function Register() {
           <RegistrationCard
             type="chef"
             imageSrc="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&fit=crop"
-            imageAlt="Professional chef plating a beautiful homemade dish"
+            imageAlt="Professional cook plating a beautiful homemade dish"
             icon={<ChefHat size={18} className="text-[#FF7A59]" />}
-            title="Join as Chef"
+            title="Join as Cook"
             description="Share your culinary passion, grow your business, and serve families in your local community."
             features={[
               "Set your own flexible schedules",
               "Keep 100% of your earnings & tips",
               "Secure transaction platforms"
             ]}
-            ctaLabel="Join as Chef"
+            ctaLabel="Join as Cook"
             ctaHref="/register/chef"
             ctaBgClass="bg-white/5 border border-white/10 hover:bg-white/10"
           />
@@ -170,7 +170,7 @@ export default function Register() {
         <div className="flex flex-wrap justify-center gap-6 md:gap-10 mt-8 text-[10px] text-[#A8A8A8] text-center font-bold uppercase tracking-wider relative z-10">
           <div className="flex items-center gap-2">
             <Shield size={14} className="text-[#FF7A59]" />
-            <span>Trusted & vetted<br />local private chefs</span>
+            <span>Trusted & vetted<br />local private cooks</span>
           </div>
           <div className="flex items-center gap-2">
             <Lock size={14} className="text-[#FF7A59]" />
@@ -178,7 +178,7 @@ export default function Register() {
           </div>
           <div className="flex items-center gap-2">
             <Heart size={14} className="text-[#FF7A59]" />
-            <span>Built for families.<br />Powered by chefs.</span>
+            <span>Built for families.<br />Powered by cooks.</span>
           </div>
         </div>
       </main>

@@ -108,7 +108,7 @@ export default function FamilyRegistration() {
               Join as a Family
             </h1>
             <p className="text-[#A8A8A8] text-xs">
-              Access premium chefs, personalize meal plans, and keep complete control over ingredients and cleanup.
+              Access premium cooks, personalize meal plans, and keep complete control over ingredients and cleanup.
             </p>
           </div>
 
@@ -254,7 +254,7 @@ export default function FamilyRegistration() {
                 <div className="w-7 h-7 rounded-full bg-[#FF7A59]/10 flex items-center justify-center flex-shrink-0 text-[#FF7A59]">
                   <Users size={14} />
                 </div>
-                <span className="text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">Vetted local chefs</span>
+                <span className="text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">Vetted local cooks</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-full bg-[#FF7A59]/10 flex items-center justify-center flex-shrink-0 text-[#FF7A59]">

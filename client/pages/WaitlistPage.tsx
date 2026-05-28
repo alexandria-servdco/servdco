@@ -120,7 +120,7 @@ export default function WaitlistPage() {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-[#1A1A1A] mb-1">
-                        You're on our early chef network.
+                        You're on our early cook network.
                       </h4>
                       <p className="text-xs text-[#1A1A1A]/70">
                         We'll notify you when your area opens.
@@ -147,7 +147,7 @@ export default function WaitlistPage() {
               )}
 
               <p className="text-[#1A1A1A]/65 text-sm md:text-[15px] leading-relaxed mb-8">
-                Servd Co isn't active in {state} yet. We're launching city-by-city and building up community support before launching our chef-matching marketplace. 
+                Servd Co isn't active in {state} yet. We're launching city-by-city and building up community support before launching our cook-matching marketplace. 
               </p>
             </div>
 
@@ -217,7 +217,7 @@ export default function WaitlistPage() {
                     <ChefHat size={20} />
                   </div>
                   <div>
-                    <p className="text-xs text-[#1A1A1A]/50 font-medium">Chefs waiting</p>
+                    <p className="text-xs text-[#1A1A1A]/50 font-medium">Cooks waiting</p>
                     <p className="text-2xl font-bold text-[#1A1A1A] mt-0.5">
                       {loading ? "..." : stats.chefs}
                     </p>
@@ -237,7 +237,7 @@ export default function WaitlistPage() {
               <div className="flex gap-2">
                 <Sparkles size={16} className="text-[#2E7D66] mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-[#1A1A1A]/60 leading-relaxed">
-                  Active areas unlock instant access to vetted chefs, customized allergy-controlled planning, and kitchen cleanups.
+                  Active areas unlock instant access to vetted cooks, customized allergy-controlled planning, and kitchen cleanups.
                 </p>
               </div>
             </div>

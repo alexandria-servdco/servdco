@@ -421,7 +421,7 @@ export default function ChefDashboard() {
             <h1 className="text-3xl font-bold text-white font-serif flex items-center gap-3">
               {currentTab === "dashboard"
                 ? `Good morning, ${profileData.name}!`
-                : `Chef ${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}`}
+                : `Cook ${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}`}
               {currentTab === "dashboard" && (
                 <span
                   className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
@@ -465,7 +465,7 @@ export default function ChefDashboard() {
               </div>
               <div>
                 <p className="text-sm font-bold text-white">
-                  Complete your professional chef profile to receive bookings!
+                  Complete your professional cook profile to receive bookings!
                 </p>
                 <p className="text-xs text-[#A8A8A8] mt-0.5">
                   Please update your culinary bio, cuisines list, and schedule
@@ -922,7 +922,7 @@ export default function ChefDashboard() {
                       100% Recommendation rate
                     </p>
                     <p className="text-[10px] text-[#A8A8A8] font-medium leading-relaxed max-w-sm">
-                      Every family who booked Chef Maria rated their experience
+                      Every family who booked Cook Maria rated their experience
                       5 stars with particular praise for kitchen cleanliness.
                     </p>
                   </div>
@@ -1275,7 +1275,7 @@ export default function ChefDashboard() {
                   onClick={() => {
                     if (
                       confirm(
-                        "Are you sure you want to delete your chef culinary profile?",
+                        "Are you sure you want to delete your cook culinary profile?",
                       )
                     ) {
                       AuthService.logout();

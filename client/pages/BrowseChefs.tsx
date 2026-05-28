@@ -17,7 +17,7 @@ import {
 const CHEFS_DATA = [
   {
     id: "sarah",
-    name: "Chef Sarah Johnson",
+    name: "Cook Sarah Johnson",
     image:
       "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=500&auto=format&fit=crop&q=80",
     rating: "4.9",
@@ -29,7 +29,7 @@ const CHEFS_DATA = [
   },
   {
     id: "michael",
-    name: "Chef Michael Brown",
+    name: "Cook Michael Brown",
     image:
       "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&auto=format&fit=crop&q=80",
     rating: "4.8",
@@ -40,18 +40,18 @@ const CHEFS_DATA = [
   },
   {
     id: "priya",
-    name: "Chef Priya Patel",
+    name: "Cook Priya Patel",
     image:
       "https://images.unsplash.com/photo-1595273670150-db0d3c67adb8?w=500&auto=format&fit=crop&q=80",
     rating: "4.9",
     reviews: "186 reviews",
     location: "Dallas, TX",
     specialties: ["Indian", "Vegetarian", "Healthy"],
-    bio: "Dedicated vegetarian chef focusing on fragrant traditional Indian recipes adapted for wellness.",
+    bio: "Dedicated vegetarian cook focusing on fragrant traditional Indian recipes adapted for wellness.",
   },
   {
     id: "james",
-    name: "Chef James Wilson",
+    name: "Cook James Wilson",
     image:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
     rating: "4.7",
@@ -62,7 +62,7 @@ const CHEFS_DATA = [
   },
   {
     id: "maria",
-    name: "Chef Maria Garcia",
+    name: "Cook Maria Garcia",
     image:
       "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500&auto=format&fit=crop&q=80",
     rating: "4.9",
@@ -73,7 +73,7 @@ const CHEFS_DATA = [
   },
   {
     id: "tasha",
-    name: "Chef Tasha Smith",
+    name: "Cook Tasha Smith",
     image:
       "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80",
     rating: "4.8",
@@ -174,11 +174,11 @@ export default function BrowseChefs() {
             Local Culinary Creators
           </p>
           <h1 className="text-4xl lg:text-5xl font-bold font-serif text-white tracking-tight">
-            Browse Our Vetted Local Chefs
+            Browse Our Vetted Local Cooks
           </h1>
           <p className="text-[#A8A8A8] text-sm max-w-xl">
             Filter by specialty cuisine, city limits, or search bio logs to find
-            an elite private chef to cook customized meals in your kitchen
+            an elite private cook to cook customized meals in your kitchen
             today.
           </p>
         </div>
@@ -193,7 +193,7 @@ export default function BrowseChefs() {
             <div className="relative flex-1 max-w-md">
               <input
                 type="text"
-                placeholder="Search chef name, specialty, bio..."
+                placeholder="Search cook name, specialty, bio..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-sm text-white placeholder-white/40 focus:outline-none focus:border-[#FF7A59] transition-all"
@@ -268,7 +268,7 @@ export default function BrowseChefs() {
             <div className="text-center py-20 bg-[#161616] rounded-[24px] border border-white/5">
               <Star className="mx-auto text-white/10 mb-4" size={40} />
               <h3 className="text-xl font-bold text-white mb-2">
-                No chefs match your filters
+                No cooks match your filters
               </h3>
               <p className="text-[#A8A8A8] text-xs">
                 Try clearing search terms or selecting another city specialty.
@@ -304,7 +304,7 @@ export default function BrowseChefs() {
                       <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111]/80 backdrop-blur-sm rounded-full border border-white/10 shadow-lg">
                         <Shield size={12} className="text-[#FF7A59]" />
                         <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                          Trusted Chef
+                          Trusted Cook
                         </span>
                       </div>
                     </div>
@@ -369,7 +369,7 @@ export default function BrowseChefs() {
                       to={`/chef/${chef.id}`}
                       className="block w-full py-3 bg-white/5 hover:bg-[#FF7A59] border border-white/10 hover:border-transparent text-white font-bold rounded-xl text-xs text-center transition-all duration-300"
                     >
-                      View Chef Profile
+                      View Cook Profile
                     </Link>
                   </div>
                 </div>

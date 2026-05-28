@@ -40,7 +40,7 @@ export default function MissionSection() {
             </h2>
 
             <p className="text-base text-foreground/80 leading-relaxed mb-12">
-              We support local chefs, strengthen communities, and help families enjoy meals made with care.
+              We support local cooks, strengthen communities, and help families enjoy meals made with care.
             </p>
 
             <div className="space-y-8">
@@ -51,7 +51,7 @@ export default function MissionSection() {
                 <div>
                   <h3 className="font-semibold text-foreground text-base mb-2">Trust & Safety</h3>
                   <p className="text-foreground/70 text-sm">
-                    Every chef is thoroughly background checked and verified
+                    Every cook is thoroughly background checked and verified
                   </p>
                 </div>
               </div>

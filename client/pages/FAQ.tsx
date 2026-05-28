@@ -9,30 +9,30 @@ import { Link } from "react-router-dom";
 const FAQS_FAMILY = [
   {
     q: "How does Servd Co work for families?",
-    a: "You browse local, verified chefs in your area, select the meal service type you need (breakfast prep, dinner, or bulk weekly meal preps), and book a date. The chef arrives at your home, uses the groceries you provide, prepares your meals, and handles basic kitchen cleanup. You stay in full control of your ingredients and food budget!"
+    a: "You browse local, verified cooks in your area, select the meal service type you need (breakfast prep, dinner, or bulk weekly meal preps), and book a date. The cook arrives at your home, uses the groceries you provide, prepares your meals, and handles basic kitchen cleanup. You stay in full control of your ingredients and food budget!"
   },
   {
     q: "What does the flat pricing include?",
-    a: "Our flat rate covers the chef's professional cooking time, culinary prep, travel costs, and basic kitchen cleanup. Groceries are purchased by you separately, allowing you complete freedom over ingredient quality, sourcing, organic preferences, and budget."
+    a: "Our flat rate covers the cook's professional cooking time, culinary prep, travel costs, and basic kitchen cleanup. Groceries are purchased by you separately, allowing you complete freedom over ingredient quality, sourcing, organic preferences, and budget."
   },
   {
     q: "Are the groceries provided by Servd Co?",
-    a: "No, families purchase their own groceries. Your private chef can send you a detailed shopping list based on the customized menu you choose. This keeps your costs low and gives you absolute control over what goes into your family's food."
+    a: "No, families purchase their own groceries. Your private cook can send you a detailed shopping list based on the customized menu you choose. This keeps your costs low and gives you absolute control over what goes into your family's food."
   },
   {
     q: "How is trust and safety verified?",
-    a: "Every chef on Servd Co undergoes a rigorous trust and safety clearing process, including identity checks, food handling certification audits, and private culinary reviews. We prioritize family safety above everything."
+    a: "Every cook on Servd Co undergoes a rigorous trust and safety clearing process, including identity checks, food handling certification audits, and private culinary reviews. We prioritize family safety above everything."
   }
 ];
 
 const FAQS_CHEF = [
   {
-    q: "How do chefs earn on Servd Co?",
-    a: "Chefs earn based on session rates: Breakfast ($40), Dinner ($60), and Meal Prep ($70). Larger bookings add +$10/session guest fees. You keep 100% of your earnings minus standard banking transaction fees, and all tips are 100% yours!"
+    q: "How do cooks earn on Servd Co?",
+    a: "Cooks earn based on session rates: Breakfast ($40), Dinner ($60), and Meal Prep ($70). Larger bookings add +$10/session guest fees. You keep 100% of your earnings minus standard banking transaction fees, and all tips are 100% yours!"
   },
   {
     q: "Who provides the cooking tools and equipment?",
-    a: "Chefs utilize the family's basic kitchen appliances (stoves, ovens) and standard cookware (pots, pans) already in the home. Chefs typically bring their own professional knife set and small specialty tools if needed."
+    a: "Cooks utilize the family's basic kitchen appliances (stoves, ovens) and standard cookware (pots, pans) already in the home. Cooks typically bring their own professional knife set and small specialty tools if needed."
   },
   {
     q: "Can I choose my own hours and schedule?",
@@ -61,7 +61,7 @@ export default function FAQ() {
         <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">Common Inquiries</p>
         <h1 className="text-4xl lg:text-5xl font-bold font-serif text-white tracking-tight">Questions? Answered.</h1>
         <p className="text-[#A8A8A8] text-sm max-w-xl mx-auto">
-          Everything you need to know about private home dining, chef earnings, safety clearances, and grocery setups.
+          Everything you need to know about private home dining, cook earnings, safety clearances, and grocery setups.
         </p>
       </section>
 
@@ -97,7 +97,7 @@ export default function FAQ() {
               }`}
             >
               <ChefHat size={14} />
-              For Chefs
+              For Cooks
             </button>
           </div>
 

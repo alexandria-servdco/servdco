@@ -143,7 +143,7 @@ export default function ChefRegistration() {
           {/* Header Title */}
           <div className="mb-4">
             <h1 className="text-3xl lg:text-4xl font-bold text-white font-serif tracking-tight mb-1">
-              Join as a Chef
+              Join as a Cook
             </h1>
             <p className="text-[#A8A8A8] text-xs">
               Share your passion. Serve your community. Build your private culinary business.
@@ -300,7 +300,7 @@ export default function ChefRegistration() {
                     <div>
                       <h4 className="text-xs font-bold text-white mb-0.5">Your safety comes first</h4>
                       <p className="text-[11px] text-[#A8A8A8] leading-relaxed">
-                        All chefs undergo safety audits, identity verification, and ServSafe certifications checks to secure trust in private kitchens.
+                        All cooks undergo safety audits, identity verification, and ServSafe certifications checks to secure trust in private kitchens.
                       </p>
                     </div>
                   </div>
@@ -376,7 +376,7 @@ export default function ChefRegistration() {
           <div className="w-full h-full rounded-2xl overflow-hidden relative border border-white/5 shadow-2xl">
             <img 
               src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&fit=crop" 
-              alt="Professional chef preparing a meal" 
+              alt="Professional cook preparing a meal" 
               className="w-full h-full object-cover opacity-80"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
@@ -385,7 +385,7 @@ export default function ChefRegistration() {
           {/* Floating Features Card */}
           <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-3 bg-[#1A1A1A] border border-white/10 rounded-2xl p-5 shadow-2xl w-[250px]">
             <h3 className="font-bold text-white text-xs mb-3 font-serif">
-              As a Servd Co chef:
+              As a Servd Co cook:
             </h3>
             <ul className="space-y-3.5">
               <li className="flex items-center gap-2.5">
@@ -424,7 +424,7 @@ export default function ChefRegistration() {
                   Servd Co helped me turn my culinary passion into a real scalable business, doing what I love on my own terms.
                 </p>
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-bold text-white uppercase tracking-wider">Chef Maria</p>
+                  <p className="text-[10px] font-bold text-white uppercase tracking-wider">Cook Maria</p>
                   {/* Dots indicator */}
                   <div className="flex gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#FF7A59]"></div>

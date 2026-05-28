@@ -143,9 +143,9 @@ export default function Terms() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
         <div className="bg-[#1E1E1E]/40 border border-white/10 rounded-2xl p-6 space-y-3">
           <HeartHandshake size={20} className="text-[#FF7A59]" />
-          <h4 className="text-white text-sm font-bold font-serif">Independent Chefs</h4>
+          <h4 className="text-white text-sm font-bold font-serif">Independent Cooks</h4>
           <p className="text-[#A8A8A8] text-[11px] leading-relaxed">
-            Chefs are independent local service providers, not ServdCo employees. We vet safety, background checks, and certifications.
+            Cooks are independent local service providers, not ServdCo employees. We vet safety, background checks, and certifications.
           </p>
         </div>
         <div className="bg-[#1E1E1E]/40 border border-white/10 rounded-2xl p-6 space-y-3">
@@ -170,7 +170,7 @@ export default function Terms() {
         <section id="acceptance" className="scroll-mt-24 space-y-3">
           <h2 className="text-2xl font-bold border-b border-white/5 pb-2">1. Acceptance of Terms</h2>
           <p className="text-sm leading-relaxed">
-            By accessing or using the Servd Co. platform ("ServdCo," "we," "us," or "our"), registering an account as a family client or independent home cook ("Chef"), or booking meal services, you agree to be bound by these Terms of Service. If you do not agree to these rules, you must cease using our platform immediately.
+            By accessing or using the Servd Co. platform ("ServdCo," "we," "us," or "our"), registering an account as a family client or independent home cook ("Cook"), or booking meal services, you agree to be bound by these Terms of Service. If you do not agree to these rules, you must cease using our platform immediately.
           </p>
         </section>
 
@@ -180,7 +180,7 @@ export default function Terms() {
             ServdCo acts as an online marketplace matching family clients looking for home-cooked meal prep with vetted independent culinary professionals. 
           </p>
           <p className="text-sm leading-relaxed">
-            <strong>Chefs are Independent Contractors:</strong> You acknowledge that Chefs listed on the platform are self-employed independent business operators. They are not employees, agents, or joint venturers of ServdCo. ServdCo does not direct, oversee, or control the cooking methodology, ingredient selection, or specific menu execution details beyond enforcing basic certification audits.
+            <strong>Cooks are Independent Contractors:</strong> You acknowledge that Cooks listed on the platform are self-employed independent business operators. They are not employees, agents, or joint venturers of ServdCo. ServdCo does not direct, oversee, or control the cooking methodology, ingredient selection, or specific menu execution details beyond enforcing basic certification audits.
           </p>
         </section>
 
@@ -190,8 +190,8 @@ export default function Terms() {
             High food handling integrity is paramount to the ServdCo community. Both parties assume responsibilities to maintain a safe kitchen environment:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-sm text-[#A8A8A8]">
-            <li><strong>Client Obligations:</strong> Family clients must provide their scheduled chef with access to a clean, fully sanitary, and hazard-free kitchen space with functional equipment (oven, cooktop, sinks, and primary utility structures).</li>
-            <li><strong>Chef Obligations:</strong> Vetted chefs must maintain active food hygiene certifications (e.g., ServSafe), handle, cook, and store ingredients under standard health parameters, and sanitize food preparation zones thoroughly before departing.</li>
+            <li><strong>Client Obligations:</strong> Family clients must provide their scheduled cook with access to a clean, fully sanitary, and hazard-free kitchen space with functional equipment (oven, cooktop, sinks, and primary utility structures).</li>
+            <li><strong>Cook Obligations:</strong> Vetted cooks must maintain active food hygiene certifications (e.g., ServSafe), handle, cook, and store ingredients under standard health parameters, and sanitize food preparation zones thoroughly before departing.</li>
           </ul>
         </section>
 
@@ -201,28 +201,28 @@ export default function Terms() {
             All transaction rails, deposit holds, and service payouts are facilitated securely by **Stripe**.
           </p>
           <p className="text-sm leading-relaxed">
-            When a family client schedules a meal prep service, a payment authorization hold is placed on their designated credit card. Payments are released and transferred to the independent chef's bank connection only upon successful completion of the scheduled service date. You agree to comply with Stripe's Services Agreement as integrated into the checkout flow.
+            When a family client schedules a meal prep service, a payment authorization hold is placed on their designated credit card. Payments are released and transferred to the independent cook's bank connection only upon successful completion of the scheduled service date. You agree to comply with Stripe's Services Agreement as integrated into the checkout flow.
           </p>
         </section>
 
         <section id="cancellations" className="scroll-mt-24 space-y-3">
           <h2 className="text-2xl font-bold border-b border-white/5 pb-2">5. Cancellations & Refund Policies</h2>
           <p className="text-sm leading-relaxed">
-            To protect independent chefs' schedules and ensure families receive consistent service, the following rules apply:
+            To protect independent cooks' schedules and ensure families receive consistent service, the following rules apply:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-sm text-[#A8A8A8]">
             <li><strong>Family Cancellations:</strong> Cancellations made more than 48 hours before the scheduled service incur no penalty. Cancellations within 24–48 hours may carry a nominal 50% reservation fee to offset ingredient sourcing and scheduling blocks. Cancellations within 24 hours are non-refundable.</li>
-            <li><strong>Chef Cancellations:</strong> If a chef cancels a booking due to emergency conditions, a full refund is immediately credited back to the client's payment account, and our support team will prioritize matching you with an alternative chef.</li>
+            <li><strong>Cook Cancellations:</strong> If a cook cancels a booking due to emergency conditions, a full refund is immediately credited back to the client's payment account, and our support team will prioritize matching you with an alternative cook.</li>
           </ul>
         </section>
 
         <section id="liability" className="scroll-mt-24 space-y-3">
           <h2 className="text-2xl font-bold border-b border-white/5 pb-2">6. Limitation of Liability</h2>
           <p className="text-sm leading-relaxed">
-            ServdCo is not liable for direct, indirect, incidental, or consequential damages resulting from kitchen services, food handling, chef execution, client home environments, or transaction outages. 
+            ServdCo is not liable for direct, indirect, incidental, or consequential damages resulting from kitchen services, food handling, cook execution, client home environments, or transaction outages. 
           </p>
           <p className="text-sm leading-relaxed">
-            <strong>Liability Insurance:</strong> Active marketplace chefs are encouraged to hold comprehensive liability protection through recognized carriers (such as FLIP platform partner programs) to safeguard against accidental property damage or ingestion concerns. ServdCo's maximum cumulative liability to any user shall not exceed the total transaction value paid for the booking in dispute.
+            <strong>Liability Insurance:</strong> Active marketplace cooks are encouraged to hold comprehensive liability protection through recognized carriers (such as FLIP platform partner programs) to safeguard against accidental property damage or ingestion concerns. ServdCo's maximum cumulative liability to any user shall not exceed the total transaction value paid for the booking in dispute.
           </p>
         </section>
 
@@ -236,7 +236,7 @@ export default function Terms() {
         <section id="termination" className="scroll-mt-24 space-y-3">
           <h2 className="text-2xl font-bold border-b border-white/5 pb-2">8. Account Suspension & Administrative Deletion</h2>
           <p className="text-sm leading-relaxed">
-            ServdCo reserves the right, in its sole administrative discretion, to suspend or permanently terminate user accounts (both client and chef profiles) immediately, without notice, if we identify:
+            ServdCo reserves the right, in its sole administrative discretion, to suspend or permanently terminate user accounts (both client and cook profiles) immediately, without notice, if we identify:
           </p>
           <ul className="list-disc pl-6 space-y-2 text-sm text-[#A8A8A8]">
             <li>Violations of safety, hygiene, or kitchen codes.</li>

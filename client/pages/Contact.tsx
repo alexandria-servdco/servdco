@@ -78,7 +78,7 @@ export default function Contact() {
             <div className="rounded-[32px] overflow-hidden shadow-2xl border border-white/5 aspect-[16/10] bg-[#161616]">
               <img 
                 src="/contact-hero.png" 
-                alt="Chef preparing organic food" 
+                alt="Cook preparing organic food" 
                 className="w-full h-full object-cover"
               />
             </div>

@@ -6,15 +6,15 @@ const privacyPolicyHTML = `
     <section id="information-collection" class="scroll-mt-24">
       <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">1. Information Collection</h2>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
-        Servd Co. connects busy families with trusted, vetted local chefs for personalized meal preparation services. To facilitate this marketplace, we collect information that helps us deliver a high-quality experience. We only collect the minimum amount of data required to operate the platform.
+        Servd Co. connects busy families with trusted, vetted local cooks for personalized meal preparation services. To facilitate this marketplace, we collect information that helps us deliver a high-quality experience. We only collect the minimum amount of data required to operate the platform.
       </p>
       <h3 class="text-lg font-bold text-white mb-2">A. Information You Provide directly</h3>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-3">
-        When registering an account as a family client or chef, or interacting with our waitlist, we collect:
+        When registering an account as a family client or cook, or interacting with our waitlist, we collect:
       </p>
       <ul class="list-disc pl-6 space-y-2 text-[#A8A8A8] text-sm mb-4">
         <li><strong>Account Profile Data:</strong> Name, email address, password hash, physical address (city, state, ZIP code), and telephone number.</li>
-        <li><strong>Chef Profiles:</strong> Experience, cuisine specialties, profile descriptions, location boundaries, and weekly scheduling availability.</li>
+        <li><strong>Cook Profiles:</strong> Experience, cuisine specialties, profile descriptions, location boundaries, and weekly scheduling availability.</li>
         <li><strong>Onboarding Credentials:</strong> Food handler certifications (e.g., ServSafe certificates), liability insurance documentation, and standard identification verification documents (for background audit logs).</li>
       </ul>
       <h3 class="text-lg font-bold text-white mb-2">B. Information Collected Automatically</h3>
@@ -29,8 +29,8 @@ const privacyPolicyHTML = `
         Your data is processed in a secure environment and only for verified functional purposes. We process information to:
       </p>
       <ul class="list-disc pl-6 space-y-2 text-[#A8A8A8] text-sm mb-4">
-        <li>Create and maintain your client or chef account on Servd Co.</li>
-        <li>Match families with independent chefs operating in their local ZIP codes.</li>
+        <li>Create and maintain your client or cook account on Servd Co.</li>
+        <li>Match families with independent cooks operating in their local ZIP codes.</li>
         <li>Authorize secure payment processes and coordinate booking schedules.</li>
         <li>Monitor regional waitlists and calculate threshold counters to trigger rollout notices.</li>
         <li>Provide responsive customer support and resolve scheduling disputes.</li>
@@ -51,7 +51,7 @@ const privacyPolicyHTML = `
         <li><strong>Persistence:</strong> Local storage is utilized to maintain guest parameters and waitlist status before full registration is finalized.</li>
       </ul>
       <p class="text-[#A8A8A8] text-sm leading-relaxed">
-        You can choose to disable cookies through your individual browser settings; however, disabling essential session cookies will prevent the platform from functioning correctly and you will not be able to log in or book chefs.
+        You can choose to disable cookies through your individual browser settings; however, disabling essential session cookies will prevent the platform from functioning correctly and you will not be able to log in or book cooks.
       </p>
     </section>
 
@@ -90,7 +90,7 @@ const privacyPolicyHTML = `
         We do not sell, rent, trade, or distribute your personal identifying information to advertising networks, brokers, or data brokers. Data sharing is limited strictly to the following scenarios:
       </p>
       <ul class="list-disc pl-6 space-y-2 text-[#A8A8A8] text-sm mb-4">
-        <li><strong>Marketplace Coordination:</strong> Sharing names, booking addresses, menu selections, and contact telephone lines between the assigned chef and family client.</li>
+        <li><strong>Marketplace Coordination:</strong> Sharing names, booking addresses, menu selections, and contact telephone lines between the assigned cook and family client.</li>
         <li><strong>Functional Partners:</strong> Secure transactions with payment processors (Stripe) and server infrastructure partners.</li>
         <li><strong>Compliance & Protection:</strong> When legally mandated to comply with subpoena requests, court mandates, or regulatory directives.</li>
       </ul>

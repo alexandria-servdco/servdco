@@ -111,7 +111,7 @@ export default function Login() {
         {/* Background Image */}
         <img
           src="https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&h=1000&fit=crop"
-          alt="Chef family"
+          alt="Cook family"
           className="w-full h-full object-cover opacity-60"
         />
 
@@ -142,7 +142,7 @@ export default function Login() {
             </h1>
 
             <p className="text-[#A8A8A8] text-sm max-w-sm leading-relaxed font-medium">
-              Connecting families with trusted local chefs who create customized, fresh dinners directly in private kitchens.
+              Connecting families with trusted local cooks who create customized, fresh dinners directly in private kitchens.
             </p>
 
             {/* Trust Badge */}
@@ -269,7 +269,7 @@ export default function Login() {
                 className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.06] hover:border-[#FF7A59]/30 transition-all text-center gap-1 group"
               >
                 <ChefHat size={16} className="text-[#A8A8A8] group-hover:text-[#FF7A59] transition-colors" />
-                <span className="text-[10px] font-bold text-white">Chef</span>
+                <span className="text-[10px] font-bold text-white">Cook</span>
               </button>
               <button
                 type="button"

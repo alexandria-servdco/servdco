@@ -35,8 +35,8 @@ export default function Navbar() {
 
   const navLinks = [
     { label: "How It Works", path: "/how-it-works" },
-    { label: "Browse Chefs", path: "/browse-chefs" },
-    { label: "For Chefs", path: "/for-chefs" },
+    { label: "Browse Cooks", path: "/browse-chefs" },
+    { label: "For Cooks", path: "/for-chefs" },
     { label: "About", path: "/about" },
     { label: "FAQ", path: "/faq" },
     { label: "Pricing", path: "/pricing" },

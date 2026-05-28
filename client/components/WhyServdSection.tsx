@@ -8,7 +8,7 @@ export default function WhyServdSection() {
       icon: Users,
     },
     {
-      title: "Local chefs have amazing talent",
+      title: "Local cooks have amazing talent",
       description: "that deserves a platform.",
       icon: Home,
     },

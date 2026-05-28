@@ -27,7 +27,7 @@ export default function Hero() {
             </h1>
 
             <p className="text-base text-foreground/80 mb-10 leading-relaxed max-w-md">
-              Servd Co connects families with trusted local chefs who create homemade meals with care, love, and real ingredients.
+              Servd Co connects families with trusted local cooks who create homemade meals with care, love, and real ingredients.
             </p>
 
             {/* Buttons */}
@@ -62,7 +62,7 @@ export default function Hero() {
               <div className="flex items-center gap-3">
                 <CheckCircle size={24} className="text-accent flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-foreground text-sm">Verified Chefs</p>
+                  <p className="font-semibold text-foreground text-sm">Verified Cooks</p>
                   <p className="text-xs text-foreground/60">Background checked</p>
                 </div>
               </div>

@@ -23,11 +23,11 @@ export function EmptyState({
     bookings: {
       icon: Calendar,
       defaultTitle: "No bookings yet",
-      defaultDesc: "Schedule your first home cooked dining session with a local verified chef."
+      defaultDesc: "Schedule your first home cooked dining session with a local verified cook."
     },
     chefs: {
       icon: Users,
-      defaultTitle: "No chefs found",
+      defaultTitle: "No cooks found",
       defaultDesc: "Try adjusting your filters, location range, or cuisine types search criteria."
     },
     requests: {

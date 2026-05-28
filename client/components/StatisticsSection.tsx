@@ -10,7 +10,7 @@ export default function StatisticsSection() {
     },
     {
       number: "315+",
-      label: "Trusted Local Chefs",
+      label: "Trusted Local Cooks",
       description: "background checked",
       icon: ChefHat,
     },

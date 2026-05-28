@@ -99,7 +99,7 @@ export default function Footer() {
                 </h2>
                 
                 <p className="text-[#A5A5A5] text-xs sm:text-sm leading-relaxed max-w-lg font-medium">
-                  Help us bring Servd Co to more communities and connect talented local chefs with families looking for personalized, nourishing meals.
+                  Help us bring Servd Co to more communities and connect talented local cooks with families looking for personalized, nourishing meals.
                 </p>
               </div>
 
@@ -117,7 +117,7 @@ export default function Footer() {
                   to="/browse-chefs"
                   className="px-8 h-12 rounded-[24px] bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-xs flex items-center justify-center hover:-translate-y-0.5 active:scale-[0.98] transition-all"
                 >
-                  Find a Chef
+                  Find a Cook
                 </Link>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function Footer() {
               { icon: ShieldCheck, title: "ServSafe Verified", desc: "Highest hygiene standards" },
               { icon: Award, title: "FLIP Insurance", desc: "Platform partner liability" },
               { icon: Lock, title: "Safe Payments", desc: "Secure encrypted rails" },
-              { icon: Users, title: "Community Driven", desc: "Local chefs, real reviews" },
+              { icon: Users, title: "Community Driven", desc: "Local cooks, real reviews" },
               { icon: PhoneCall, title: "Responsive Support", desc: "Here whenever you need" }
             ].map((trust, idx) => (
               <div 
@@ -160,7 +160,7 @@ export default function Footer() {
             </Link>
             
             <p className="text-[#A5A5A5] text-[12px] leading-relaxed max-w-sm font-medium">
-              Servd Co connects busy local families with vetted, independent private chefs who design menus, buy fresh ingredients, and prepare home-cooked meals right inside private kitchens.
+              Servd Co connects busy local families with vetted, independent private cooks who design menus, buy fresh ingredients, and prepare home-cooked meals right inside private kitchens.
             </p>
 
             <div className="space-y-3.5 pt-2">
@@ -194,7 +194,7 @@ export default function Footer() {
             <p className="text-[11px] font-extrabold text-white uppercase tracking-widest border-l-2 border-[#FF7A59] pl-3.5">For Families</p>
             <ul className="space-y-3 pl-3.5">
               {[
-                { label: "Browse Chefs", path: "/browse-chefs" },
+                { label: "Browse Cooks", path: "/browse-chefs" },
                 { label: "How It Works", path: "/how-it-works" },
                 { label: "Pricing", path: "/pricing" },
                 { label: "FAQ", path: "/faq" },
@@ -215,15 +215,15 @@ export default function Footer() {
 
           {/* Chefs Column */}
           <div className="lg:col-span-2 space-y-5">
-            <p className="text-[11px] font-extrabold text-white uppercase tracking-widest border-l-2 border-[#FF7A59] pl-3.5">For Chefs</p>
+            <p className="text-[11px] font-extrabold text-white uppercase tracking-widest border-l-2 border-[#FF7A59] pl-3.5">For Cooks</p>
             <ul className="space-y-3 pl-3.5">
               {[
                 { label: "Apply To Cook", path: "/register/chef" },
                 { label: "Income Calculator", path: "/for-chefs" },
-                { label: "Chef Community", path: "/for-chefs" },
+                { label: "Cook Community", path: "/for-chefs" },
                 { label: "Resources", path: "#" },
                 { label: "Requirements", path: "/for-chefs" },
-                { label: "Chef Dashboard", path: "/chef-dashboard" }
+                { label: "Cook Dashboard", path: "/chef-dashboard" }
               ].map((link) => (
                 <li key={link.label}>
                   <Link 
@@ -397,7 +397,7 @@ export default function Footer() {
                       className="w-full h-[52px] px-4 py-1.5 bg-[#161616] border border-white/5 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-[#FF7A59] focus:ring-1 focus:ring-[#FF7A59] transition-all appearance-none cursor-pointer"
                     >
                       <option value="family">Family (Interested in hiring)</option>
-                      <option value="chef">Chef (Interested in cooking)</option>
+                      <option value="chef">Cook (Interested in cooking)</option>
                       <option value="both">Both</option>
                     </select>
                     <label className="absolute left-4 top-1.5 text-[9px] text-[#FF7A59] font-bold uppercase tracking-wider">I am interested as</label>

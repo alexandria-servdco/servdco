@@ -94,7 +94,7 @@ const NAV_ITEMS = [
   { id: "launch_control", label: "Launch Control", icon: MapPinned },
   { id: "interest_requests", label: "Interest Requests", icon: Globe },
   { id: "users", label: "Users", icon: Users },
-  { id: "chefs", label: "Chefs", icon: ChefHat },
+  { id: "chefs", label: "Cooks", icon: ChefHat },
   { id: "bookings", label: "Bookings", icon: CalendarDays },
   { id: "documents", label: "Verification", icon: FileText },
   { id: "payouts", label: "Payouts", icon: DollarSign },
@@ -443,8 +443,8 @@ export default function AdminDashboard({
     })),
     ...chefs.slice(0, 3).map((c) => ({
       id: `ch_${c.id}`,
-      title: `Chef Registered`,
-      message: `${c.name} applied as a ${c.cuisine} chef in ${c.location}`,
+      title: `Cook Registered`,
+      message: `${c.name} applied as a ${c.cuisine} cook in ${c.location}`,
       timestamp: "Yesterday",
       iconColor: "#FF7A59",
     })),
@@ -762,7 +762,7 @@ export default function AdminDashboard({
               {activeNav === "launch_control" && "Launch Regions Control"}
               {activeNav === "interest_requests" && "Market Interest Requests"}
               {activeNav === "users" && "User Directory"}
-              {activeNav === "chefs" && "Chef Network & Verification"}
+              {activeNav === "chefs" && "Cook Network & Verification"}
               {activeNav === "bookings" && "Marketplace Bookings"}
               {activeNav === "documents" && "Trust & Verification Center"}
               {activeNav === "payouts" && "Payout Control"}
@@ -784,19 +784,19 @@ export default function AdminDashboard({
               {activeNav === "launch_control" &&
                 "Control where Servd Co is active and manage rollout strategy."}
               {activeNav === "interest_requests" &&
-                "Aggregate user/chef demand requests from pending rollout cities."}
+                "Aggregate user/cook demand requests from pending rollout cities."}
               {activeNav === "users" &&
                 "Manage registered family accounts, credentials, and access states."}
               {activeNav === "chefs" &&
-                "Review chef cuisines, active marketplace metrics, and approve applications."}
+                "Review cook cuisines, active marketplace metrics, and approve applications."}
               {activeNav === "bookings" &&
                 "Oversee real-time marketplace bookings, transactions, and status logs."}
               {activeNav === "documents" &&
-                "Inspect submitted chef certifications, ServSafe, ID verification and insurance policies."}
+                "Inspect submitted cook certifications, ServSafe, ID verification and insurance policies."}
               {activeNav === "payouts" &&
-                "Manage chef payouts, disputes, and holds."}
+                "Manage cook payouts, disputes, and holds."}
               {activeNav === "moderation" &&
-                "Audit reviews, portfolio images, and chef content."}
+                "Audit reviews, portfolio images, and cook content."}
               {activeNav === "announcements" &&
                 "Configure dynamic global alerts across the product."}
               {activeNav === "analytics" &&
@@ -947,7 +947,7 @@ export default function AdminDashboard({
                   />
                   <AnalyticsCard
                     icon="chefs"
-                    label="Total Chefs"
+                    label="Total Cooks"
                     value={totalChefsCount.toString()}
                     change="+8.1%"
                     positive
@@ -1557,7 +1557,7 @@ export default function AdminDashboard({
                         fontWeight: "500",
                       }}
                     >
-                      Active Chefs
+                      Active Cooks
                     </p>
                     <p
                       style={{
@@ -1997,7 +1997,7 @@ export default function AdminDashboard({
                                 fontWeight: "500",
                               }}
                             >
-                              Waiting Chefs
+                              Waiting Cooks
                             </span>
                             <p
                               style={{
@@ -2321,7 +2321,7 @@ export default function AdminDashboard({
                             "Status",
                             "Cities Covered",
                             "Families Wait",
-                            "Chefs Wait",
+                            "Cooks Wait",
                             "Demand Status",
                             "Actions",
                           ].map((col, idx) => (

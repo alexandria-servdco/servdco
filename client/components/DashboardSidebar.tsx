@@ -9,7 +9,7 @@ export default function DashboardSidebar() {
 
   const menuLinks = [
     { label: "Dashboard", path: "/family-dashboard", icon: LayoutDashboard },
-    { label: "Browse Chefs", path: "/browse-chefs", icon: Search },
+    { label: "Browse Cooks", path: "/browse-chefs", icon: Search },
     { label: "Bookings", path: "/family-dashboard/bookings", icon: Calendar },
     { label: "History", path: "/family-dashboard/history", icon: Clock },
     { label: "Favorites", path: "/family-dashboard/favorites", icon: Heart }

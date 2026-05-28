@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { toast } from 'sonner';
 
 export interface Notification {
   id: string;
@@ -29,6 +30,18 @@ export const useNotificationStore = create<NotificationState>((set) => ({
         read: false,
         createdAt: new Date().toISOString(),
       };
+      
+      // Trigger visual toast
+      if (notification.type === 'success') {
+        toast.success(notification.title, { description: notification.message });
+      } else if (notification.type === 'error') {
+        toast.error(notification.title, { description: notification.message });
+      } else if (notification.type === 'warning') {
+        toast.warning(notification.title, { description: notification.message });
+      } else {
+        toast(notification.title, { description: notification.message });
+      }
+
       const updatedNotifications = [newNotification, ...state.notifications];
       return {
         notifications: updatedNotifications,

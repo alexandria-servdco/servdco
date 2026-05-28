@@ -34,7 +34,7 @@ export function PayoutControl() {
           background: "rgba(25,25,25,0.4)",
           border: "1px solid rgba(255,255,255,0.06)",
           borderRadius: "12px",
-          overflow: "hidden",
+          overflowX: "auto",
         }}
       >
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -325,7 +325,7 @@ export function PayoutControl() {
           background: "rgba(25,25,25,0.4)",
           border: "1px solid rgba(255,255,255,0.06)",
           borderRadius: "12px",
-          overflow: "hidden",
+          overflowX: "auto",
         }}
       >
         <table style={{ width: "100%", borderCollapse: "collapse" }}>

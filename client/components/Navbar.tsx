@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Menu, X, Users, ChefHat, ShieldAlert, LogOut, ChevronUp, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthService } from "@/services/auth.service";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -98,7 +99,7 @@ export default function Navbar() {
                   <div key={link.label} className="relative group/menu py-2">
                     <button
                       className={cn(
-                        "flex items-center gap-1 px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 rounded-lg",
+                        "flex items-center gap-1 px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 rounded-lg whitespace-nowrap",
                         subActive ? "text-[#FF7A59]" : "text-white/90 hover:text-white"
                       )}
                     >
@@ -143,7 +144,7 @@ export default function Navbar() {
                   key={link.label}
                   to={link.path}
                   className={cn(
-                    "relative px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 rounded-lg group",
+                    "relative px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 rounded-lg group whitespace-nowrap",
                     active
                       ? "text-[#FF7A59]"
                       : "text-white/90 hover:text-white"
@@ -185,6 +186,9 @@ export default function Navbar() {
                   )}
                   My Dashboard
                 </Link>
+                <div className="hidden sm:block">
+                  <NotificationBell />
+                </div>
                 <button
                   onClick={handleLogout}
                   className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/10 text-[12px] font-bold text-white/70 hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/5 transition-all"

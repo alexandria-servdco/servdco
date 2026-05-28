@@ -6,7 +6,7 @@ export default function Hero() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Email submitted:", email);
+    // In future, this would integrate with a backend CRM or mailing list.
     setEmail("");
   };
 

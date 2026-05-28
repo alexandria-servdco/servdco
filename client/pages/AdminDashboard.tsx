@@ -60,6 +60,9 @@ import {
 
 import { DashboardWidgetSkeleton, CardSkeleton } from "@/components/ui/Skeletons";
 
+import { useAdminStore } from "@/store/useAdminStore";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+
 import { ChartCard } from "@/components/admin/ChartCard";
 import { lazy, Suspense } from "react";
 
@@ -473,7 +476,7 @@ export default function AdminDashboard({
     >
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside
-        className="hidden md:flex flex-col h-screen sticky top-0"
+        className="hidden md:flex flex-col h-screen sticky top-0 no-scrollbar"
         style={{
           width: "260px",
           minWidth: "260px",
@@ -481,6 +484,7 @@ export default function AdminDashboard({
           borderRight: "1px solid rgba(255,255,255,0.05)",
           padding: "32px 20px",
           boxShadow: "4px 0 24px rgba(0,0,0,0.2)",
+          overflowY: "auto",
         }}
       >
         {/* Logo */}
@@ -803,6 +807,7 @@ export default function AdminDashboard({
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <NotificationBell />
             {/* Direct Export for tables */}
             {["interest_requests", "users", "chefs", "bookings"].includes(
               activeNav,
@@ -2598,7 +2603,8 @@ export default function AdminDashboard({
               maxWidth: "500px",
               boxShadow: "0 20px 50px rgba(0,0,0,0.4)",
               border: "1px solid rgba(255,255,255,0.08)",
-              overflow: "hidden",
+              maxHeight: "90vh",
+              overflowY: "auto",
             }}
           >
             <div
@@ -2624,6 +2630,8 @@ export default function AdminDashboard({
               </h3>
               <button
                 onClick={() => setEditingRegion(null)}
+                aria-label="Close modal"
+                tabIndex={0}
                 style={{
                   background: "none",
                   border: "none",

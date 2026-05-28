@@ -165,7 +165,11 @@ export function ChefNetworkTable({
                         textAlign: "center",
                       }}
                     >
-                      <EmptyState message="No chefs matching specified filters." />
+                      <EmptyState 
+                        type="chefs" 
+                        title="No chefs found" 
+                        description="No chefs matching the specified search criteria or status filter." 
+                      />
                     </td>
                   </tr>
                 );

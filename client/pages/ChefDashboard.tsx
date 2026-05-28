@@ -61,6 +61,7 @@ import { ChefAnalytics } from "@/components/chef/ChefAnalytics";
 import { AvailabilityManager } from "@/components/chef/AvailabilityManager";
 import { ProfileEditor } from "@/components/chef/ProfileEditor";
 import { PayoutLogs } from "@/components/chef/PayoutLogs";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 const initialChartData = [
   { date: "May 1", earnings: 180 },
@@ -445,10 +446,7 @@ export default function ChefDashboard() {
           </div>
 
           <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
-            <button className="relative p-2 w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center transition-all flex-shrink-0">
-              <Bell size={18} className="text-[#A8A8A8] hover:text-white" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#FF7A59] rounded-full animate-ping"></span>
-            </button>
+            <NotificationBell />
             <Link
               to="/chef-dashboard/availability"
               className="px-5 py-3 bg-[#FF7A59] hover:bg-[#e96a49] text-white rounded-full text-xs font-bold transition-all hover:scale-[1.02] shadow-md shadow-[#FF7A59]/10"

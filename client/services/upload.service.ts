@@ -116,7 +116,7 @@ export class UploadService {
   // (if return_delete_token is set in preset) or a backend call. For the MVP frontend,
   // we mock this so it doesn't break the UI flow.
   static async deleteUpload(publicId: string): Promise<boolean> {
-    console.log(`[UploadService] Mock delete for ${publicId}. True deletion requires backend signature.`);
+    // True deletion requires backend signature.
     return new Promise((resolve) => setTimeout(() => resolve(true), 500));
   }
 }

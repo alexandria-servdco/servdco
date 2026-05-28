@@ -1,4 +1,4 @@
-import { Star, MapPin } from "lucide-react";
+import { Star, MapPin, Crown } from "lucide-react";
 
 interface ChefCardProps {
   name: string;
@@ -7,6 +7,7 @@ interface ChefCardProps {
   specialties: string[];
   location: string;
   image: string;
+  premium_status?: boolean;
 }
 
 export default function ChefCard({
@@ -16,9 +17,16 @@ export default function ChefCard({
   specialties,
   location,
   image,
+  premium_status,
 }: ChefCardProps) {
   return (
-    <div className="rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
+    <div className="rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full relative cursor-pointer">
+      {premium_status && (
+        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-[#FF7A59] to-[#FF8F73] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-lg border border-white/20">
+          <Crown size={12} className="text-white" />
+          Featured
+        </div>
+      )}
       <div className="aspect-square overflow-hidden bg-gray-200 flex-shrink-0">
         <img
           src={image}
@@ -34,7 +42,9 @@ export default function ChefCard({
               <Star
                 key={i}
                 size={14}
-                className={i < Math.floor(rating) ? "fill-primary" : "text-gray-300"}
+                className={
+                  i < Math.floor(rating) ? "fill-primary" : "text-gray-300"
+                }
               />
             ))}
           </div>

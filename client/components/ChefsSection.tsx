@@ -8,7 +8,9 @@ export default function ChefsSection() {
       reviewCount: 128,
       specialties: ["Comfort Food", "Meal Prep"],
       location: "New York",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop",
+      premium_status: true,
     },
     {
       name: "Chef James",
@@ -16,7 +18,9 @@ export default function ChefsSection() {
       reviewCount: 94,
       specialties: ["Southern", "Family Meals"],
       location: "Atlanta",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop",
+      premium_status: false,
     },
     {
       name: "Chef Lauren",
@@ -24,7 +28,9 @@ export default function ChefsSection() {
       reviewCount: 10,
       specialties: ["Healthy", "Gluten-Free"],
       location: "Los Angeles",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop",
+      premium_status: true,
     },
     {
       name: "Chef Andre",
@@ -32,7 +38,8 @@ export default function ChefsSection() {
       reviewCount: 156,
       specialties: ["Caribbean", "Fusion"],
       location: "Miami",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop",
     },
     {
       name: "Chef Priya",
@@ -40,7 +47,8 @@ export default function ChefsSection() {
       reviewCount: 103,
       specialties: ["Indian", "Vegetarian"],
       location: "San Francisco",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop",
     },
   ];
 
@@ -51,7 +59,10 @@ export default function ChefsSection() {
           <h2 className="text-4xl md:text-5xl font-bold text-foreground">
             Meet Some of Our Amazing Chefs
           </h2>
-          <a href="#" className="text-primary font-semibold hover:opacity-80 transition-opacity whitespace-nowrap">
+          <a
+            href="#"
+            className="text-primary font-semibold hover:opacity-80 transition-opacity whitespace-nowrap"
+          >
             View all chefs
           </a>
         </div>

@@ -3,15 +3,32 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { api } from "@/lib/api";
-import { 
-  Heart, Shield, ChefHat, CheckCircle, Search, Utensils, Clock, Sparkles, 
-  MapPin, Star, BadgeCheck, Plus, Minus, ArrowRight, X, HelpCircle, ChevronRight, Gift
+import {
+  Heart,
+  Shield,
+  ChefHat,
+  CheckCircle,
+  Search,
+  Utensils,
+  Clock,
+  Sparkles,
+  MapPin,
+  Star,
+  BadgeCheck,
+  Plus,
+  Minus,
+  ArrowRight,
+  X,
+  HelpCircle,
+  ChevronRight,
+  Gift,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { calculateCookPayout } from "@/utils/platformFee";
 
 export default function Index() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  
+
   // Interactive Calculator State
   const [breakfastSessions, setBreakfastSessions] = useState(2);
   const [dinnerSessions, setDinnerSessions] = useState(3);
@@ -25,16 +42,16 @@ export default function Index() {
     email: "",
     city: "",
     state: "",
-    role: "family" as "family" | "chef" | "both"
+    role: "family" as "family" | "chef" | "both",
   });
   const [citySubmitted, setCitySubmitted] = useState(false);
 
   // Calculator Formulas
   const sessionFeeMultiplier = familyFees ? 10 : 0;
-  const weeklyEarning = 
-    (breakfastSessions * (40 + sessionFeeMultiplier)) + 
-    (dinnerSessions * (60 + sessionFeeMultiplier)) + 
-    (mealPrepSessions * (70 + sessionFeeMultiplier));
+  const weeklyEarning =
+    breakfastSessions * calculateCookPayout(40 + sessionFeeMultiplier) +
+    dinnerSessions * calculateCookPayout(60 + sessionFeeMultiplier) +
+    mealPrepSessions * calculateCookPayout(70 + sessionFeeMultiplier);
   const monthlyEarning = weeklyEarning * 4;
 
   const handleCitySubmit = async (e: React.FormEvent) => {
@@ -45,13 +62,19 @@ export default function Index() {
         email: cityForm.email,
         city: cityForm.city,
         state: cityForm.state,
-        role: cityForm.role
+        role: cityForm.role,
       });
       setCitySubmitted(true);
       setTimeout(() => {
         setIsCityModalOpen(false);
         setCitySubmitted(false);
-        setCityForm({ name: "", email: "", city: "", state: "", role: "family" });
+        setCityForm({
+          name: "",
+          email: "",
+          city: "",
+          state: "",
+          role: "family",
+        });
       }, 2500);
     } catch (err) {
       console.error("Failed to register interest request", err);
@@ -62,13 +85,17 @@ export default function Index() {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+      transition: { staggerChildren: 0.1 },
+    },
   };
 
   const itemVariants: any = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
   };
 
   return (
@@ -79,16 +106,16 @@ export default function Index() {
       <section className="relative min-h-[640px] lg:min-h-[720px] flex items-center pt-[85px] pb-24 overflow-hidden bg-[#111111]">
         {/* Warm lighting glow in center */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#FF7A59]/5 blur-[130px] pointer-events-none z-0" />
-        
+
         {/* Hero Kitchen Image on Right (fades to left dark bg) */}
         <div className="absolute top-0 right-0 w-full lg:w-[55%] h-[400px] lg:h-full z-0 opacity-15 lg:opacity-75 mt-16 lg:mt-0">
           {/* Radial center/left fade overlay */}
           <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-[#111111] via-[#111111]/85 to-transparent z-10 w-[40%]" />
           <div className="hidden lg:block absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent z-10 h-full" />
-          <img 
-            src="/home-hero.png" 
-            alt="Chef cooking in warm family kitchen" 
-            className="w-full h-full object-cover object-right rounded-bl-[100px] lg:rounded-bl-[160px] shadow-2xl border-l border-b border-white/5" 
+          <img
+            src="/home-hero.png"
+            alt="Chef cooking in warm family kitchen"
+            className="w-full h-full object-cover object-right rounded-bl-[100px] lg:rounded-bl-[160px] shadow-2xl border-l border-b border-white/5"
           />
         </div>
 
@@ -96,43 +123,52 @@ export default function Index() {
           <div className="w-full lg:w-[50%] space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#FF7A59]/30 bg-[#FF7A59]/5">
               <Heart size={12} className="text-[#FF7A59] fill-[#FF7A59]" />
-              <span className="text-[#FF7A59] text-[9.5px] font-bold tracking-widest uppercase">Local Chefs. Homemade with love.</span>
+              <span className="text-[#FF7A59] text-[9.5px] font-bold tracking-widest uppercase">
+                Local Chefs. Homemade with love.
+              </span>
             </div>
-            
+
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight font-serif text-white">
-              Real food,<br />
-              Cooked in<br />
+              Real food,
+              <br />
+              Cooked in
+              <br />
               <span className="relative inline-block text-[#FF7A59]">
                 Your kitchen.
-                <svg 
-                  className="absolute left-0 bottom-[-4px] w-full h-[8px] pointer-events-none" 
-                  viewBox="0 0 100 10" 
-                  fill="none" 
+                <svg
+                  className="absolute left-0 bottom-[-4px] w-full h-[8px] pointer-events-none"
+                  viewBox="0 0 100 10"
+                  fill="none"
                   preserveAspectRatio="none"
                 >
-                  <path 
-                    d="M 2 6 C 20 8, 50 3, 98 7" 
-                    stroke="#FF7A59" 
-                    strokeWidth="3.5" 
-                    strokeLinecap="round" 
+                  <path
+                    d="M 2 6 C 20 8, 50 3, 98 7"
+                    stroke="#FF7A59"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
                     className="animate-draw-underline"
                   />
                 </svg>
               </span>
             </h1>
-            
+
             <p className="text-[#A8A8A8] text-base sm:text-lg leading-relaxed max-w-lg font-medium">
-              Servd Co. makes having a home-cooked meal affordable for everyone. We aren't a high-end agency for professional chefs. Instead, we give everyday people who love to cook a platform to share their passion and earn extra income. You provide the ingredients you trust, and a local cook takes care of the prep, cooking, and cleanup.
+              Servd Co. makes having a home-cooked meal affordable for everyone.
+              We aren't a high-end agency for professional chefs. Instead, we
+              give everyday people who love to cook a platform to share their
+              passion and earn extra income. You provide the ingredients you
+              trust, and a local cook takes care of the prep, cooking, and
+              cleanup.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-              <Link 
+              <Link
                 to="/register"
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 velvet-tactile text-white text-[14.5px] font-bold"
               >
                 Find a Chef
               </Link>
-              <button 
+              <button
                 onClick={() => setIsCityModalOpen(true)}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 velvet-tactile text-white text-[14.5px] font-bold"
               >
@@ -150,12 +186,24 @@ export default function Index() {
             {[
               { icon: CheckCircle, text: "Trusted & Insured\nLocal Chefs" },
               { icon: ChefHat, text: "Homemade Meals\nCooked with Love" },
-              { icon: Heart, text: "Allergen & Quality\nControl in Your Hands" },
-              { icon: Shield, text: "Safe, Secure &\nPlatform Insured" }
+              {
+                icon: Heart,
+                text: "Allergen & Quality\nControl in Your Hands",
+              },
+              { icon: Shield, text: "Safe, Secure &\nPlatform Insured" },
             ].map((card, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 pt-4 lg:pt-0 lg:first:pl-0 lg:pl-8 first:pt-0">
-                <card.icon size={26} className="text-[#FF7A59] flex-shrink-0" strokeWidth={1.8} />
-                <p className="text-[13px] font-bold text-[#F5F5F5] leading-tight whitespace-pre-line">{card.text}</p>
+              <div
+                key={i}
+                className="flex items-center gap-4 px-4 pt-4 lg:pt-0 lg:first:pl-0 lg:pl-8 first:pt-0"
+              >
+                <card.icon
+                  size={26}
+                  className="text-[#FF7A59] flex-shrink-0"
+                  strokeWidth={1.8}
+                />
+                <p className="text-[13px] font-bold text-[#F5F5F5] leading-tight whitespace-pre-line">
+                  {card.text}
+                </p>
               </div>
             ))}
           </div>
@@ -163,19 +211,25 @@ export default function Index() {
       </section>
 
       {/* ── 3. HOW IT WORKS ──────────────────────────────────────────────── */}
-      <section id="how-it-works" className="bg-[#161616] py-28 border-y border-white/5">
+      <section
+        id="how-it-works"
+        className="bg-[#161616] py-28 border-y border-white/5"
+      >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-20 space-y-3">
-            <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">How It Works</p>
+            <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">
+              How It Works
+            </p>
             <h2 className="text-4xl lg:text-5xl font-bold text-white font-serif tracking-tight">
               From booking to your table
             </h2>
             <p className="text-sm text-[#A8A8A8] max-w-[500px] mx-auto leading-relaxed">
-              Three simple steps to a professionally cooked meal in your own kitchen.
+              Three simple steps to a professionally cooked meal in your own
+              kitchen.
             </p>
           </div>
 
-          <motion.div 
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
@@ -190,19 +244,19 @@ export default function Index() {
                 step: "01",
                 icon: Search,
                 title: "Browse & Book",
-                desc: "Select breakfast, dinner, or meal prep through your dashboard. Filter by cuisine, availability, and ratings."
+                desc: "Select breakfast, dinner, or meal prep through your dashboard. Filter by cuisine, availability, and ratings.",
               },
               {
                 step: "02",
                 icon: Utensils,
                 title: "Provide Ingredients",
-                desc: "You purchase groceries from stores you trust, maintaining full control over allergens, quality, and budget."
+                desc: "You purchase groceries from stores you trust, maintaining full control over allergens, quality, and budget.",
               },
               {
                 step: "03",
                 icon: Sparkles,
                 title: "Cook & Clean",
-                desc: "Your chef arrives, prepares your meals in your kitchen, and handles basic kitchen cleanup before they leave."
+                desc: "Your chef arrives, prepares your meals in your kitchen, and handles basic kitchen cleanup before they leave.",
               },
             ].map(({ step, icon: Icon, title, desc }, i) => (
               <motion.div
@@ -218,7 +272,9 @@ export default function Index() {
                 <div className="velvet-icon-container mb-6 mt-4">
                   <Icon size={24} strokeWidth={1.8} className="text-white" />
                 </div>
-                <h3 className="text-[19px] font-bold text-white mb-3 font-serif">{title}</h3>
+                <h3 className="text-[19px] font-bold text-white mb-3 font-serif">
+                  {title}
+                </h3>
                 <p className="text-xs text-[#A8A8A8] leading-relaxed">{desc}</p>
               </motion.div>
             ))}
@@ -230,7 +286,9 @@ export default function Index() {
       <section className="py-28 border-b border-white/5 bg-[#111111]">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-20 space-y-3">
-            <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">Family Advantages</p>
+            <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">
+              Family Advantages
+            </p>
             <h2 className="text-4xl lg:text-5xl font-bold text-white font-serif tracking-tight">
               Why families love Servd Co
             </h2>
@@ -244,22 +302,22 @@ export default function Index() {
               {
                 title: "Total Budget & Allergy Control",
                 desc: "Supply your own ingredients and maintain complete control over allergies and food quality.",
-                icon: Shield
+                icon: Shield,
               },
               {
                 title: "Complete Menu Freedom",
                 desc: "Post custom meal requests or directly choose your preferred chef.",
-                icon: Utensils
+                icon: Utensils,
               },
               {
                 title: "Hours of Time Reclaimed",
                 desc: "Skip chopping, cooking, and endless preparation.",
-                icon: Clock
+                icon: Clock,
               },
               {
                 title: "Zero Cleanup",
                 desc: "Walk into a clean kitchen after dinner is served.",
-                icon: Sparkles
+                icon: Sparkles,
               },
             ].map((benefit, i) => {
               const Icon = benefit.icon;
@@ -270,10 +328,18 @@ export default function Index() {
                 >
                   <div>
                     <div className="velvet-icon-container mb-6">
-                      <Icon size={22} strokeWidth={1.8} className="text-white" />
+                      <Icon
+                        size={22}
+                        strokeWidth={1.8}
+                        className="text-white"
+                      />
                     </div>
-                    <h3 className="text-[17px] font-bold text-white mb-3 font-serif leading-tight">{benefit.title}</h3>
-                    <p className="text-xs text-[#A8A8A8] leading-relaxed">{benefit.desc}</p>
+                    <h3 className="text-[17px] font-bold text-white mb-3 font-serif leading-tight">
+                      {benefit.title}
+                    </h3>
+                    <p className="text-xs text-[#A8A8A8] leading-relaxed">
+                      {benefit.desc}
+                    </p>
                   </div>
                 </div>
               );
@@ -281,7 +347,7 @@ export default function Index() {
           </div>
 
           <div className="flex justify-center">
-            <Link 
+            <Link
               to="/register"
               className="px-8 py-4 velvet-tactile text-white font-bold text-sm"
             >
@@ -295,12 +361,12 @@ export default function Index() {
       <section className="relative w-full max-w-7xl mx-auto px-6 lg:px-8 py-28 bg-[#161616] rounded-[40px] border border-white/5 my-12 overflow-hidden shadow-2xl">
         {/* Glow effect */}
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-[#FF7A59]/3 blur-[120px] pointer-events-none" />
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center relative z-10">
           {/* Left: Emotional Image Column */}
           <div className="lg:col-span-5 relative group">
             <div className="absolute -top-6 -left-6 w-32 h-32 bg-[#FF7A59]/5 rounded-full opacity-60 blur-3xl pointer-events-none" />
-            
+
             <div className="relative rounded-[32px] overflow-hidden border border-white/5 shadow-2xl bg-[#2A2A2A] transition-all duration-500">
               <img
                 src="/home-mother-child.png"
@@ -308,37 +374,49 @@ export default function Index() {
                 className="w-full h-[480px] object-cover object-center group-hover:scale-[1.01] transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#111111]/90 via-transparent to-transparent opacity-90" />
-              
+
               <div className="absolute bottom-6 left-6 right-6 bg-[#2A2A2A]/95 backdrop-blur-sm rounded-2xl p-5 border border-white/5 shadow-lg">
-                <p className="text-[#FF7A59] font-bold text-[10px] tracking-widest uppercase mb-1">REAL IMPACT</p>
-                <p className="text-[13px] text-white font-medium leading-relaxed italic">
-                  "Having those two extra hours back every evening changed how we connect as a family."
+                <p className="text-[#FF7A59] font-bold text-[10px] tracking-widest uppercase mb-1">
+                  REAL IMPACT
                 </p>
-                <p className="text-[11px] text-[#A8A8A8] mt-2 font-bold">Sarah M., Mother of three</p>
+                <p className="text-[13px] text-white font-medium leading-relaxed italic">
+                  "Having those two extra hours back every evening changed how
+                  we connect as a family."
+                </p>
+                <p className="text-[11px] text-[#A8A8A8] mt-2 font-bold">
+                  Sarah M., Mother of three
+                </p>
               </div>
             </div>
           </div>
 
           {/* Right: Story details */}
           <div className="lg:col-span-7 flex flex-col justify-center space-y-6">
-            <span className="text-[#FF7A59] font-bold text-xs tracking-widest uppercase block">FOUNDER STORY</span>
-            
+            <span className="text-[#FF7A59] font-bold text-xs tracking-widest uppercase block">
+              FOUNDER STORY
+            </span>
+
             <h2 className="text-4xl lg:text-5xl font-bold text-white font-serif leading-[1.1] tracking-tight">
               Built from a real family's everyday reality
             </h2>
-            
+
             <div className="space-y-5 text-sm lg:text-base text-[#A8A8A8] leading-relaxed font-medium">
               <p className="border-l-4 border-[#FF7A59] pl-4 text-white font-semibold italic">
                 Servd Co was born out of a real mom's daily exhaustion.
               </p>
               <p>
-                Many parents and professionals spend the entire day working, only to reach evening with no energy left to cook healthy meals.
+                Many parents and professionals spend the entire day working,
+                only to reach evening with no energy left to cook healthy meals.
               </p>
               <p>
-                Servd Co was created to remove stress from the kitchen, help families reclaim time together, and give talented local cooks flexible income opportunities.
+                Servd Co was created to remove stress from the kitchen, help
+                families reclaim time together, and give talented local cooks
+                flexible income opportunities.
               </p>
               <p className="text-xs text-[#A8A8A8]/60 border-t border-white/5 pt-4 mt-2">
-                From busy parents and elderly adults to college students, postpartum moms, recovering family members, and anyone needing support, Servd Co was designed for everyone.
+                From busy parents and elderly adults to college students,
+                postpartum moms, recovering family members, and anyone needing
+                support, Servd Co was designed for everyone.
               </p>
             </div>
           </div>
@@ -346,67 +424,119 @@ export default function Index() {
       </section>
 
       {/* ── 6. EXPLORE CHEFS SECTION (Dark theme) ────────────────────────── */}
-      <section id="chefs" className="max-w-7xl mx-auto px-6 lg:px-8 py-28 border-t border-white/5 bg-[#111111]">
+      <section
+        id="chefs"
+        className="max-w-7xl mx-auto px-6 lg:px-8 py-28 border-t border-white/5 bg-[#111111]"
+      >
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
           <div className="space-y-2">
-            <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">Chef Marketplace</p>
+            <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">
+              Chef Marketplace
+            </p>
             <h2 className="text-4xl lg:text-5xl font-bold text-white font-serif tracking-tight">
               Explore local chefs
             </h2>
           </div>
-          <Link 
-            to="/browse-chefs" 
+          <Link
+            to="/browse-chefs"
             className="w-fit flex items-center gap-2 px-6 py-3 border border-white/10 hover:border-transparent bg-[#2A2A2A] rounded-full text-xs font-bold text-white hover:bg-[#FF7A59] transition-all shadow-md group"
           >
-            View all chefs <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            View all chefs{" "}
+            <ArrowRight
+              size={14}
+              className="group-hover:translate-x-1 transition-transform"
+            />
           </Link>
         </div>
 
         {/* Chefs Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[
-            { id: "maria", name: "Chef Maria", tags: "Comfort Food • Meal Prep", rating: "4.9", reviews: "128", img: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=400&fit=crop", location: "Atlanta, GA" },
-            { id: "james", name: "Chef James", tags: "Southern • Family Meals", rating: "4.8", reviews: "94", img: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&h=400&fit=crop", location: "Austin, TX" },
-            { id: "priya", name: "Chef Priya", tags: "Indian • Vegetarian", rating: "4.9", reviews: "112", img: "https://images.unsplash.com/photo-1607631568010-a87245c0daf8?w=400&h=400&fit=crop", location: "Dallas, TX" },
-            { id: "sarah", name: "Chef Sarah", tags: "Comfort Food • Family Dinners", rating: "4.9", reviews: "142", img: "https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?w=400&h=400&fit=crop", location: "Atlanta, GA" }
+            {
+              id: "maria",
+              name: "Chef Maria",
+              tags: "Comfort Food • Meal Prep",
+              rating: "4.9",
+              reviews: "128",
+              img: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=400&fit=crop",
+              location: "Atlanta, GA",
+            },
+            {
+              id: "james",
+              name: "Chef James",
+              tags: "Southern • Family Meals",
+              rating: "4.8",
+              reviews: "94",
+              img: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&h=400&fit=crop",
+              location: "Austin, TX",
+            },
+            {
+              id: "priya",
+              name: "Chef Priya",
+              tags: "Indian • Vegetarian",
+              rating: "4.9",
+              reviews: "112",
+              img: "https://images.unsplash.com/photo-1607631568010-a87245c0daf8?w=400&h=400&fit=crop",
+              location: "Dallas, TX",
+            },
+            {
+              id: "sarah",
+              name: "Chef Sarah",
+              tags: "Comfort Food • Family Dinners",
+              rating: "4.9",
+              reviews: "142",
+              img: "https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?w=400&h=400&fit=crop",
+              location: "Atlanta, GA",
+            },
           ].map((chef, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className="bg-[#2A2A2A] rounded-[24px] border border-white/5 overflow-hidden group hover:shadow-[0_16px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 {/* Photo */}
                 <div className="h-[190px] overflow-hidden relative bg-black/10">
-                  <img 
-                    src={chef.img} 
-                    alt={chef.name} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                  <img
+                    src={chef.img}
+                    alt={chef.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute top-3 right-3">
                     <div className="w-8 h-8 rounded-full bg-[#111111]/70 backdrop-blur-sm flex items-center justify-center border border-white/10 hover:text-[#FF7A59] transition-colors cursor-pointer text-white">
                       <Heart size={14} />
                     </div>
                   </div>
-                  
+
                   {/* Verified tag */}
                   <div className="absolute bottom-3 left-3">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#111111]/80 backdrop-blur-sm rounded-full border border-white/10 shadow-sm">
                       <BadgeCheck size={12} className="text-[#FF7A59]" />
-                      <span className="text-[10px] font-bold text-[#FF7A59] uppercase tracking-wider">Verified Chef</span>
+                      <span className="text-[10px] font-bold text-[#FF7A59] uppercase tracking-wider">
+                        Verified Chef
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Details */}
                 <div className="p-5 pb-3">
-                  <h3 className="font-bold text-white text-[16px] mb-1 font-serif group-hover:text-[#FF7A59] transition-colors">{chef.name}</h3>
-                  <p className="text-[11.5px] text-[#A8A8A8] font-bold mb-3">{chef.tags}</p>
-                  
+                  <h3 className="font-bold text-white text-[16px] mb-1 font-serif group-hover:text-[#FF7A59] transition-colors">
+                    {chef.name}
+                  </h3>
+                  <p className="text-[11.5px] text-[#A8A8A8] font-bold mb-3">
+                    {chef.tags}
+                  </p>
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-[12.5px] font-bold text-white">
-                      <Star size={13} className="fill-[#FF7A59] text-[#FF7A59]" />
+                      <Star
+                        size={13}
+                        className="fill-[#FF7A59] text-[#FF7A59]"
+                      />
                       <span>{chef.rating}</span>
-                      <span className="text-[#A8A8A8] font-semibold">({chef.reviews})</span>
+                      <span className="text-[#A8A8A8] font-semibold">
+                        ({chef.reviews})
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 text-[11.5px] text-[#A8A8A8] font-semibold">
                       <MapPin size={11} className="text-[#FF7A59]" />
@@ -418,7 +548,7 @@ export default function Index() {
 
               {/* View CTA */}
               <div className="p-5 pt-0">
-                <Link 
+                <Link
                   to={`/chef/${chef.id}`}
                   className="block w-full py-3 mt-3 border border-white/10 bg-[#161616] text-[#F5F5F5] hover:bg-[#FF7A59] hover:text-white hover:border-transparent rounded-xl text-[12.5px] font-bold text-center transition-all duration-300"
                 >
@@ -431,22 +561,29 @@ export default function Index() {
       </section>
 
       {/* ── 7. COMBINED CHEF OPPORTUNITY & DYNAMIC CALCULATOR (INSPIRATION) ── */}
-      <section id="for-chefs" className="bg-[#161616] py-28 relative overflow-hidden border-t border-b border-white/5 text-white">
+      <section
+        id="for-chefs"
+        className="bg-[#161616] py-28 relative overflow-hidden border-t border-b border-white/5 text-white"
+      >
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[#FF7A59]/5 rounded-full blur-[120px] pointer-events-none" />
-        
+
         <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-            
             {/* Left opportunity text */}
             <div className="lg:col-span-6 space-y-8 lg:sticky lg:top-28">
-              <span className="text-[#FF7A59] font-bold text-xs tracking-widest uppercase block">COMMUNITY OF CHEFS</span>
-              
+              <span className="text-[#FF7A59] font-bold text-xs tracking-widest uppercase block">
+                COMMUNITY OF CHEFS
+              </span>
+
               <h2 className="text-4xl lg:text-6xl font-bold leading-[1.05] tracking-tight font-serif text-white">
                 Turn your cooking into real income.
               </h2>
-              
+
               <p className="text-[#A8A8A8] text-base leading-relaxed font-medium max-w-lg">
-                Join a growing network of local chefs who prepare fresh home-cooked meals directly in family kitchens. Keep 100% of tips, choose standard session types, and set complete schedule freedom.
+                Join a growing network of local chefs who prepare fresh
+                home-cooked meals directly in family kitchens. Keep 100% of
+                tips, choose standard session types, and set complete schedule
+                freedom.
               </p>
 
               <div className="flex gap-4">
@@ -454,7 +591,11 @@ export default function Index() {
                   to="/for-chefs"
                   className="px-6 py-3.5 bg-[#FF7A59] hover:bg-[#e96a49] text-white font-bold rounded-full text-xs shadow-md transition-all inline-flex items-center gap-2 group"
                 >
-                  Learn More About Cooking <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  Learn More About Cooking{" "}
+                  <ArrowRight
+                    size={14}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
                 </Link>
               </div>
             </div>
@@ -463,30 +604,42 @@ export default function Index() {
             <div className="lg:col-span-6">
               <div className="bg-[#2A2A2A] rounded-[32px] p-8 border border-white/5 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#FF7A59]/10 blur-2xl" />
-                
+
                 <h3 className="font-bold text-white text-lg font-serif mb-6 pb-3 border-b border-white/5 flex items-center justify-between">
                   <span>Chef Income Calculator</span>
-                  <span className="text-[10px] uppercase font-bold text-[#FF7A59] tracking-wider bg-[#FF7A59]/5 border border-[#FF7A59]/10 px-3 py-1 rounded-full">Weekly Estimate</span>
+                  <span className="text-[10px] uppercase font-bold text-[#FF7A59] tracking-wider bg-[#FF7A59]/5 border border-[#FF7A59]/10 px-3 py-1 rounded-full">
+                    Weekly Estimate
+                  </span>
                 </h3>
-                
+
                 <div className="space-y-5">
                   {/* Breakfast Stepper */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-baseline text-xs text-[#A8A8A8]">
-                      <span className="font-bold text-white">Breakfast Sessions / week</span>
+                      <span className="font-bold text-white">
+                        Breakfast Sessions / week
+                      </span>
                       <span>$40 per session</span>
                     </div>
                     <div className="flex items-center justify-between bg-[#161616] rounded-xl px-4 py-2 border border-white/5">
-                      <button 
-                        onClick={() => setBreakfastSessions(Math.max(0, breakfastSessions - 1))}
+                      <button
+                        onClick={() =>
+                          setBreakfastSessions(
+                            Math.max(0, breakfastSessions - 1),
+                          )
+                        }
                         className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
                         style={{ borderRadius: "50%" }}
                       >
                         -
                       </button>
-                      <span className="font-bold text-sm text-white">{breakfastSessions} sessions</span>
-                      <button 
-                        onClick={() => setBreakfastSessions(breakfastSessions + 1)}
+                      <span className="font-bold text-sm text-white">
+                        {breakfastSessions} sessions
+                      </span>
+                      <button
+                        onClick={() =>
+                          setBreakfastSessions(breakfastSessions + 1)
+                        }
                         className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
                         style={{ borderRadius: "50%" }}
                       >
@@ -498,19 +651,25 @@ export default function Index() {
                   {/* Dinner Stepper */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-baseline text-xs text-[#A8A8A8]">
-                      <span className="font-bold text-white">Dinner Sessions / week</span>
+                      <span className="font-bold text-white">
+                        Dinner Sessions / week
+                      </span>
                       <span>$60 per session</span>
                     </div>
                     <div className="flex items-center justify-between bg-[#161616] rounded-xl px-4 py-2 border border-white/5">
-                      <button 
-                        onClick={() => setDinnerSessions(Math.max(0, dinnerSessions - 1))}
+                      <button
+                        onClick={() =>
+                          setDinnerSessions(Math.max(0, dinnerSessions - 1))
+                        }
                         className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
                         style={{ borderRadius: "50%" }}
                       >
                         -
                       </button>
-                      <span className="font-bold text-sm text-white">{dinnerSessions} sessions</span>
-                      <button 
+                      <span className="font-bold text-sm text-white">
+                        {dinnerSessions} sessions
+                      </span>
+                      <button
                         onClick={() => setDinnerSessions(dinnerSessions + 1)}
                         className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
                         style={{ borderRadius: "50%" }}
@@ -523,20 +682,28 @@ export default function Index() {
                   {/* Meal Prep Stepper */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-baseline text-xs text-[#A8A8A8]">
-                      <span className="font-bold text-white">Meal Prep Sessions / week</span>
+                      <span className="font-bold text-white">
+                        Meal Prep Sessions / week
+                      </span>
                       <span>$70 per session</span>
                     </div>
                     <div className="flex items-center justify-between bg-[#161616] rounded-xl px-4 py-2 border border-white/5">
-                      <button 
-                        onClick={() => setMealPrepSessions(Math.max(0, mealPrepSessions - 1))}
+                      <button
+                        onClick={() =>
+                          setMealPrepSessions(Math.max(0, mealPrepSessions - 1))
+                        }
                         className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
                         style={{ borderRadius: "50%" }}
                       >
                         -
                       </button>
-                      <span className="font-bold text-sm text-white">{mealPrepSessions} sessions</span>
-                      <button 
-                        onClick={() => setMealPrepSessions(mealPrepSessions + 1)}
+                      <span className="font-bold text-sm text-white">
+                        {mealPrepSessions} sessions
+                      </span>
+                      <button
+                        onClick={() =>
+                          setMealPrepSessions(mealPrepSessions + 1)
+                        }
                         className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
                         style={{ borderRadius: "50%" }}
                       >
@@ -548,45 +715,63 @@ export default function Index() {
                   {/* Family Guest Fee Toggle */}
                   <div className="flex items-center justify-between bg-[#161616] rounded-xl px-4 py-3 border border-white/5">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Guest / Larger Family Toggle</h4>
-                      <p className="text-[10px] text-[#A8A8A8] mt-0.5">Adds flat +$10 to every session</p>
+                      <h4 className="text-xs font-bold text-white">
+                        Guest / Larger Family Toggle
+                      </h4>
+                      <p className="text-[10px] text-[#A8A8A8] mt-0.5">
+                        Adds flat +$10 to every session
+                      </p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => setFamilyFees(!familyFees)}
-                      className={`w-11 h-6 rounded-full transition-all relative border border-white/10 ${familyFees ? 'bg-[#FF7A59]' : 'bg-[#2A2A2A]'}`}
+                      className={`w-11 h-6 rounded-full transition-all relative border border-white/10 ${familyFees ? "bg-[#FF7A59]" : "bg-[#2A2A2A]"}`}
                     >
-                      <span className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${familyFees ? 'left-[22px]' : 'left-1'}`} />
+                      <span
+                        className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${familyFees ? "left-[22px]" : "left-1"}`}
+                      />
                     </button>
                   </div>
 
                   {/* Results box */}
                   <div className="pt-6 mt-4 border-t border-white/5 space-y-4">
                     <div className="flex justify-between items-baseline">
-                      <span className="text-xs font-bold text-[#A8A8A8] uppercase tracking-wider">Weekly Potential:</span>
-                      <span className="text-3xl font-bold text-white font-serif">${weeklyEarning}</span>
+                      <span className="text-xs font-bold text-[#A8A8A8] uppercase tracking-wider">
+                        Weekly Potential:
+                      </span>
+                      <span className="text-3xl font-bold text-white font-serif">
+                        ${weeklyEarning}
+                      </span>
                     </div>
                     <div className="flex justify-between items-baseline">
-                      <span className="text-xs font-bold text-[#A8A8A8] uppercase tracking-wider">Monthly Potential:</span>
-                      <span className="text-3xl font-bold text-[#FF7A59] font-serif">${monthlyEarning}</span>
+                      <span className="text-xs font-bold text-[#A8A8A8] uppercase tracking-wider">
+                        Monthly Potential:
+                      </span>
+                      <span className="text-3xl font-bold text-[#FF7A59] font-serif">
+                        ${monthlyEarning}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
       {/* ── 8. QUESTIONS? ANSWERED (Index quick link) ────────────────────── */}
       <section className="max-w-4xl mx-auto px-6 lg:px-8 py-24 bg-[#111111] text-center space-y-6">
-        <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">Common Questions</p>
-        <h2 className="text-4xl font-bold text-white font-serif tracking-tight">Need quick answers?</h2>
+        <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">
+          Common Questions
+        </p>
+        <h2 className="text-4xl font-bold text-white font-serif tracking-tight">
+          Need quick answers?
+        </h2>
         <p className="text-sm text-[#A8A8A8] max-w-lg mx-auto">
-          We maintain absolute pricing transparency, rigorous trust certifications, and comprehensive safety clearances.
+          We maintain absolute pricing transparency, rigorous trust
+          certifications, and comprehensive safety clearances.
         </p>
         <div className="pt-4">
-          <Link 
+          <Link
             to="/faq"
             className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-full text-xs font-bold hover:bg-white/10 transition-all hover:scale-[1.02]"
           >
@@ -601,7 +786,7 @@ export default function Index() {
       {isCityModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
           <div className="bg-[#2A2A2A] rounded-[28px] max-w-[480px] w-full shadow-2xl border border-white/5 overflow-hidden p-8 relative text-[#F5F5F5]">
-            <button 
+            <button
               onClick={() => setIsCityModalOpen(false)}
               className="absolute top-5 right-5 text-[#A8A8A8] hover:text-white transition-colors"
             >
@@ -613,43 +798,57 @@ export default function Index() {
                 <div className="w-14 h-14 bg-[#2E7D66]/10 text-[#2E7D66] rounded-full flex items-center justify-center mx-auto border border-[#2E7D66]/20">
                   <CheckCircle size={32} />
                 </div>
-                <h3 className="text-2xl font-bold font-serif text-white">Request Received!</h3>
+                <h3 className="text-2xl font-bold font-serif text-white">
+                  Request Received!
+                </h3>
                 <p className="text-xs text-[#A8A8A8] leading-relaxed max-w-[320px] mx-auto">
-                  Thank you for helping us bring Servd Co to your area. We will keep you updated as local demand grows!
+                  Thank you for helping us bring Servd Co to your area. We will
+                  keep you updated as local demand grows!
                 </p>
               </div>
             ) : (
               <form onSubmit={handleCitySubmit} className="space-y-5">
                 <div>
-                  <h3 className="text-2xl font-bold text-white font-serif">Bring Servd Co to Your City</h3>
+                  <h3 className="text-2xl font-bold text-white font-serif">
+                    Bring Servd Co to Your City
+                  </h3>
                   <p className="text-xs text-[#A8A8A8] mt-1.5">
-                    We track demand to decide which regions to launch next. Submit your request below!
+                    We track demand to decide which regions to launch next.
+                    Submit your request below!
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   {/* Name */}
                   <div>
-                    <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">Full Name</label>
+                    <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                      Full Name
+                    </label>
                     <input
                       type="text"
                       required
                       placeholder="Enter your name"
                       value={cityForm.name}
-                      onChange={(e) => setCityForm({ ...cityForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setCityForm({ ...cityForm, name: e.target.value })
+                      }
                       className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#FF7A59] transition-colors"
                     />
                   </div>
 
                   {/* Email */}
                   <div>
-                    <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">Email Address</label>
+                    <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                      Email Address
+                    </label>
                     <input
                       type="email"
                       required
                       placeholder="Enter your email"
                       value={cityForm.email}
-                      onChange={(e) => setCityForm({ ...cityForm, email: e.target.value })}
+                      onChange={(e) =>
+                        setCityForm({ ...cityForm, email: e.target.value })
+                      }
                       className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#FF7A59] transition-colors"
                     />
                   </div>
@@ -657,24 +856,32 @@ export default function Index() {
                   {/* City & State Grid */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">City</label>
+                      <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                        City
+                      </label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Dallas"
                         value={cityForm.city}
-                        onChange={(e) => setCityForm({ ...cityForm, city: e.target.value })}
+                        onChange={(e) =>
+                          setCityForm({ ...cityForm, city: e.target.value })
+                        }
                         className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#FF7A59] transition-colors"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">State</label>
+                      <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                        State
+                      </label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Texas"
                         value={cityForm.state}
-                        onChange={(e) => setCityForm({ ...cityForm, state: e.target.value })}
+                        onChange={(e) =>
+                          setCityForm({ ...cityForm, state: e.target.value })
+                        }
                         className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#FF7A59] transition-colors"
                       />
                     </div>
@@ -682,13 +889,22 @@ export default function Index() {
 
                   {/* Role Interest */}
                   <div>
-                    <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">I am interested as</label>
+                    <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                      I am interested as
+                    </label>
                     <select
                       value={cityForm.role}
-                      onChange={(e) => setCityForm({ ...cityForm, role: e.target.value as any })}
+                      onChange={(e) =>
+                        setCityForm({
+                          ...cityForm,
+                          role: e.target.value as any,
+                        })
+                      }
                       className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] transition-colors cursor-pointer"
                     >
-                      <option value="family">Family (Interested in hiring)</option>
+                      <option value="family">
+                        Family (Interested in hiring)
+                      </option>
                       <option value="chef">Chef (Interested in cooking)</option>
                       <option value="both">Both</option>
                     </select>
@@ -706,7 +922,6 @@ export default function Index() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

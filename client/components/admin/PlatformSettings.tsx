@@ -1,6 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
+import { usePlatformStore } from "@/store/usePlatformStore";
 
 export function PlatformSettings() {
+  const {
+    platformFeePercentage,
+    chefPremiumPrice,
+    setPlatformFeePercentage,
+    setChefPremiumPrice,
+  } = usePlatformStore();
+
+  const [localFee, setLocalFee] = useState(platformFeePercentage);
+  const [localPremium, setLocalPremium] = useState(chefPremiumPrice);
+
+  const handleSaveFee = () => {
+    setPlatformFeePercentage(localFee);
+    alert(`Platform fee updated to ${localFee}% globally!`);
+  };
+
+  const handleSavePremium = () => {
+    setChefPremiumPrice(localPremium);
+    alert(`Chef Premium Price updated to $${localPremium}/mo globally!`);
+  };
+
   return (
     <div
       style={{
@@ -73,7 +94,8 @@ export function PlatformSettings() {
           >
             <input
               type="number"
-              defaultValue={13}
+              value={localFee}
+              onChange={(e) => setLocalFee(Number(e.target.value))}
               style={{
                 background: "rgba(0,0,0,0.3)",
                 border: "1px solid rgba(255,255,255,0.1)",
@@ -85,12 +107,11 @@ export function PlatformSettings() {
                 outline: "none",
               }}
             />
-            <span style={{ color: "#A8A8A8", fontSize: "16px" }}>
-              %
-            </span>
+            <span style={{ color: "#A8A8A8", fontSize: "16px" }}>%</span>
           </div>
 
           <button
+            onClick={handleSaveFee}
             style={{
               marginTop: "20px",
               padding: "8px 16px",
@@ -143,12 +164,11 @@ export function PlatformSettings() {
               alignItems: "center",
             }}
           >
-            <span style={{ color: "#A8A8A8", fontSize: "16px" }}>
-              $
-            </span>
+            <span style={{ color: "#A8A8A8", fontSize: "16px" }}>$</span>
             <input
               type="number"
-              defaultValue={49}
+              value={localPremium}
+              onChange={(e) => setLocalPremium(Number(e.target.value))}
               style={{
                 background: "rgba(0,0,0,0.3)",
                 border: "1px solid rgba(255,255,255,0.1)",
@@ -160,12 +180,11 @@ export function PlatformSettings() {
                 outline: "none",
               }}
             />
-            <span style={{ color: "#A8A8A8", fontSize: "14px" }}>
-              / mo
-            </span>
+            <span style={{ color: "#A8A8A8", fontSize: "14px" }}>/ mo</span>
           </div>
 
           <button
+            onClick={handleSavePremium}
             style={{
               marginTop: "20px",
               padding: "8px 16px",

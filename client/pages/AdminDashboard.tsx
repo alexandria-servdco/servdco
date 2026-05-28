@@ -58,17 +58,21 @@ import {
   Area,
 } from "recharts";
 
+import { DashboardWidgetSkeleton, CardSkeleton } from "@/components/ui/Skeletons";
+
 import { ChartCard } from "@/components/admin/ChartCard";
-import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
-import { VerificationCenter } from "@/components/admin/VerificationCenter";
-import { UserManagementTable } from "@/components/admin/UserManagementTable";
-import { ChefNetworkTable } from "@/components/admin/ChefNetworkTable";
-import { BookingsLedgerTable } from "@/components/admin/BookingsLedgerTable";
-import { PayoutControl } from "@/components/admin/PayoutControl";
-import { ContentModeration } from "@/components/admin/ContentModeration";
-import { GlobalAnnouncements } from "@/components/admin/GlobalAnnouncements";
-import { PlatformSettings } from "@/components/admin/PlatformSettings";
-import { MarketInterestRequests } from "@/components/admin/MarketInterestRequests";
+import { lazy, Suspense } from "react";
+
+const AdminAnalytics = lazy(() => import("@/components/admin/AdminAnalytics").then(m => ({ default: m.AdminAnalytics })));
+const VerificationCenter = lazy(() => import("@/components/admin/VerificationCenter").then(m => ({ default: m.VerificationCenter })));
+const UserManagementTable = lazy(() => import("@/components/admin/UserManagementTable").then(m => ({ default: m.UserManagementTable })));
+const ChefNetworkTable = lazy(() => import("@/components/admin/ChefNetworkTable").then(m => ({ default: m.ChefNetworkTable })));
+const BookingsLedgerTable = lazy(() => import("@/components/admin/BookingsLedgerTable").then(m => ({ default: m.BookingsLedgerTable })));
+const PayoutControl = lazy(() => import("@/components/admin/PayoutControl").then(m => ({ default: m.PayoutControl })));
+const ContentModeration = lazy(() => import("@/components/admin/ContentModeration").then(m => ({ default: m.ContentModeration })));
+const GlobalAnnouncements = lazy(() => import("@/components/admin/GlobalAnnouncements").then(m => ({ default: m.GlobalAnnouncements })));
+const PlatformSettings = lazy(() => import("@/components/admin/PlatformSettings").then(m => ({ default: m.PlatformSettings })));
+const MarketInterestRequests = lazy(() => import("@/components/admin/MarketInterestRequests").then(m => ({ default: m.MarketInterestRequests })));
 
 // ─── Constants & Aesthetics ───────────────────────────────────────────────────
 
@@ -892,16 +896,31 @@ export default function AdminDashboard({
         {/* ── CONTENT SWITCHER ───────────────────────────────────────────────── */}
 
         {isLoading ? (
-          <LoadingSpinner />
+          <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-7xl mx-auto">
+            <DashboardWidgetSkeleton />
+            <DashboardWidgetSkeleton />
+            <DashboardWidgetSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
         ) : (
-          <div
-            style={{
-              padding: "28px 32px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "28px",
-            }}
-          >
+          <Suspense fallback={
+            <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-7xl mx-auto">
+              <DashboardWidgetSkeleton />
+              <DashboardWidgetSkeleton />
+              <DashboardWidgetSkeleton />
+            </div>
+          }>
+            <div
+              style={{
+                padding: "28px 32px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "28px",
+              }}
+            >
             {/* ── Tab: DASHBOARD HOME ───────────────────────────────────────── */}
             {activeNav === "dashboard" && (
               <>
@@ -2552,10 +2571,11 @@ export default function AdminDashboard({
               <PlatformSettings />
             )}
           </div>
+          </Suspense>
         )}
       </main>
 
-      {/* ── REGION EDIT MODAL ────────────────────────────────────────────────── */}
+      {/* -- REGION EDIT MODAL -------------------------------------------------- */}
       {editingRegion && (
         <div
           style={{
@@ -3399,3 +3419,4 @@ function EmptyState({ message }: { message: string }) {
     </div>
   );
 }
+

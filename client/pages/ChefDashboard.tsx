@@ -1096,7 +1096,22 @@ export default function ChefDashboard() {
             />
           ) : currentTab === "analytics" ? (
             /* Analytics Dashboard */
-            <ChefAnalytics />
+            currentUser?.isPremium ? (
+              <ChefAnalytics />
+            ) : (
+              <div className="velvet-card p-12 text-center max-w-2xl mx-auto space-y-4 mt-8">
+                <Crown size={48} className="mx-auto text-[#FF7A59]/40 mb-4" />
+                <h3 className="text-2xl font-bold text-white font-serif">Premium Analytics Required</h3>
+                <p className="text-[#A8A8A8] text-sm">
+                  Upgrade to a Premium Membership to access deep insights on your bookings, revenue forecasting, and profile performance.
+                </p>
+                <div className="pt-4">
+                  <button onClick={() => navigate("/chef-dashboard/premium")} className="px-6 py-3 bg-[#FF7A59] hover:bg-[#e96a49] text-white font-bold rounded-full text-xs transition-all shadow-lg shadow-[#FF7A59]/20">
+                    View Premium Plans
+                  </button>
+                </div>
+              </div>
+            )
           ) : currentTab === "premium" ? (
             /* Premium Membership System */
             <div className="space-y-6 max-w-4xl">

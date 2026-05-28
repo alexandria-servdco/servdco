@@ -107,6 +107,7 @@ export default function BrowseChefs() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All Specialties");
   const [selectedCity, setSelectedCity] = useState("All Cities");
+  const [sortBy, setSortBy] = useState("Recommended");
   const [favorites, setFavorites] = useState<string[]>([]);
 
   // Toggle favorite
@@ -134,7 +135,29 @@ export default function BrowseChefs() {
       selectedCity === "All Cities" ||
       chef.location.toLowerCase().includes(selectedCity.toLowerCase());
 
-    return matchesSearch && matchesSpecialty && matchesCity;
+    const isVerified = chef.isVerified !== false; // Hide if explicitly false
+
+    return matchesSearch && matchesSpecialty && matchesCity && isVerified;
+  });
+
+  // Sort logic with Premium tie-breaker
+  filteredChefs.sort((a, b) => {
+    let diff = 0;
+    if (sortBy === "Rating: High to Low") {
+      diff = Number(b.rating) - Number(a.rating);
+    } else if (sortBy === "Most Reviewed") {
+      const bRev = parseInt(b.reviews) || 0;
+      const aRev = parseInt(a.reviews) || 0;
+      diff = bRev - aRev;
+    }
+
+    // Tie breaker or if Recommended
+    if (diff === 0) {
+      if (a.premium_status && !b.premium_status) return -1;
+      if (!a.premium_status && b.premium_status) return 1;
+    }
+
+    return diff;
   });
 
   return (
@@ -220,6 +243,23 @@ export default function BrowseChefs() {
                   size={14}
                 />
               </div>
+
+              {/* Sort selector */}
+              <div className="relative flex-1 sm:flex-initial">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full sm:w-auto px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs font-semibold text-white focus:outline-none focus:border-[#FF7A59] appearance-none cursor-pointer pr-10"
+                >
+                  <option value="Recommended">Recommended</option>
+                  <option value="Rating: High to Low">Rating: High to Low</option>
+                  <option value="Most Reviewed">Most Reviewed</option>
+                </select>
+                <ChevronDown
+                  className="absolute right-3.5 top-3.5 text-white/40 pointer-events-none"
+                  size={14}
+                />
+              </div>
             </div>
           </div>
 
@@ -250,13 +290,24 @@ export default function BrowseChefs() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-                    {/* Featured Badge */}
-                    {chef.premium_status && (
-                      <div className="absolute top-4 left-4 bg-gradient-to-r from-[#FF7A59] to-[#FF8F73] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-lg border border-white/20">
-                        <Crown size={12} className="text-white" />
-                        Featured
+                    {/* Top Left Badges flex container */}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2 items-start pointer-events-none">
+                      {/* Featured Badge */}
+                      {chef.premium_status && (
+                        <div className="bg-gradient-to-r from-[#FF7A59] to-[#FF8F73] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-lg border border-white/20">
+                          <Crown size={12} className="text-white" />
+                          Featured
+                        </div>
+                      )}
+
+                      {/* Vetting Shield badge */}
+                      <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111]/80 backdrop-blur-sm rounded-full border border-white/10 shadow-lg">
+                        <Shield size={12} className="text-[#FF7A59]" />
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                          Trusted Chef
+                        </span>
                       </div>
-                    )}
+                    </div>
 
                     {/* Favorite Heart Button */}
                     <button
@@ -275,14 +326,6 @@ export default function BrowseChefs() {
                         }
                       />
                     </button>
-
-                    {/* Vetting Shield badge */}
-                    <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 bg-[#111111]/80 backdrop-blur-sm rounded-full border border-white/10">
-                      <Shield size={12} className="text-[#FF7A59]" />
-                      <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                        Trusted Chef
-                      </span>
-                    </div>
 
                     {/* Specialties listed overlay */}
                     <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-1.5">

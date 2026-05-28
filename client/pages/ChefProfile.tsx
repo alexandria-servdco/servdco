@@ -26,6 +26,7 @@ const CHEFS_DATA: Record<string, any> = {
       "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&auto=format&fit=crop&q=80",
     rating: "4.9",
     reviews: "142",
+    premium_status: true,
     location: "Atlanta, GA",
     specialties: ["Comfort Food", "Family Dinners"],
     bio: "Passionate about creating comforting, nutrient-rich dishes using exclusively organic and local community farm ingredients. Sarah has spent over 5 years crafting custom dining options for families across Atlanta.",
@@ -207,9 +208,16 @@ export default function ChefProfile() {
                 <div className="flex-1 space-y-4 text-center md:text-left">
                   <div className="space-y-1">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                      <h1 className="text-3xl font-bold text-white font-serif">
-                        {chef.name}
-                      </h1>
+                      <div className="flex flex-col gap-1.5">
+                        {chef.premium_status && (
+                          <span className="w-max bg-gradient-to-r from-[#FF7A59] to-[#FF8F73] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/20">
+                            Featured Premium Chef
+                          </span>
+                        )}
+                        <h1 className="text-3xl font-bold text-white font-serif">
+                          {chef.name}
+                        </h1>
+                      </div>
                       <button
                         onClick={() => setFavorite(!favorite)}
                         className={`px-4 py-2 rounded-full border text-xs font-bold transition-all flex items-center justify-center gap-1.5 self-center ${

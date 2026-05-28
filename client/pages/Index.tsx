@@ -405,13 +405,10 @@ export default function Index() {
                 Servd Co was born out of a real mom's daily exhaustion.
               </p>
               <p>
-                Many parents and professionals spend the entire day working,
-                only to reach evening with no energy left to cook healthy meals.
+                Like so many parents and busy professionals, I found myself running at full speed all day, only to hit 5:00 PM with zero energy left to cook. I wanted healthy, wholesome meals for my kids, but the reality was often another stressful drive-thru run. I realized I had the opportunity to create a platform that made it possible to take back a Friday evening and enjoy a healthy meal without lifting a finger in the kitchen, free from the guilt of choosing the drive-thru alternative; we needed a helping hand in the heart of our homes. I built Servd Co. to take the stress out of the kitchen, giving families their time back and giving talented local cooks a flexible way to earn an income doing what they love on their own time. It has been important to me from the start to make this platform a benefit to both families and cooks.
               </p>
               <p>
-                Servd Co was created to remove stress from the kitchen, help
-                families reclaim time together, and give talented local cooks
-                flexible income opportunities.
+                As I started building Servd Co., I realized that busy parents and professionals aren’t the only ones who would benefit from this platform. From elderly adults looking to maintain their independence with wholesome meals, to college students leaving home for the very first time, to postpartum moms and new dads navigating those beautiful, exhausting early weeks, to your dad who just had a major surgery and needs real nutrition to heal, Servd Co. is designed with everyone in mind. Because after all, we could all use a helping hand in the kitchen sometimes
               </p>
               <p className="text-xs text-[#A8A8A8]/60 border-t border-white/5 pt-4 mt-2">
                 From busy parents and elderly adults to college students,

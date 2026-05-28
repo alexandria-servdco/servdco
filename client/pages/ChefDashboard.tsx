@@ -51,6 +51,16 @@ import {
   BookingCardSkeleton,
   DashboardWidgetSkeleton,
 } from "@/components/ui/Skeletons";
+import { FileUpload } from "@/components/upload/FileUpload";
+import { ImageUpload } from "@/components/upload/ImageUpload";
+import { MultiImageUploader } from "@/components/upload/MultiImageUploader";
+import { UploadGallery } from "@/components/upload/UploadGallery";
+import { UploadResponse } from "@/types/upload.types";
+import { StatItem } from "@/components/ui/StatItem";
+import { ChefAnalytics } from "@/components/chef/ChefAnalytics";
+import { AvailabilityManager } from "@/components/chef/AvailabilityManager";
+import { ProfileEditor } from "@/components/chef/ProfileEditor";
+import { PayoutLogs } from "@/components/chef/PayoutLogs";
 
 const initialChartData = [
   { date: "May 1", earnings: 180 },
@@ -94,6 +104,8 @@ export default function ChefDashboard() {
     experience: "12 years in private cooking",
     cuisines: ["American", "Italian", "Gluten-Free"],
     newCuisine: "",
+    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop",
+    portfolioImages: [] as UploadResponse[],
   });
   const [profileSuccess, setProfileSuccess] = useState(false);
 
@@ -107,6 +119,8 @@ export default function ChefDashboard() {
     servSafe: "approved",
     insurance: "pending",
     insuranceFile: "",
+    servSafeUpload: null as UploadResponse | null,
+    insuranceUpload: null as UploadResponse | null,
   });
 
   // Settings states
@@ -296,8 +310,8 @@ export default function ChefDashboard() {
           {/* Chef Profile Header */}
           <div className="text-center pb-6 border-b border-white/5">
             <img
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop"
-              alt="Chef Maria"
+              src={profileData.avatarUrl}
+              alt={profileData.name}
               className="w-16 h-16 rounded-[20px] object-cover mx-auto mb-3 border border-white/10"
             />
             <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -1019,30 +1033,13 @@ export default function ChefDashboard() {
                           PENDING
                         </span>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-white text-xs uppercase tracking-wider">
-                          General Liability Insurance
-                        </h4>
-                        <p className="text-[10px] text-[#A8A8A8] mt-1 font-medium">
-                          Currently under reviews or waiting upload files.
-                        </p>
-                      </div>
-
-                      <div className="pt-2">
-                        <label className="block w-full py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold rounded-xl text-[10px] text-center cursor-pointer transition-colors">
-                          Upload File
-                          <input
-                            type="file"
-                            onChange={handleUploadDocument}
-                            className="hidden"
-                          />
-                        </label>
-                        {documentStatus.insuranceFile && (
-                          <p className="text-[9px] text-[#2E7D66] font-bold mt-1 text-center">
-                            Selected: {documentStatus.insuranceFile}
-                          </p>
-                        )}
-                      </div>
+                      
+                      <FileUpload
+                        label="General Liability Insurance"
+                        description="Currently under review or awaiting upload."
+                        onUploadSuccess={(res) => setDocumentStatus({ ...documentStatus, insuranceUpload: res })}
+                        onUploadRemove={() => setDocumentStatus({ ...documentStatus, insuranceUpload: null })}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1075,461 +1072,31 @@ export default function ChefDashboard() {
             </div>
           ) : currentTab === "availability" ? (
             /* Weekly schedule builder */
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 velvet-card p-8 space-y-6">
-                <h3 className="text-xl font-bold text-white font-serif border-b border-white/5 pb-4">
-                  Weekly Schedule Slots
-                </h3>
-
-                {availabilitySuccess && (
-                  <div className="p-3 bg-green-950/20 border border-green-500/20 rounded-xl text-xs text-green-400 font-semibold">
-                    Availability updated successfully!
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  {availabilitySlots.map((slot) => (
-                    <div
-                      key={slot.day}
-                      className="bg-[#161616] p-5 rounded-2xl space-y-3 border border-white/5"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-extrabold text-white uppercase tracking-wider">
-                          {slot.day}
-                        </span>
-                        <span className="text-[10px] text-[#2E7D66] font-bold uppercase">
-                          RECURRING WEEKLY
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {slot.timeSlots.map((time, idx) => (
-                          <div
-                            key={idx}
-                            className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-[11px] text-white/80 flex items-center gap-2"
-                          >
-                            <span>{time}</span>
-                            <button
-                              onClick={() =>
-                                handleDeleteAvailabilitySlot(slot.day, idx)
-                              }
-                              className="text-red-400 hover:text-red-300"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="velvet-card p-6 space-y-6">
-                <h4 className="font-bold text-white font-serif">
-                  Add availability slot
-                </h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2">
-                      Day of Week
-                    </label>
-                    <select
-                      value={newDay}
-                      onChange={(e) => setNewDay(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] cursor-pointer"
-                    >
-                      {[
-                        "Monday",
-                        "Tuesday",
-                        "Wednesday",
-                        "Thursday",
-                        "Friday",
-                        "Saturday",
-                        "Sunday",
-                      ].map((day) => (
-                        <option key={day} value={day}>
-                          {day}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2">
-                      Time Slot Range
-                    </label>
-                    <select
-                      value={newTime}
-                      onChange={(e) => setNewTime(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] cursor-pointer"
-                    >
-                      <option value="09:00 AM - 12:00 PM">
-                        09:00 AM - 12:00 PM (Morning)
-                      </option>
-                      <option value="01:00 PM - 04:00 PM">
-                        01:00 PM - 04:00 PM (Afternoon)
-                      </option>
-                      <option value="05:00 PM - 08:00 PM">
-                        05:00 PM - 08:00 PM (Dinner)
-                      </option>
-                    </select>
-                  </div>
-
-                  <Button
-                    onClick={handleAddAvailability}
-                    className="w-full text-xs font-bold"
-                  >
-                    Save Slot
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <AvailabilityManager
+              availabilitySlots={availabilitySlots}
+              onAddSlot={(day, time) => {
+                setNewDay(day);
+                setNewTime(time);
+                handleAddAvailability();
+              }}
+              onDeleteSlot={handleDeleteAvailabilitySlot}
+              successMessage={availabilitySuccess}
+            />
           ) : currentTab === "earnings" ? (
             /* Earnings charts & income calculator */
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-6">
-                <div className="velvet-card p-8 space-y-4">
-                  <h3 className="text-xl font-bold text-white font-serif">
-                    Payout Logs
-                  </h3>
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/5 bg-white/[0.01] text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">
-                        <th className="p-4">Reference ID</th>
-                        <th className="p-4">Date</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        {
-                          ref: "pay-102",
-                          date: "May 20, 2026",
-                          status: "Paid Out",
-                          amt: "$420.00",
-                        },
-                        {
-                          ref: "pay-101",
-                          date: "May 10, 2026",
-                          status: "Paid Out",
-                          amt: "$320.00",
-                        },
-                      ].map((pay) => (
-                        <tr
-                          key={pay.ref}
-                          className="border-b border-white/5 hover:bg-white/[0.01] text-xs transition-colors"
-                        >
-                          <td className="p-4 font-mono text-[#A8A8A8]">
-                            #{pay.ref}
-                          </td>
-                          <td className="p-4 font-bold text-white">
-                            {pay.date}
-                          </td>
-                          <td className="p-4">
-                            <span className="inline-block px-2.5 py-0.5 rounded bg-[#2E7D66]/10 text-[#2E7D66] border border-[#2E7D66]/20 text-[9px] font-bold uppercase tracking-wider">
-                              {pay.status}
-                            </span>
-                          </td>
-                          <td className="p-4 font-serif font-bold text-white">
-                            {pay.amt}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Interactive income calculator */}
-              <div className="velvet-card p-6 space-y-6">
-                <h4 className="font-bold text-white font-serif">
-                  Chef Income Calculator
-                </h4>
-                <p className="text-[10px] text-[#A8A8A8] font-medium leading-relaxed">
-                  Slide the counts to estimate potential earnings per month
-                  cooking on Servd Co.
-                </p>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs font-bold text-white mb-2">
-                      <span>Sessions / Week</span>
-                      <span className="text-[#FF7A59]">
-                        {sessionsPerWeek} sessions
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={sessionsPerWeek}
-                      onChange={(e) =>
-                        setSessionsPerWeek(parseInt(e.target.value))
-                      }
-                      className="w-full h-1 bg-[#161616] rounded-lg appearance-none cursor-pointer accent-[#FF7A59]"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs font-bold text-white mb-2">
-                      <span>Average Cost / Session</span>
-                      <span className="text-[#FF7A59]">${avgSessionCost}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="50"
-                      max="250"
-                      step="10"
-                      value={avgSessionCost}
-                      onChange={(e) =>
-                        setAvgSessionCost(parseInt(e.target.value))
-                      }
-                      className="w-full h-1 bg-[#161616] rounded-lg appearance-none cursor-pointer accent-[#FF7A59]"
-                    />
-                  </div>
-
-                  <div className="pt-4 border-t border-white/5 text-center">
-                    <p className="text-[10px] text-[#A8A8A8] uppercase tracking-wider font-bold">
-                      Estimated Monthly Income
-                    </p>
-                    <p className="text-4xl font-bold text-white font-serif mt-1.5 text-[#FF7A59]">
-                      ${(sessionsPerWeek * avgSessionCost * 4.3).toFixed(0)}
-                    </p>
-                    <p className="text-[9px] text-white/30 font-bold uppercase mt-1">
-                      Based on standard platform averages
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PayoutLogs />
           ) : currentTab === "profile" ? (
             /* Biography Profile Editor */
-            <form
-              onSubmit={handleProfileSave}
-              className="max-w-2xl velvet-card p-8 space-y-6"
-            >
-              <h3 className="text-xl font-bold text-white font-serif">
-                Chef Biography Profile
-              </h3>
-
-              {/* Profile progress card */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-2.5">
-                <div className="flex justify-between items-center text-xs font-bold">
-                  <span className="text-[#A8A8A8]">Profile Strength</span>
-                  <span className="text-[#FF7A59]">{profileProgress}%</span>
-                </div>
-                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#FF8F73] to-[#FF7A59] transition-all duration-500"
-                    style={{ width: `${profileProgress}%` }}
-                  />
-                </div>
-              </div>
-
-              {profileSuccess && (
-                <div className="p-3 bg-green-950/20 border border-green-500/20 rounded-xl text-xs text-green-400 font-semibold">
-                  Chef profile parameters updated successfully!
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <FormInput
-                  type="text"
-                  label="Display Headline / Tagline"
-                  id="specialty"
-                  value={profileData.specialty}
-                  onChange={(e) =>
-                    setProfileData({
-                      ...profileData,
-                      specialty: e.target.value,
-                    })
-                  }
-                  required
-                />
-
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">
-                    Chef Bio
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={profileData.bio}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, bio: e.target.value })
-                    }
-                    className="w-full p-4 bg-[#161616] border border-white/5 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-[#FF7A59]"
-                  />
-                </div>
-
-                <FormInput
-                  type="text"
-                  label="Experience Years Details"
-                  id="experience"
-                  value={profileData.experience}
-                  onChange={(e) =>
-                    setProfileData({
-                      ...profileData,
-                      experience: e.target.value,
-                    })
-                  }
-                  required
-                />
-
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">
-                    Cuisine Specialties
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {profileData.cuisines.map((cuisine) => (
-                      <span
-                        key={cuisine}
-                        className="px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-xs text-[#A8A8A8] flex items-center gap-1.5"
-                      >
-                        {cuisine}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setProfileData({
-                              ...profileData,
-                              cuisines: profileData.cuisines.filter(
-                                (c) => c !== cuisine,
-                              ),
-                            })
-                          }
-                          className="text-red-400 hover:text-red-300 font-bold"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Add another cuisine (e.g. Vegetarian)"
-                      value={profileData.newCuisine}
-                      onChange={(e) =>
-                        setProfileData({
-                          ...profileData,
-                          newCuisine: e.target.value,
-                        })
-                      }
-                      className="px-4 py-2 bg-[#161616] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] w-full"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddCuisine}
-                      className="px-4 py-2 bg-white/5 border border-white/10 hover:bg-[#FF7A59] hover:border-transparent text-white font-bold rounded-xl text-xs transition-all whitespace-nowrap"
-                    >
-                      + Add
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-white/5">
-                <Button type="submit" className="text-xs font-bold">
-                  Save Biography Details
-                </Button>
-              </div>
-            </form>
+            <ProfileEditor
+              profileData={profileData}
+              profileProgress={profileProgress}
+              profileSuccess={profileSuccess}
+              onSave={handleProfileSave}
+              onUpdate={(data) => setProfileData({ ...profileData, ...data })}
+            />
           ) : currentTab === "analytics" ? (
             /* Analytics Dashboard */
-            <div className="space-y-6">
-              <h3 className="text-xl font-bold text-white font-serif">
-                Analytics Overview
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatItem
-                  icon={Activity}
-                  label="Profile Views"
-                  value="1,245"
-                  change="+12%"
-                  subtext="Last 30 days"
-                />
-                <StatItem
-                  icon={LineChart}
-                  label="Conversion Rate"
-                  value="8.4%"
-                  change="+2.1%"
-                  subtext="From view to booking"
-                />
-                <StatItem
-                  icon={TrendingUp}
-                  label="Total Earnings"
-                  value="$4,590"
-                  change="+15%"
-                  subtext="Gross income"
-                />
-                <StatItem
-                  icon={Star}
-                  label="Avg Rating"
-                  value="4.8"
-                  change="+0.1"
-                  subtext="Across 45 reviews"
-                />
-              </div>
-              <div className="velvet-card p-8 space-y-6">
-                <h4 className="font-bold text-white font-serif">
-                  Booking Trends
-                </h4>
-                <div className="h-64 rounded-xl border border-white/5 flex items-center justify-center bg-[#161616] p-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={[
-                        { name: "Mon", bookings: 2 },
-                        { name: "Tue", bookings: 3 },
-                        { name: "Wed", bookings: 1 },
-                        { name: "Thu", bookings: 4 },
-                        { name: "Fri", bookings: 7 },
-                        { name: "Sat", bookings: 11 },
-                        { name: "Sun", bookings: 9 },
-                      ]}
-                      margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-                      <XAxis
-                        dataKey="name"
-                        stroke="#888"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis
-                        stroke="#888"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#111",
-                          border: "1px solid #333",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                          color: "#fff",
-                        }}
-                        itemStyle={{ color: "#FF7A59" }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="bookings"
-                        stroke="#FF7A59"
-                        strokeWidth={3}
-                        dot={{
-                          r: 4,
-                          fill: "#FF7A59",
-                          strokeWidth: 2,
-                          stroke: "#111",
-                        }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
+            <ChefAnalytics />
           ) : currentTab === "premium" ? (
             /* Premium Membership System */
             <div className="space-y-6 max-w-4xl">
@@ -1715,47 +1282,7 @@ export default function ChefDashboard() {
   );
 }
 
-function StatItem({
-  icon: Icon,
-  label,
-  value,
-  change = null,
-  subtext = null,
-  status = null,
-}: any) {
-  return (
-    <div className="bg-[#1A1A1A] rounded-[24px] p-6 border border-white/5 shadow-2xl space-y-4">
-      <div className="flex items-start justify-between">
-        <Icon size={24} className="text-[#FF7A59]" />
-        {change && (
-          <span className="text-[10px] font-bold text-[#2E7D66] uppercase tracking-wider bg-[#2E7D66]/5 border border-[#2E7D66]/10 px-2 py-0.5 rounded-full">
-            {change}
-          </span>
-        )}
-      </div>
 
-      <div className="space-y-1">
-        <p className="text-[10px] text-[#A8A8A8] uppercase tracking-wider font-bold">
-          {label}
-        </p>
-        <span className="text-3xl font-bold text-white font-serif block">
-          {value}
-        </span>
-      </div>
-
-      {status === "verified" && (
-        <div className="flex gap-2 items-center text-[10px] text-[#2E7D66] font-bold uppercase">
-          <CheckCircle size={12} />
-          <span>Active searches listings</span>
-        </div>
-      )}
-
-      {subtext && (
-        <p className="text-[10px] text-[#A8A8A8] font-semibold">{subtext}</p>
-      )}
-    </div>
-  );
-}
 
 // Minimal calendar helper
 function CalendarDot({ size = 16 }) {

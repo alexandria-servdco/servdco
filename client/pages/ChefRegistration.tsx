@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
+import { FileUpload } from "@/components/upload/FileUpload";
+import { UploadResponse } from "@/types/upload.types";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -50,6 +52,12 @@ export default function ChefRegistration() {
     zip: ""
   });
 
+  const [uploads, setUploads] = useState({
+    servSafe: null as UploadResponse | null,
+    insurance: null as UploadResponse | null,
+    background: null as UploadResponse | null,
+  });
+
   const handleNext = async () => {
     if (currentStep === 1) {
       if (!formData.fullName || !formData.email || !formData.phone || !formData.city || !formData.zip) {
@@ -58,6 +66,13 @@ export default function ChefRegistration() {
       }
       if (!emailValid) {
         setError("Please provide a valid email address.");
+        return;
+      }
+    }
+
+    if (currentStep === 3) {
+      if (!uploads.servSafe || !uploads.insurance || !uploads.background) {
+        setError("Please upload all required documents to proceed.");
         return;
       }
     }
@@ -292,8 +307,36 @@ export default function ChefRegistration() {
                 </div>
               )}
 
-              {/* Steps 2-4 Placeholders */}
-              {currentStep > 1 && (
+              {/* Step 3: Document Uploads */}
+              {currentStep === 3 && (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-5">
+                    <FileUpload
+                      label="ServSafe Food Handler Certificate"
+                      description="Required. Must be valid and current."
+                      onUploadSuccess={(res) => setUploads({ ...uploads, servSafe: res })}
+                      onUploadRemove={() => setUploads({ ...uploads, servSafe: null })}
+                    />
+                    
+                    <FileUpload
+                      label="General Liability Insurance"
+                      description="Required. Proof of minimum $1M coverage."
+                      onUploadSuccess={(res) => setUploads({ ...uploads, insurance: res })}
+                      onUploadRemove={() => setUploads({ ...uploads, insurance: null })}
+                    />
+
+                    <FileUpload
+                      label="Background Check Consent / Document"
+                      description="Required. Recent background check results."
+                      onUploadSuccess={(res) => setUploads({ ...uploads, background: res })}
+                      onUploadRemove={() => setUploads({ ...uploads, background: null })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Steps 2 & 4 Placeholders */}
+              {currentStep !== 1 && currentStep !== 3 && (
                 <div className="flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01] py-16 px-4">
                   <Utensils size={36} className="text-[#FF7A59]/40 mb-3" />
                   <p className="text-xs text-white/50 font-bold uppercase tracking-wider">Form fields for {STEPS[currentStep - 1]}</p>

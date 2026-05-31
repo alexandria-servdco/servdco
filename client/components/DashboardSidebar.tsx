@@ -1,4 +1,13 @@
-import { LayoutDashboard, Search, Calendar, Clock, Heart, User, Settings, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  Search,
+  Calendar,
+  Clock,
+  Heart,
+  User,
+  Settings,
+  LogOut,
+} from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { AuthService } from "@/services/auth.service";
@@ -12,42 +21,36 @@ export default function DashboardSidebar() {
     { label: "Browse Cooks", path: "/browse-chefs", icon: Search },
     { label: "Bookings", path: "/family-dashboard/bookings", icon: Calendar },
     { label: "History", path: "/family-dashboard/history", icon: Clock },
-    { label: "Favorites", path: "/family-dashboard/favorites", icon: Heart }
+    { label: "Favorites", path: "/family-dashboard/favorites", icon: Heart },
   ];
 
   const footerLinks = [
     { label: "Profile", path: "/family-dashboard/profile", icon: User },
-    { label: "Settings", path: "/family-dashboard/settings", icon: Settings }
+    { label: "Settings", path: "/family-dashboard/settings", icon: Settings },
   ];
 
   const isActive = (path: string) => {
-    if (path === "/family-dashboard" && location.pathname === "/dashboard") return true;
+    if (path === "/family-dashboard" && location.pathname === "/dashboard")
+      return true;
     return location.pathname === path;
   };
 
   return (
     <aside className="hidden md:flex w-64 bg-[#161616] border-r border-white/5 flex-col h-screen sticky top-0 font-sans z-30">
-      
       {/* Logo */}
       <div className="p-8 border-b border-white/5">
-        <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-          <div className="w-8 h-8 rounded-full bg-[#FF7A59] flex items-center justify-center shadow-md shadow-[#FF7A59]/20">
-            <svg
-              viewBox="0 0 100 100"
-              className="w-4 h-4 text-white"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="5"
-              strokeLinecap="round"
-            >
-              <circle cx="50" cy="50" r="35" />
-              <circle cx="50" cy="50" r="22" />
-              <circle cx="50" cy="50" r="9" />
-            </svg>
-          </div>
-          <span className="text-base font-bold text-white tracking-tight">
-            Servd <span className="text-[#FF7A59]">co.</span>
-          </span>
+        <Link
+          to="/"
+          className="flex items-center gap-3 hover:opacity-90 transition-opacity"
+        >
+          <img
+            src="/1.png"
+            alt="ServdCo"
+            loading="lazy"
+            decoding="async"
+            className="h-12 w-auto object-contain flex-shrink-0"
+            style={{ objectPosition: "center" }}
+          />
         </Link>
       </div>
 
@@ -63,10 +66,17 @@ export default function DashboardSidebar() {
                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all relative group",
                 active
                   ? "text-[#FF7A59] bg-[#FF7A59]/10 border border-[#FF7A59]/20"
-                  : "text-[#A8A8A8] hover:text-[#F5F5F5] hover:bg-white/[0.02] border border-transparent"
+                  : "text-[#A8A8A8] hover:text-[#F5F5F5] hover:bg-white/[0.02] border border-transparent",
               )}
             >
-              <link.icon size={16} className={active ? "text-[#FF7A59]" : "text-[#A8A8A8] group-hover:text-[#F5F5F5] transition-colors"} />
+              <link.icon
+                size={16}
+                className={
+                  active
+                    ? "text-[#FF7A59]"
+                    : "text-[#A8A8A8] group-hover:text-[#F5F5F5] transition-colors"
+                }
+              />
               <span>{link.label}</span>
               {active && (
                 <span className="absolute right-4 w-1.5 h-1.5 rounded-full bg-[#FF7A59] shadow-[0_0_8px_#FF7A59]" />
@@ -88,7 +98,7 @@ export default function DashboardSidebar() {
                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all border border-transparent",
                 active
                   ? "text-[#FF7A59] bg-[#FF7A59]/10"
-                  : "text-[#A8A8A8] hover:text-[#F5F5F5] hover:bg-white/[0.02]"
+                  : "text-[#A8A8A8] hover:text-[#F5F5F5] hover:bg-white/[0.02]",
               )}
             >
               <link.icon size={16} />
@@ -96,8 +106,8 @@ export default function DashboardSidebar() {
             </Link>
           );
         })}
-        
-        <button 
+
+        <button
           onClick={() => {
             AuthService.logout();
             navigate("/");

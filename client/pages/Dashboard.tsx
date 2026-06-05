@@ -256,12 +256,12 @@ export default function Dashboard() {
                         <div key={booking.id} className="flex flex-col sm:flex-row gap-6 pb-6 border-b border-white/5 last:border-b-0 last:pb-0">
                           <img
                             src="https://images.unsplash.com/photo-1595273670150-db0d3c67adb8?w=100&h=100&fit=crop"
-                            alt="Chef"
+                            alt="Cook"
                             className="w-20 h-20 rounded-2xl object-cover border border-white/10"
                           />
                           <div className="flex-1 space-y-2">
                             <div className="flex justify-between items-baseline">
-                              <h3 className="font-bold text-white text-lg font-serif">{booking.chefName || "Chef Priya Patel"}</h3>
+                              <h3 className="font-bold text-white text-lg font-serif">{booking.chefName || "Cook Priya Patel"}</h3>
                               <span className="font-bold text-[#FF7A59] text-base font-serif">${booking.price || "96.00"}</span>
                             </div>
                             <p className="text-xs text-[#A8A8A8] font-bold">{booking.serviceType || "Indian Dinner Prep"}</p>
@@ -313,7 +313,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
                   <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-white font-serif">Suggested Chefs For You</h2>
+                    <h2 className="text-2xl font-bold text-white font-serif">Suggested Cooks For You</h2>
                     <Link to="/browse-chefs" className="text-[#FF7A59] font-bold text-xs hover:underline uppercase tracking-wider">Browse all</Link>
                   </div>
 
@@ -361,8 +361,8 @@ export default function Dashboard() {
                     <h3 className="font-bold text-white text-base font-serif">Recent Activity Log</h3>
                     <div className="space-y-4">
                       {[
-                        { title: "Booking request with Chef Priya sent", time: "2 hours ago", bg: "bg-[#FF7A59]/10 text-[#FF7A59]" },
-                        { title: "Review left for Chef James Johnson", time: "1 day ago", bg: "bg-white/5 text-[#A8A8A8]" },
+                        { title: "Booking request with Cook Priya sent", time: "2 hours ago", bg: "bg-[#FF7A59]/10 text-[#FF7A59]" },
+                        { title: "Review left for Cook James Johnson", time: "1 day ago", bg: "bg-white/5 text-[#A8A8A8]" },
                         { title: "Welcome to your Servd Co Dashboard!", time: "3 days ago", bg: "bg-[#2E7D66]/10 text-[#2E7D66]" }
                       ].map((act, i) => (
                         <div key={i} className="flex gap-3 pb-3 border-b border-white/5 last:border-b-0 last:pb-0">
@@ -401,7 +401,7 @@ export default function Dashboard() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search chef name..."
+                  placeholder="Search cook name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="px-4 py-2 bg-[#161616] border border-white/5 rounded-xl text-xs text-white w-full sm:w-64 focus:outline-none focus:border-[#FF7A59]"
@@ -419,7 +419,7 @@ export default function Dashboard() {
                           <Calendar size={20} />
                         </div>
                         <div>
-                          <h4 className="font-bold text-white font-serif">{booking.chefName || "Chef Priya Patel"}</h4>
+                          <h4 className="font-bold text-white font-serif">{booking.chefName || "Cook Priya Patel"}</h4>
                           <p className="text-xs text-[#A8A8A8] mt-0.5">{booking.date} • {booking.serviceType || "Indian Dinner Prep"}</p>
                         </div>
                       </div>
@@ -457,8 +457,8 @@ export default function Dashboard() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-4">
                 {[
-                  { id: "h-1", chefName: "Chef Maria", date: "May 10, 2026", meals: "Comfort pot roast", rating: 5, price: "$85.00" },
-                  { id: "h-2", chefName: "Chef James Wilson", date: "April 28, 2026", meals: "Keto steak dinner", rating: 5, price: "$120.00" }
+                  { id: "h-1", chefName: "Cook Maria", date: "May 10, 2026", meals: "Comfort pot roast", rating: 5, price: "$85.00" },
+                  { id: "h-2", chefName: "Cook James Wilson", date: "April 28, 2026", meals: "Keto steak dinner", rating: 5, price: "$120.00" }
                 ].map((hist) => (
                   <div key={hist.id} className="velvet-card p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-4">
@@ -510,7 +510,7 @@ export default function Dashboard() {
                       to={`/chef/${chef.id}`}
                       className="block w-full py-3 bg-[#FF7A59] hover:bg-[#e96a49] text-white text-center font-bold rounded-xl text-xs transition-colors"
                     >
-                      View Chef Profile
+                      View Cook Profile
                     </Link>
                   </div>
                 </div>

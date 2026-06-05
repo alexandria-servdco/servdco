@@ -1367,7 +1367,7 @@ export default function AdminDashboard({
                                     usr.role === "chef" ? "#FF7A59" : "#2E7D66",
                                 }}
                               >
-                                {usr.role}
+                                {usr.role === "chef" ? "Cook" : usr.role}
                               </span>
                             </p>
                           </div>
@@ -2803,7 +2803,7 @@ export default function AdminDashboard({
                       marginBottom: "6px",
                     }}
                   >
-                    Min Chefs for Launch
+                    Min Cooks for Launch
                   </label>
                   <input
                     type="number"

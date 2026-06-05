@@ -15,7 +15,7 @@ const BLOG_POSTS = [
   {
     category: "Meal Preparation",
     title: "How to Reclaim 12 Hours Every Single Week",
-    desc: "A deep dive into session-based weekly meal prep planning. How private chefs help busy working professionals eat healthy.",
+    desc: "A deep dive into session-based weekly meal prep planning. How private cooks help busy working professionals eat healthy.",
     date: "May 18, 2026",
     readTime: "6 min read",
     image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=500&auto=format&fit=crop&q=80"
@@ -23,7 +23,7 @@ const BLOG_POSTS = [
   {
     category: "Culinary Inspiration",
     title: "Aromatics & Spices: The Heart of Indian Cooking",
-    desc: "Chef Priya Patel shares her top kitchen secrets for grinding custom garam masala and harnessing wellness in standard cooking.",
+    desc: "Cook Priya Patel shares her top kitchen secrets for grinding custom garam masala and harnessing wellness in standard cooking.",
     date: "May 15, 2026",
     readTime: "5 min read",
     image: "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=500&auto=format&fit=crop&q=80"
@@ -42,7 +42,7 @@ export default function Blog() {
         <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">Servd Co Chronicles</p>
         <h1 className="text-4xl lg:text-5xl font-bold font-serif text-white tracking-tight">Our Kitchen Stories.</h1>
         <p className="text-[#A8A8A8] text-sm max-w-xl mx-auto">
-          Explore recipes, organic farm sourcing advice, wellness principles, and success stories from our network of local private chefs.
+          Explore recipes, organic farm sourcing advice, wellness principles, and success stories from our network of local private cooks.
         </p>
       </section>
 

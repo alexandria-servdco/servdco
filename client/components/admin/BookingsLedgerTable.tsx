@@ -78,7 +78,7 @@ export function BookingsLedgerTable({
             <Search size={13} style={{ color: "#A8A8A8" }} />
             <input
               type="text"
-              placeholder="Search family/chef..."
+              placeholder="Search family/cook..."
               value={bookingSearch}
               onChange={(e) => setBookingSearch(e.target.value)}
               style={{
@@ -139,7 +139,7 @@ export function BookingsLedgerTable({
               {[
                 "Booking ID",
                 "Family / Client",
-                "Assigned Chef",
+                "Assigned Cook",
                 "Service Type",
                 "Date & Time",
                 "Price",

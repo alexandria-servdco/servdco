@@ -209,7 +209,7 @@ export function MarketInterestRequests({
             >
               <option value="all">All Roles</option>
               <option value="family">Family</option>
-              <option value="chef">Chef</option>
+              <option value="chef">Cook</option>
               <option value="both">Both</option>
             </select>
           </div>
@@ -348,7 +348,7 @@ export function MarketInterestRequests({
                                 : "#F59E0B",
                         }}
                       >
-                        {req.role}
+                        {req.role === "chef" ? "Cook" : req.role}
                       </span>
                     </td>
                     <td

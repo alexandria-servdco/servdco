@@ -71,7 +71,7 @@ export const AuthService = {
 
     if (email.toLowerCase().includes("chef")) {
       mockRole = "chef";
-      mockName = "Chef Maria";
+      mockName = "Cook Maria";
     } else if (email.toLowerCase().includes("admin")) {
       mockRole = "admin";
       mockName = "Admin Control";

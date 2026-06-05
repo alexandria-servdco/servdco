@@ -16,7 +16,7 @@ const LEGAL_DOCS = [
   },
   {
     title: "Terms of Service",
-    desc: "Understand user roles, independent contractor chef frameworks, kitchen sanitation codes, and our marketplace code of conduct.",
+    desc: "Understand user roles, independent contractor cook frameworks, kitchen sanitation codes, and our marketplace code of conduct.",
     icon: Scale,
     color: "from-amber-500/10 to-orange-500/10 text-amber-400 border-amber-500/20",
     hoverBorder: "hover:border-amber-500/40",

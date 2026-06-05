@@ -23,7 +23,7 @@ export default function HowItWorks() {
             From booking, to your kitchen table.
           </h1>
           <p className="text-[#A8A8A8] text-base lg:text-lg max-w-2xl mx-auto leading-relaxed">
-            Servd Co pairs passionate, vetted local chefs with busy families to cook healthy, customized meals directly in their homes. Here is exactly how the platform works.
+            Servd Co pairs passionate, vetted local cooks with busy families to cook healthy, customized meals directly in their homes. Here is exactly how the platform works.
           </p>
         </div>
       </section>
@@ -38,14 +38,14 @@ export default function HowItWorks() {
               <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">For Busy Families</p>
               <h2 className="text-4xl font-bold font-serif text-white">How we bring fresh meals home</h2>
               <p className="text-[#A8A8A8] text-sm leading-relaxed">
-                Reclaim your evenings without compromising on health or quality. Our chefs handle the prep, cooking, and the kitchen cleanup so you can walk straight to a clean kitchen and hot dinner.
+                Reclaim your evenings without compromising on health or quality. Our cooks handle the prep, cooking, and the kitchen cleanup so you can walk straight to a clean kitchen and hot dinner.
               </p>
               <div className="pt-4">
                 <Link
                   to="/browse-chefs"
                   className="px-6 py-3.5 bg-[#FF7A59] hover:bg-[#e96a49] text-white font-bold rounded-full text-xs shadow-md transition-all inline-flex items-center gap-2 group"
                 >
-                  Find a Chef <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  Find a Cook <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>
@@ -56,20 +56,20 @@ export default function HowItWorks() {
                 {
                   step: "01",
                   icon: Search,
-                  title: "Browse and select local chefs",
-                  desc: "Filter chefs by cuisine specialty, locality, and availability. Review real customer ratings and read verified chef bio profiles to find the perfect match."
+                  title: "Browse and select local cooks",
+                  desc: "Filter cooks by cuisine specialty, locality, and availability. Review real customer ratings and read verified cook bio profiles to find the perfect match."
                 },
                 {
                   step: "02",
                   icon: Calendar,
                   title: "Schedule your customized session",
-                  desc: "Choose the service type you need: breakfast prep, dinner, or bulk weekly meal preps. Set the date and confirm your booking. The flat rate covers the chef's professional time."
+                  desc: "Choose the service type you need: breakfast prep, dinner, or bulk weekly meal preps. Set the date and confirm your booking. The flat rate covers the cook's professional time."
                 },
                 {
                   step: "03",
                   icon: Utensils,
                   title: "Enjoy home-cooked food",
-                  desc: "Provide the fresh ingredients you love. The chef arrives at your home, handles all food preparation, cooks, plates, and conducts a complete basic kitchen cleanup."
+                  desc: "Provide the fresh ingredients you love. The cook arrives at your home, handles all food preparation, cooks, plates, and conducts a complete basic kitchen cleanup."
                 }
               ].map((s, idx) => (
                 <div key={idx} className="bg-[#2A2A2A] rounded-2xl p-6 border border-white/5 hover:border-white/10 transition-colors flex gap-6 items-start">
@@ -109,7 +109,7 @@ export default function HowItWorks() {
                   step: "02",
                   icon: Clock,
                   title: "Set schedule & menu limits",
-                  desc: "Use the chef dashboard calendar controls to activate availability for breakfast, dinner, or meal prep bookings whenever fits your weekly routing."
+                  desc: "Use the cook dashboard calendar controls to activate availability for breakfast, dinner, or meal prep bookings whenever fits your weekly routing."
                 },
                 {
                   step: "03",
@@ -135,7 +135,7 @@ export default function HowItWorks() {
 
             {/* Right */}
             <div className="lg:col-span-5 order-1 lg:order-2 space-y-6">
-              <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">For Local Chefs</p>
+              <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">For Local Cooks</p>
               <h2 className="text-4xl font-bold font-serif text-white">Turn your passion into real income</h2>
               <p className="text-[#A8A8A8] text-sm leading-relaxed">
                 Gain independence, enjoy client culinary interactions, and choose the hours that make sense for you. Servd Co handles transaction rails and marketing, letting you excel in the kitchen.
@@ -145,7 +145,7 @@ export default function HowItWorks() {
                   to="/for-chefs"
                   className="px-6 py-3.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold rounded-full text-xs transition-all inline-flex items-center gap-2 group"
                 >
-                  Chef Earnings Calculator <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  Cook Earnings Calculator <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>

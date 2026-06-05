@@ -66,7 +66,7 @@ export function PayoutControl() {
                   fontWeight: "500",
                 }}
               >
-                Chef
+                Cook
               </th>
               <th
                 style={{
@@ -137,7 +137,7 @@ export function PayoutControl() {
                   color: "#FFF",
                 }}
               >
-                Chef Sarah (SF)
+                Cook Sarah (SF)
               </td>
               <td
                 style={{
@@ -235,7 +235,7 @@ export function PayoutControl() {
                   color: "#FFF",
                 }}
               >
-                Chef Marcus (LA)
+                Cook Marcus (LA)
               </td>
               <td
                 style={{
@@ -357,7 +357,7 @@ export function PayoutControl() {
                   fontWeight: "500",
                 }}
               >
-                Chef
+                Cook
               </th>
               <th
                 style={{
@@ -406,7 +406,7 @@ export function PayoutControl() {
                   color: "#FFF",
                 }}
               >
-                Chef Oliver (NYC)
+                Cook Oliver (NYC)
               </td>
               <td
                 style={{
@@ -446,7 +446,7 @@ export function PayoutControl() {
                   color: "#FFF",
                 }}
               >
-                Chef Anna (CHI)
+                Cook Anna (CHI)
               </td>
               <td
                 style={{

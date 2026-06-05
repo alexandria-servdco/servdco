@@ -19,7 +19,7 @@ export function PlatformSettings() {
 
   const handleSavePremium = () => {
     setChefPremiumPrice(localPremium);
-    alert(`Chef Premium Price updated to $${localPremium}/mo globally!`);
+    alert(`Cook Premium Price updated to $${localPremium}/mo globally!`);
   };
 
   return (
@@ -145,7 +145,7 @@ export function PlatformSettings() {
               margin: "0 0 4px 0",
             }}
           >
-            Chef Premium Price
+            Cook Premium Price
           </h3>
           <p
             style={{
@@ -154,7 +154,7 @@ export function PlatformSettings() {
               margin: "0 0 20px 0",
             }}
           >
-            The monthly subscription cost for Chef Premium accounts.
+            The monthly subscription cost for Cook Premium accounts.
           </p>
 
           <div

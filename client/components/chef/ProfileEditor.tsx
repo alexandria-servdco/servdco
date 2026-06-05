@@ -47,7 +47,7 @@ export function ProfileEditor({
       className="max-w-2xl velvet-card p-8 space-y-6"
     >
       <h3 className="text-xl font-bold text-white font-serif">
-        Chef Biography Profile
+        Cook Biography Profile
       </h3>
 
       <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-2.5">
@@ -65,7 +65,7 @@ export function ProfileEditor({
 
       {profileSuccess && (
         <div className="p-3 bg-green-950/20 border border-green-500/20 rounded-xl text-xs text-green-400 font-semibold">
-          Chef profile parameters updated successfully!
+          Cook profile parameters updated successfully!
         </div>
       )}
 
@@ -81,7 +81,7 @@ export function ProfileEditor({
 
         <div className="space-y-2">
           <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">
-            Chef Bio
+            Cook Bio
           </label>
           <textarea
             rows={4}

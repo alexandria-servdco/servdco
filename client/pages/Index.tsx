@@ -114,7 +114,7 @@ export default function Index() {
           <div className="hidden lg:block absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent z-10 h-full" />
           <img
             src="/home-hero.png"
-            alt="Chef cooking in warm family kitchen"
+            alt="Cook preparing food in warm family kitchen"
             className="w-full h-full object-cover object-right rounded-bl-[100px] lg:rounded-bl-[160px] shadow-2xl border-l border-b border-white/5"
           />
         </div>
@@ -124,7 +124,7 @@ export default function Index() {
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#FF7A59]/30 bg-[#FF7A59]/5">
               <Heart size={12} className="text-[#FF7A59] fill-[#FF7A59]" />
               <span className="text-[#FF7A59] text-[9.5px] font-bold tracking-widest uppercase">
-                Local Chefs. Homemade with love.
+                Local Cooks. Homemade with love.
               </span>
             </div>
 
@@ -154,7 +154,7 @@ export default function Index() {
 
             <p className="text-[#A8A8A8] text-base sm:text-lg leading-relaxed max-w-lg font-medium">
               Servd Co. makes having a home-cooked meal affordable for everyone.
-              We aren't a high-end agency for professional chefs. Instead, we
+              We aren't a high-end agency for professional cooks. Instead, we
               give everyday people who love to cook a platform to share their
               passion and earn extra income. You provide the ingredients you
               trust, and a local cook takes care of the prep, cooking, and
@@ -166,7 +166,7 @@ export default function Index() {
                 to="/register"
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 velvet-tactile text-white text-[14.5px] font-bold"
               >
-                Find a Chef
+                Find a Cook
               </Link>
               <button
                 onClick={() => setIsCityModalOpen(true)}
@@ -184,7 +184,7 @@ export default function Index() {
         <div className="velvet-card p-8 border border-white/5 shadow-2xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 divide-y lg:divide-y-0 lg:divide-x divide-white/5">
             {[
-              { icon: CheckCircle, text: "Trusted & Insured\nLocal Chefs" },
+              { icon: CheckCircle, text: "Trusted & Insured\nLocal Cooks" },
               { icon: ChefHat, text: "Homemade Meals\nCooked with Love" },
               {
                 icon: Heart,
@@ -256,7 +256,7 @@ export default function Index() {
                 step: "03",
                 icon: Sparkles,
                 title: "Cook & Clean",
-                desc: "Your chef arrives, prepares your meals in your kitchen, and handles basic kitchen cleanup before they leave.",
+                desc: "Your cook arrives, prepares your meals in your kitchen, and handles basic kitchen cleanup before they leave.",
               },
             ].map(({ step, icon: Icon, title, desc }, i) => (
               <motion.div
@@ -306,7 +306,7 @@ export default function Index() {
               },
               {
                 title: "Complete Menu Freedom",
-                desc: "Post custom meal requests or directly choose your preferred chef.",
+                desc: "Post custom meal requests or directly choose your preferred cook.",
                 icon: Utensils,
               },
               {
@@ -351,7 +351,7 @@ export default function Index() {
               to="/register"
               className="px-8 py-4 velvet-tactile text-white font-bold text-sm"
             >
-              Hire a Chef
+              Hire a Cook
             </Link>
           </div>
         </div>
@@ -428,17 +428,17 @@ export default function Index() {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
           <div className="space-y-2">
             <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">
-              Chef Marketplace
+              Cook Marketplace
             </p>
             <h2 className="text-4xl lg:text-5xl font-bold text-white font-serif tracking-tight">
-              Explore local chefs
+              Explore local cooks
             </h2>
           </div>
           <Link
             to="/browse-chefs"
             className="w-fit flex items-center gap-2 px-6 py-3 border border-white/10 hover:border-transparent bg-[#2A2A2A] rounded-full text-xs font-bold text-white hover:bg-[#FF7A59] transition-all shadow-md group"
           >
-            View all chefs{" "}
+            View all cooks{" "}
             <ArrowRight
               size={14}
               className="group-hover:translate-x-1 transition-transform"
@@ -451,7 +451,7 @@ export default function Index() {
           {[
             {
               id: "maria",
-              name: "Chef Maria",
+              name: "Cook Maria",
               tags: "Comfort Food • Meal Prep",
               rating: "4.9",
               reviews: "128",
@@ -460,7 +460,7 @@ export default function Index() {
             },
             {
               id: "james",
-              name: "Chef James",
+              name: "Cook James",
               tags: "Southern • Family Meals",
               rating: "4.8",
               reviews: "94",
@@ -469,7 +469,7 @@ export default function Index() {
             },
             {
               id: "priya",
-              name: "Chef Priya",
+              name: "Cook Priya",
               tags: "Indian • Vegetarian",
               rating: "4.9",
               reviews: "112",
@@ -478,7 +478,7 @@ export default function Index() {
             },
             {
               id: "sarah",
-              name: "Chef Sarah",
+              name: "Cook Sarah",
               tags: "Comfort Food • Family Dinners",
               rating: "4.9",
               reviews: "142",
@@ -509,7 +509,7 @@ export default function Index() {
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#111111]/80 backdrop-blur-sm rounded-full border border-white/10 shadow-sm">
                       <BadgeCheck size={12} className="text-[#FF7A59]" />
                       <span className="text-[10px] font-bold text-[#FF7A59] uppercase tracking-wider">
-                        Verified Chef
+                        Verified Cook
                       </span>
                     </div>
                   </div>
@@ -549,7 +549,7 @@ export default function Index() {
                   to={`/chef/${chef.id}`}
                   className="block w-full py-3 mt-3 border border-white/10 bg-[#161616] text-[#F5F5F5] hover:bg-[#FF7A59] hover:text-white hover:border-transparent rounded-xl text-[12.5px] font-bold text-center transition-all duration-300"
                 >
-                  View Chef
+                  View Cook
                 </Link>
               </div>
             </div>
@@ -569,7 +569,7 @@ export default function Index() {
             {/* Left opportunity text */}
             <div className="lg:col-span-6 space-y-8 lg:sticky lg:top-28">
               <span className="text-[#FF7A59] font-bold text-xs tracking-widest uppercase block">
-                COMMUNITY OF CHEFS
+                COMMUNITY OF COOKS
               </span>
 
               <h2 className="text-4xl lg:text-6xl font-bold leading-[1.05] tracking-tight font-serif text-white">
@@ -577,7 +577,7 @@ export default function Index() {
               </h2>
 
               <p className="text-[#A8A8A8] text-base leading-relaxed font-medium max-w-lg">
-                Join a growing network of local chefs who prepare fresh
+                Join a growing network of local cooks who prepare fresh
                 home-cooked meals directly in family kitchens. Keep 100% of
                 tips, choose standard session types, and set complete schedule
                 freedom.
@@ -603,7 +603,7 @@ export default function Index() {
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#FF7A59]/10 blur-2xl" />
 
                 <h3 className="font-bold text-white text-lg font-serif mb-6 pb-3 border-b border-white/5 flex items-center justify-between">
-                  <span>Chef Income Calculator</span>
+                  <span>Cook Income Calculator</span>
                   <span className="text-[10px] uppercase font-bold text-[#FF7A59] tracking-wider bg-[#FF7A59]/5 border border-[#FF7A59]/10 px-3 py-1 rounded-full">
                     Weekly Estimate
                   </span>
@@ -902,7 +902,7 @@ export default function Index() {
                       <option value="family">
                         Family (Interested in hiring)
                       </option>
-                      <option value="chef">Chef (Interested in cooking)</option>
+                      <option value="chef">Cook (Interested in cooking)</option>
                       <option value="both">Both</option>
                     </select>
                   </div>

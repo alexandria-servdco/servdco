@@ -42,7 +42,7 @@ export function AdminAnalytics({
           gap: "20px",
         }}
       >
-        <ChartCard title="Monthly User & Chef Signups">
+        <ChartCard title="Monthly User & Cook Signups">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart
               data={[
@@ -91,7 +91,7 @@ export function AdminAnalytics({
                 dataKey="chefs"
                 fill="#2E7D66"
                 radius={[4, 4, 0, 0]}
-                name="Chefs"
+                name="Cooks"
               />
             </BarChart>
           </ResponsiveContainer>

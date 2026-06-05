@@ -103,7 +103,7 @@ export function GlobalAnnouncements() {
                 margin: 0,
               }}
             >
-              "Due to severe weather, some Chef arrivals in New York City may be delayed. Support is monitoring actively."
+              "Due to severe weather, some cook arrivals in New York City may be delayed. Support is monitoring actively."
             </p>
           </div>
           <button

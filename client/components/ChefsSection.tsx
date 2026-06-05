@@ -3,7 +3,7 @@ import ChefCard from "./ChefCard";
 export default function ChefsSection() {
   const chefs = [
     {
-      name: "Chef Maria",
+      name: "Cook Maria",
       rating: 4.8,
       reviewCount: 128,
       specialties: ["Comfort Food", "Meal Prep"],
@@ -13,7 +13,7 @@ export default function ChefsSection() {
       premium_status: true,
     },
     {
-      name: "Chef James",
+      name: "Cook James",
       rating: 4.9,
       reviewCount: 94,
       specialties: ["Southern", "Family Meals"],
@@ -23,7 +23,7 @@ export default function ChefsSection() {
       premium_status: false,
     },
     {
-      name: "Chef Lauren",
+      name: "Cook Lauren",
       rating: 4.9,
       reviewCount: 10,
       specialties: ["Healthy", "Gluten-Free"],
@@ -33,7 +33,7 @@ export default function ChefsSection() {
       premium_status: true,
     },
     {
-      name: "Chef Andre",
+      name: "Cook Andre",
       rating: 4.8,
       reviewCount: 156,
       specialties: ["Caribbean", "Fusion"],
@@ -42,7 +42,7 @@ export default function ChefsSection() {
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop",
     },
     {
-      name: "Chef Priya",
+      name: "Cook Priya",
       rating: 4.8,
       reviewCount: 103,
       specialties: ["Indian", "Vegetarian"],
@@ -57,13 +57,13 @@ export default function ChefsSection() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground">
-            Meet Some of Our Amazing Chefs
+            Meet Some of Our Amazing Cooks
           </h2>
           <a
             href="#"
             className="text-primary font-semibold hover:opacity-80 transition-opacity whitespace-nowrap"
           >
-            View all chefs
+            View all cooks
           </a>
         </div>
 

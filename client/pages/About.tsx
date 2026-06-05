@@ -25,7 +25,7 @@ export default function About() {
                 We believe good<br />food brings people<br />together.
               </h1>
               <p className="text-[#A8A8A8] text-sm md:text-base leading-relaxed max-w-lg">
-                Servd Co connects busy families with trusted, vetted local chefs who prepare fresh home-cooked dinners directly in family kitchens. We believe mealtimes are meant for connecting, not cleaning.
+                Servd Co connects busy families with trusted, vetted local cooks who prepare fresh home-cooked dinners directly in family kitchens. We believe mealtimes are meant for connecting, not cleaning.
               </p>
               <div className="flex items-center gap-4 pt-2">
                 <a
@@ -42,7 +42,7 @@ export default function About() {
               <div className="w-full aspect-[4/3] rounded-[32px] overflow-hidden shadow-2xl border border-white/5 relative bg-[#1A1A1A]">
                 <img 
                   src="/about-hero.png" 
-                  alt="Family and chef enjoying a meal" 
+                  alt="Family and cook enjoying a meal" 
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -66,7 +66,7 @@ export default function About() {
               </div>
               <h3 className="text-2xl font-bold text-white mb-4 font-serif">Our Mission</h3>
               <p className="text-xs md:text-sm text-[#A8A8A8] leading-relaxed max-w-md">
-                To simplify healthy home dining, strengthen local chef economies, and return valuable evening time back to families. We provide standard rails so chefs can excel in private kitchens.
+                To simplify healthy home dining, strengthen local cook economies, and return valuable evening time back to families. We provide standard rails so cooks can excel in private kitchens.
               </p>
             </div>
 
@@ -94,7 +94,7 @@ export default function About() {
             <p className="text-[#FF7A59] font-bold text-xs uppercase tracking-widest">Our Core Values</p>
             <h2 className="text-4xl font-bold font-serif text-white">How we nourish communities</h2>
             <p className="text-xs text-[#A8A8A8]">
-              We operate under standard, clear guiding principles to protect our chefs and support busy family households.
+              We operate under standard, clear guiding principles to protect our cooks and support busy family households.
             </p>
           </div>
 
@@ -103,7 +103,7 @@ export default function About() {
               {
                 icon: Users,
                 title: "Community First",
-                desc: "We focus on hiring and supporting talented local chefs, keeping currency flowing back directly into the neighborhoods we serve."
+                desc: "We focus on hiring and supporting talented local cooks, keeping currency flowing back directly into the neighborhoods we serve."
               },
               {
                 icon: Home,

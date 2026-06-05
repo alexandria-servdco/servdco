@@ -116,7 +116,7 @@ const privacyPolicyHTML = `
     <section id="minors" class="scroll-mt-24">
       <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">9. Protecting Minors' Privacy</h2>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
-        Servd Co. connects adult households with local chefs. Our platforms are strictly directed to individuals aged 18 and older. We do not knowingly compile or archive identification records from children under the age of 13. If you believe a child has submitted personal details to our waitlist, please contact us immediately so we can purge the information.
+        Servd Co. connects adult households with local cooks. Our platforms are strictly directed to individuals aged 18 and older. We do not knowingly compile or archive identification records from children under the age of 13. If you believe a child has submitted personal details to our waitlist, please contact us immediately so we can purge the information.
       </p>
     </section>
 

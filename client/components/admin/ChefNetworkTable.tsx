@@ -56,7 +56,7 @@ export function ChefNetworkTable({
             margin: 0,
           }}
         >
-          Registered Chef Marketplace Network
+          Registered Cook Marketplace Network
         </h3>
 
         {/* Filters */}
@@ -75,7 +75,7 @@ export function ChefNetworkTable({
             <Search size={13} style={{ color: "#A8A8A8" }} />
             <input
               type="text"
-              placeholder="Search chef cuisine/location..."
+              placeholder="Search cook cuisine/location..."
               value={chefSearch}
               onChange={(e) => setChefSearch(e.target.value)}
               style={{
@@ -116,7 +116,7 @@ export function ChefNetworkTable({
             <tr>
               {[
                 "Image",
-                "Chef Name",
+                "Cook Name",
                 "Cuisine Specialties",
                 "Location",
                 "Star Rating",
@@ -167,8 +167,8 @@ export function ChefNetworkTable({
                     >
                       <EmptyState 
                         type="chefs" 
-                        title="No chefs found" 
-                        description="No chefs matching the specified search criteria or status filter." 
+                        title="No cooks found"
+                        description="No cooks matching the specified search criteria or status filter."
                       />
                     </td>
                   </tr>

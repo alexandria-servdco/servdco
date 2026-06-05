@@ -69,7 +69,7 @@ export default function Login() {
         },
         chef: {
           id: "dev-chef-123",
-          name: "Chef Maria",
+          name: "Cook Maria",
           email: "chef@servd.co",
           role: "chef",
           state: "Ohio",

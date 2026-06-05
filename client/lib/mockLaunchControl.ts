@@ -209,7 +209,7 @@ const INITIAL_INTEREST_REQUESTS: InterestRequest[] = [
   },
   {
     id: "int_2",
-    name: "Chef Marcus",
+    name: "Cook Marcus",
     email: "marcus.cooks@example.com",
     city: "Dallas",
     state: "Texas",
@@ -236,7 +236,7 @@ const INITIAL_INTEREST_REQUESTS: InterestRequest[] = [
   },
   {
     id: "int_5",
-    name: "Chef Thomas",
+    name: "Cook Thomas",
     email: "thomas.c@example.com",
     city: "Orlando",
     state: "Florida",
@@ -365,7 +365,7 @@ const INITIAL_USERS: User[] = [
   },
   {
     id: "usr_10",
-    name: "Chef Marcus",
+    name: "Cook Marcus",
     email: "marcus@example.com",
     role: "chef",
     state: "Texas",
@@ -377,7 +377,7 @@ const INITIAL_USERS: User[] = [
   },
   {
     id: "usr_11",
-    name: "Chef Tasha",
+    name: "Cook Tasha",
     email: "tasha@example.com",
     role: "chef",
     state: "Florida",
@@ -389,7 +389,7 @@ const INITIAL_USERS: User[] = [
   },
   {
     id: "usr_12",
-    name: "Chef Alex",
+    name: "Cook Alex",
     email: "alex@example.com",
     role: "chef",
     state: "New York",
@@ -469,7 +469,7 @@ const INITIAL_CHEFS: Chef[] = [
   {
     id: "ch_5",
     userId: "usr_10",
-    name: "Chef Marcus",
+    name: "Cook Marcus",
     cuisine: "Southern BBQ",
     location: "Dallas, TX",
     verification_status: "approved",
@@ -485,7 +485,7 @@ const INITIAL_CHEFS: Chef[] = [
   {
     id: "ch_6",
     userId: "usr_11",
-    name: "Chef Tasha",
+    name: "Cook Tasha",
     cuisine: "French Cuisine",
     location: "Tampa, FL",
     verification_status: "approved",
@@ -501,7 +501,7 @@ const INITIAL_CHEFS: Chef[] = [
   {
     id: "ch_7",
     userId: "usr_12",
-    name: "Chef Alex",
+    name: "Cook Alex",
     cuisine: "Asian Fusion",
     location: "New York City, NY",
     verification_status: "pending",
@@ -550,7 +550,7 @@ const INITIAL_BOOKINGS: Booking[] = [
   {
     id: "BK-12565",
     family_name: "David Miller",
-    chef_name: "Chef Tasha",
+    chef_name: "Cook Tasha",
     service_type: "Weekly Meal Prep",
     date: "2026-05-23T12:00:00Z",
     status: "confirmed",
@@ -560,7 +560,7 @@ const INITIAL_BOOKINGS: Booking[] = [
   {
     id: "BK-12564",
     family_name: "Sophia Williams",
-    chef_name: "Chef Alex",
+    chef_name: "Cook Alex",
     service_type: "Catering",
     date: "2026-05-22T18:30:00Z",
     status: "cancelled",
@@ -580,7 +580,7 @@ const INITIAL_BOOKINGS: Booking[] = [
   {
     id: "BK-12562",
     family_name: "Sarah Johnson",
-    chef_name: "Chef Marcus",
+    chef_name: "Cook Marcus",
     service_type: "Dinner Party",
     date: "2026-05-12T19:00:00Z",
     status: "completed",
@@ -784,7 +784,7 @@ export const mockLaunchControl = {
         updatedNotifications.unshift({
           id: `notif_${Date.now()}`,
           title: `Auto-Launch: ${updatedRegion.state} Live!`,
-          message: `Auto-launch triggered for ${updatedRegion.state} as chef and family thresholds were met.`,
+          message: `Auto-launch triggered for ${updatedRegion.state} as cook and family thresholds were met.`,
           timestamp: "Just now",
         });
       }

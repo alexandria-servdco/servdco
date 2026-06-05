@@ -99,7 +99,7 @@ export default function ChefDashboard() {
 
   // Profile Editor state
   const [profileData, setProfileData] = useState({
-    name: "Chef Maria",
+    name: "Cook Maria",
     specialty: "Comfort Food Specialist",
     bio: "Passionate about healthy comfort dining, sourcing fresh local ingredients to make home cooking memorable for families.",
     experience: "12 years in private cooking",
@@ -146,7 +146,7 @@ export default function ChefDashboard() {
     setCurrentUser(user);
     setProfileData((prev) => ({
       ...prev,
-      name: user.name || "Chef Maria",
+      name: user.name || "Cook Maria",
     }));
 
     const fetchData = async () => {

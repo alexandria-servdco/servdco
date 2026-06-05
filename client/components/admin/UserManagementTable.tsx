@@ -98,7 +98,7 @@ export function UserManagementTable({
           >
             <option value="all">All Roles</option>
             <option value="family">Family</option>
-            <option value="chef">Chef</option>
+            <option value="chef">Cook</option>
           </select>
 
           <select
@@ -250,7 +250,7 @@ export function UserManagementTable({
                             fontWeight: "600",
                           }}
                         >
-                          {usr.role}
+                          {usr.role === "chef" ? "Cook" : usr.role}
                         </span>
                       </td>
                       <td

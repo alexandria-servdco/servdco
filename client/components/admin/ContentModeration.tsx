@@ -99,7 +99,7 @@ export function ContentModeration() {
                   margin: 0,
                 }}
               >
-                Review on "Chef Sarah"
+                Review on "Cook Sarah"
               </h4>
               <p
                 style={{
@@ -108,7 +108,7 @@ export function ContentModeration() {
                   margin: "4px 0 0",
                 }}
               >
-                Reported by: Chef Sarah (Reason: Harassment)
+                Reported by: Cook Sarah (Reason: Harassment)
               </p>
             </div>
           </div>
@@ -206,7 +206,7 @@ export function ContentModeration() {
                   margin: 0,
                 }}
               >
-                Portfolio: "Chef Alex"
+                Portfolio: "Cook Alex"
               </h4>
               <p
                 style={{

@@ -162,7 +162,7 @@ export function VerificationCenter({
             <thead>
               <tr>
                 {[
-                  "Chef Name",
+                  "Cook Name",
                   "Document Type",
                   "Submitted Date",
                   "Status",
@@ -442,7 +442,7 @@ export function VerificationCenter({
                     color: "#F5F5F5",
                   }}
                 >
-                  Chef Gordon
+                  Cook Gordon
                 </td>
                 <td
                   style={{
@@ -504,7 +504,7 @@ export function VerificationCenter({
                     color: "#F5F5F5",
                   }}
                 >
-                  Chef Jessica
+                  Cook Jessica
                 </td>
                 <td
                   style={{

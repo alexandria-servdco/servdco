@@ -63,7 +63,7 @@ export function PayoutLogs() {
       {/* Interactive income calculator */}
       <div className="velvet-card p-6 space-y-6">
         <h4 className="font-bold text-white font-serif">
-          Chef Income Calculator
+          Cook Income Calculator
         </h4>
         <p className="text-[10px] text-[#A8A8A8] font-medium leading-relaxed">
           Slide the counts to estimate potential earnings per month

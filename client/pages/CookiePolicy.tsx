@@ -220,7 +220,7 @@ export default function CookiePolicy() {
             Most desktop and mobile browsers accept cookies automatically by default. You can instruct your browser, through its security preferences panel, to reject all cookies, alert you when a cookie is created, or clear cookies upon quitting.
           </p>
           <p className="text-sm leading-relaxed font-semibold">
-            Note: Disabling cookies entirely will prevent you from logging into your family client or chef profile, and checkout sequences via Stripe will fail.
+            Note: Disabling cookies entirely will prevent you from logging into your family client or cook profile, and checkout sequences via Stripe will fail.
           </p>
         </section>
 

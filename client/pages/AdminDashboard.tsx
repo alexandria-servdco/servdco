@@ -347,9 +347,7 @@ export default function AdminDashboard({
 
   const handleDeleteUser = async (id: string) => {
     try {
-      // Simulate deletion in mock
-      const updatedUsers = users.filter((u) => u.id !== id);
-      localStorage.setItem("servd_users", JSON.stringify(updatedUsers));
+      await api.deleteUser(id);
       await reloadData();
     } catch (err) {
       console.error(err);

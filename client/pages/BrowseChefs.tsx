@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -7,82 +7,12 @@ import {
   Star,
   MapPin,
   ChevronDown,
-  SlidersHorizontal,
   Heart,
   Shield,
   Crown,
 } from "lucide-react";
-
-// Mock chefs list
-const CHEFS_DATA = [
-  {
-    id: "sarah",
-    name: "Cook Sarah Johnson",
-    image:
-      "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=500&auto=format&fit=crop&q=80",
-    rating: "4.9",
-    reviews: "142 reviews",
-    location: "Atlanta, GA",
-    specialties: ["Comfort Food", "Family Dinners"],
-    bio: "Specializing in wholesome comfort classics crafted from organic, locally-sourced ingredients.",
-    premium_status: true,
-  },
-  {
-    id: "michael",
-    name: "Cook Michael Brown",
-    image:
-      "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&auto=format&fit=crop&q=80",
-    rating: "4.8",
-    reviews: "98 reviews",
-    location: "Austin, TX",
-    specialties: ["Italian", "Handmade Pasta"],
-    bio: "Classic Italian culinary veteran bringing fine handmade pasta traditions directly to family kitchens.",
-  },
-  {
-    id: "priya",
-    name: "Cook Priya Patel",
-    image:
-      "https://images.unsplash.com/photo-1595273670150-db0d3c67adb8?w=500&auto=format&fit=crop&q=80",
-    rating: "4.9",
-    reviews: "186 reviews",
-    location: "Dallas, TX",
-    specialties: ["Indian", "Vegetarian", "Healthy"],
-    bio: "Dedicated vegetarian cook focusing on fragrant traditional Indian recipes adapted for wellness.",
-  },
-  {
-    id: "james",
-    name: "Cook James Wilson",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80",
-    rating: "4.7",
-    reviews: "82 reviews",
-    location: "Nashville, TN",
-    specialties: ["Healthy Meals", "Keto", "Meal Prep"],
-    bio: "Custom performance diet meal-preps specializing in nutrient-dense keto and low-carb culinary planning.",
-  },
-  {
-    id: "maria",
-    name: "Cook Maria Garcia",
-    image:
-      "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500&auto=format&fit=crop&q=80",
-    rating: "4.9",
-    reviews: "214 reviews",
-    location: "Orlando, FL",
-    specialties: ["Mexican", "Latin Fusion"],
-    bio: "Passionate Latin fusion expert bringing vibrant Mexican street food traditions directly to home tables.",
-  },
-  {
-    id: "tasha",
-    name: "Cook Tasha Smith",
-    image:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&auto=format&fit=crop&q=80",
-    rating: "4.8",
-    reviews: "112 reviews",
-    location: "Atlanta, GA",
-    specialties: ["Southern Comfort", "BBQ"],
-    bio: "Southern native preparing slow-cooked traditional BBQ and comforting soul-food menu spreads.",
-  },
-];
+import { api } from "@/lib/api";
+import { mapChefsToCards, CookCardData } from "@/lib/cookMapper";
 
 const SPECIALTIES_LIST = [
   "All Specialties",
@@ -104,11 +34,21 @@ const CITIES_LIST = [
 ];
 
 export default function BrowseChefs() {
+  const [cooks, setCooks] = useState<CookCardData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All Specialties");
   const [selectedCity, setSelectedCity] = useState("All Cities");
   const [sortBy, setSortBy] = useState("Recommended");
   const [favorites, setFavorites] = useState<string[]>([]);
+
+  useEffect(() => {
+    api
+      .getChefs()
+      .then((data) => setCooks(mapChefsToCards(data)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   // Toggle favorite
   const toggleFavorite = (id: string) => {
@@ -120,7 +60,7 @@ export default function BrowseChefs() {
   };
 
   // Filter logic
-  const filteredChefs = CHEFS_DATA.filter((chef) => {
+  const filteredChefs = cooks.filter((chef) => {
     const matchesSearch =
       chef.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       chef.bio.toLowerCase().includes(searchQuery.toLowerCase());
@@ -263,8 +203,10 @@ export default function BrowseChefs() {
             </div>
           </div>
 
-          {/* Chefs Grid */}
-          {filteredChefs.length === 0 ? (
+          {/* Cooks Grid */}
+          {loading ? (
+            <div className="text-center py-20 text-[#A8A8A8] text-sm">Loading cooks...</div>
+          ) : filteredChefs.length === 0 ? (
             <div className="text-center py-20 bg-[#161616] rounded-[24px] border border-white/5">
               <Star className="mx-auto text-white/10 mb-4" size={40} />
               <h3 className="text-xl font-bold text-white mb-2">

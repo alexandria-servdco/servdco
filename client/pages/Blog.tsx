@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Clock, ArrowRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 const BLOG_POSTS = [
   {
@@ -92,7 +93,15 @@ export default function Blog() {
                     </p>
                   </div>
 
-                  <button className="text-[#FF7A59] text-xs font-bold flex items-center gap-1.5 pt-2 group-hover:underline self-start">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toast.info("Article coming soon", {
+                        description: "Full blog posts will be available after launch. Contact us for early access.",
+                      })
+                    }
+                    className="text-[#FF7A59] text-xs font-bold flex items-center gap-1.5 pt-2 group-hover:underline self-start"
+                  >
                     Read Article <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>

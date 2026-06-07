@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { 
-  Bell, Heart, ChevronRight, Calendar, Users, 
+  Heart, ChevronRight, Calendar, Users, 
   Gift, ArrowRight, Shield, Clock, User, Settings, Star, AlertCircle
 } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 import { BookingService } from "@/services/booking.service";
 import { ChefService } from "@/services/chef.service";
 import { FamilyService } from "@/services/family.service";
 import { AuthService } from "@/services/auth.service";
+import { NotificationService } from "@/services/notification.service";
+import { mapChefsToCards } from "@/lib/cookMapper";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -72,7 +75,10 @@ export default function Dashboard() {
         const fetchedBookings = await BookingService.getBookings();
         const fetchedChefs = await ChefService.getChefs();
         setBookings(fetchedBookings);
-        setChefs(fetchedChefs);
+        setChefs(mapChefsToCards(fetchedChefs));
+        if (user.id) {
+          await NotificationService.syncUserNotifications(user.id);
+        }
       } catch (err) {
         console.error("Failed to load family dashboard resources", err);
       } finally {
@@ -163,10 +169,7 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 w-10 h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 flex items-center justify-center transition-all">
-              <Bell size={18} className="text-[#A8A8A8] hover:text-white" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#FF7A59] rounded-full animate-ping"></span>
-            </button>
+            <NotificationBell />
             
             <div className="flex items-center gap-3 pl-4 border-l border-white/5">
               <img
@@ -230,7 +233,17 @@ export default function Dashboard() {
                   </div>
 
                   <div className="pt-6 space-y-6">
-                    <button className="w-full py-3.5 velvet-tactile text-white font-bold text-xs">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        NotificationService.notify(currentUser?.id, {
+                          title: "Referral Link Ready",
+                          message: "Share your unique referral link with friends to earn $20 credit each.",
+                          type: "info",
+                        })
+                      }
+                      className="w-full py-3.5 velvet-tactile text-white font-bold text-xs"
+                    >
                       Invite Friends
                     </button>
                     <div className="rounded-2xl overflow-hidden aspect-[16/9] border border-white/5">

@@ -640,15 +640,27 @@ const INITIAL_DOCUMENTS: ChefDocument[] = [
   },
 ];
 
+export interface UserNotification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: "info" | "success" | "warning" | "error";
+  read: boolean;
+  created_at: string;
+}
+
 const STORAGE_KEYS = {
   REGIONS: "servd_regions",
   WAITLIST: "servd_waitlist",
   NOTIFICATIONS: "servd_notifications",
+  USER_NOTIFICATIONS: "servd_user_notifications",
   INTEREST_REQUESTS: "servd_interest_requests",
   USERS: "servd_users",
   CHEFS: "servd_chefs",
   BOOKINGS: "servd_bookings",
   DOCUMENTS: "servd_documents",
+  CONTACT_MESSAGES: "servd_contact_messages",
 };
 
 // Safe helper for localStorage reading
@@ -1159,5 +1171,136 @@ export const mockLaunchControl = {
     docs[idx].status = status;
     safeSet(STORAGE_KEYS.DOCUMENTS, docs);
     return { success: true, document: docs[idx] };
+  },
+
+  getChefById(id: string): Chef | null {
+    initMockDatabase();
+    const chefs = safeGet<Chef[]>(STORAGE_KEYS.CHEFS, INITIAL_CHEFS);
+    return chefs.find((c) => c.id === id) || null;
+  },
+
+  createBooking(params: {
+    cook_id: string;
+    family_name: string;
+    service_type: string;
+    date: string;
+    guests_count: number;
+    price: number;
+  }): { success: boolean; booking: Booking; message: string } {
+    initMockDatabase();
+    const chefs = safeGet<Chef[]>(STORAGE_KEYS.CHEFS, INITIAL_CHEFS);
+    const cook = chefs.find((c) => c.id === params.cook_id);
+    if (!cook) throw new Error(`Cook with ID ${params.cook_id} not found.`);
+
+    const bookings = safeGet<Booking[]>(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
+    const newBooking: Booking = {
+      id: `BK-${Date.now().toString().slice(-5)}`,
+      family_name: params.family_name,
+      chef_name: cook.name.startsWith("Cook ") ? cook.name : `Cook ${cook.name}`,
+      service_type: params.service_type,
+      date: params.date,
+      status: "pending",
+      price: params.price,
+      created_at: new Date().toISOString(),
+    };
+    bookings.unshift(newBooking);
+    safeSet(STORAGE_KEYS.BOOKINGS, bookings);
+
+    const cookIdx = chefs.findIndex((c) => c.id === params.cook_id);
+    if (cookIdx !== -1) {
+      chefs[cookIdx].bookings_count += 1;
+      safeSet(STORAGE_KEYS.CHEFS, chefs);
+    }
+
+    return {
+      success: true,
+      booking: newBooking,
+      message: `Booking request sent to ${newBooking.chef_name}. They will confirm shortly.`,
+    };
+  },
+
+  submitContact(params: {
+    name: string;
+    email: string;
+    message: string;
+  }): { success: boolean; message: string } {
+    initMockDatabase();
+    const messages = safeGet<
+      Array<{ id: string; name: string; email: string; message: string; created_at: string }>
+    >(STORAGE_KEYS.CONTACT_MESSAGES, []);
+    messages.unshift({
+      id: `msg_${Date.now()}`,
+      ...params,
+      created_at: new Date().toISOString(),
+    });
+    safeSet(STORAGE_KEYS.CONTACT_MESSAGES, messages);
+    return {
+      success: true,
+      message: "Thank you for reaching out. Our team will respond within 24 hours.",
+    };
+  },
+
+  submitDocuments(params: {
+    chef_name: string;
+    documents: Array<{ type: ChefDocument["type"]; url: string }>;
+  }): { success: boolean; documents: ChefDocument[] } {
+    initMockDatabase();
+    const docs = safeGet<ChefDocument[]>(STORAGE_KEYS.DOCUMENTS, INITIAL_DOCUMENTS);
+    const created = params.documents.map((d, i) => ({
+      id: `doc_${Date.now()}_${i}`,
+      chef_name: params.chef_name,
+      type: d.type,
+      status: "pending" as const,
+      url: d.url,
+      submitted_at: new Date().toISOString(),
+    }));
+    docs.unshift(...created);
+    safeSet(STORAGE_KEYS.DOCUMENTS, docs);
+    return { success: true, documents: created };
+  },
+
+  deleteUser(id: string): { success: boolean } {
+    initMockDatabase();
+    const users = safeGet<User[]>(STORAGE_KEYS.USERS, INITIAL_USERS);
+    const filtered = users.filter((u) => u.id !== id);
+    if (filtered.length === users.length) {
+      throw new Error(`User with ID ${id} not found.`);
+    }
+    safeSet(STORAGE_KEYS.USERS, filtered);
+    return { success: true };
+  },
+
+  getUserNotifications(userId: string): UserNotification[] {
+    initMockDatabase();
+    const all = safeGet<UserNotification[]>(STORAGE_KEYS.USER_NOTIFICATIONS, []);
+    return all.filter((n) => n.user_id === userId);
+  },
+
+  addUserNotification(
+    userId: string,
+    notification: Omit<UserNotification, "id" | "user_id" | "read" | "created_at">,
+  ): UserNotification {
+    initMockDatabase();
+    const all = safeGet<UserNotification[]>(STORAGE_KEYS.USER_NOTIFICATIONS, []);
+    const entry: UserNotification = {
+      id: `notif_${Date.now()}`,
+      user_id: userId,
+      read: false,
+      created_at: new Date().toISOString(),
+      ...notification,
+    };
+    all.unshift(entry);
+    safeSet(STORAGE_KEYS.USER_NOTIFICATIONS, all);
+    return entry;
+  },
+
+  markNotificationRead(id: string): void {
+    initMockDatabase();
+    const all = safeGet<UserNotification[]>(STORAGE_KEYS.USER_NOTIFICATIONS, []);
+    const idx = all.findIndex((n) => n.id === id);
+    if (idx !== -1) {
+      all[idx].read = true;
+      safeSet(STORAGE_KEYS.USER_NOTIFICATIONS, all);
+    }
   },
 };

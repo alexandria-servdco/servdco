@@ -450,7 +450,7 @@ export default function Index() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[
             {
-              id: "maria",
+              id: "ch_4",
               name: "Cook Maria",
               tags: "Comfort Food • Meal Prep",
               rating: "4.9",
@@ -459,7 +459,7 @@ export default function Index() {
               location: "Atlanta, GA",
             },
             {
-              id: "james",
+              id: "ch_3",
               name: "Cook James",
               tags: "Southern • Family Meals",
               rating: "4.8",
@@ -468,7 +468,7 @@ export default function Index() {
               location: "Austin, TX",
             },
             {
-              id: "priya",
+              id: "ch_2",
               name: "Cook Priya",
               tags: "Indian • Vegetarian",
               rating: "4.9",
@@ -477,7 +477,7 @@ export default function Index() {
               location: "Dallas, TX",
             },
             {
-              id: "sarah",
+              id: "ch_1",
               name: "Cook Sarah",
               tags: "Comfort Food • Family Dinners",
               rating: "4.9",

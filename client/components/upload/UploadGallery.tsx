@@ -13,9 +13,9 @@ export function UploadGallery({ images, onRemoveImage }: UploadGalleryProps) {
   if (images.length === 0) {
     return (
       <EmptyState
+        type="documents"
         title="No portfolio images yet"
         description="Upload high-quality images of your signature dishes to attract more bookings."
-        actionLabel=""
       />
     );
   }

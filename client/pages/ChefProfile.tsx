@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -6,147 +6,49 @@ import {
   Star,
   MapPin,
   Shield,
-  Calendar,
-  Clock,
   Users,
-  ArrowRight,
   Heart,
   Check,
-  Play,
   UserCircle,
-  MessageSquare,
+  ArrowRight,
 } from "lucide-react";
 import { calculatePlatformFee, calculateCookPayout } from "@/utils/platformFee";
+import { api } from "@/lib/api";
+import { mapChefToCard, CookCardData } from "@/lib/cookMapper";
+import { BookingService } from "@/services/booking.service";
+import { AuthService } from "@/services/auth.service";
+import { NotificationService } from "@/services/notification.service";
 
-// Mock chefs list
-const CHEFS_DATA: Record<string, any> = {
-  sarah: {
-    name: "Cook Sarah Johnson",
-    image:
-      "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&auto=format&fit=crop&q=80",
-    rating: "4.9",
-    reviews: "142",
-    premium_status: true,
-    location: "Atlanta, GA",
-    specialties: ["Comfort Food", "Family Dinners"],
-    bio: "Passionate about creating comforting, nutrient-rich dishes using exclusively organic and local community farm ingredients. Sarah has spent over 5 years crafting custom dining options for families across Atlanta.",
-    menus: [
-      {
-        course: "Main Course",
-        title: "Herb Roasted Chicken",
-        desc: "Served with local garlic mashed potatoes and seasonal roasted vegetables.",
-      },
-      {
-        course: "Main Course",
-        title: "Grass-Fed Beef Pot Roast",
-        desc: "Slow-braised with baby carrots, celery, and fresh garden rosemary.",
-      },
-      {
-        course: "Starter",
-        title: "Farmhouse Salad",
-        desc: "Crisp organic greens, heirloom cherry tomatoes, with house honey vinaigrette.",
-      },
-    ],
-    customerReviews: [
-      {
-        author: "Emily J.",
-        date: "2 days ago",
-        rating: 5,
-        text: "Sarah was absolutely fantastic! The pot roast was cooked to perfection and she left our kitchen cleaner than it was before she arrived.",
-      },
-      {
-        author: "Marcus K.",
-        date: "1 week ago",
-        rating: 5,
-        text: "We book Sarah for our weekly meal prep every single Sunday. Her dishes are incredibly fresh, and it has saved us so much time.",
-      },
-    ],
-  },
-  michael: {
-    name: "Cook Michael Brown",
-    image:
-      "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&auto=format&fit=crop&q=80",
-    rating: "4.8",
-    reviews: "98",
-    location: "Austin, TX",
-    specialties: ["Italian", "Handmade Pasta"],
-    bio: "Classic Italian culinary veteran with over 8 years in private kitchen dining, Michael specializes in fine handmade pastas and traditional regional Italian slow sauces.",
-    menus: [
-      {
-        course: "Main Course",
-        title: "Handmade Tagliatelle Ragu",
-        desc: "Classic slow-braised beef and pork ragu with Parmigiano-Reggiano.",
-      },
-      {
-        course: "Main Course",
-        title: "Wild Mushroom Risotto",
-        desc: "Arborio rice cooked with rich porcini stock, fresh herbs, and white truffle oil.",
-      },
-      {
-        course: "Starter",
-        title: "Caprese Bruschetta",
-        desc: "Toasted sourdough, heirloom tomatoes, fresh mozzarella, and sweet basil.",
-      },
-    ],
-    customerReviews: [
-      {
-        author: "Antonio S.",
-        date: "3 days ago",
-        rating: 5,
-        text: "The tagliatelle was out of this world! Michael is extremely professional and polite. Our kids loved watching him roll out the fresh pasta.",
-      },
-    ],
-  },
-  priya: {
-    name: "Cook Priya Patel",
-    image:
-      "https://images.unsplash.com/photo-1595273670150-db0d3c67adb8?w=600&auto=format&fit=crop&q=80",
-    rating: "4.9",
-    reviews: "186",
-    location: "Dallas, TX",
-    specialties: ["Indian", "Vegetarian", "Healthy"],
-    bio: "Priya is dedicated to preparing fragrant, wholesome Indian recipes adapted for modern wellness. Her cooking features home-ground aromatic spices and focuses on nutritious, fresh vegetarian menus.",
-    menus: [
-      {
-        course: "Main Course",
-        title: "Creamy Paneer Tikka Masala",
-        desc: "Spiced grilled paneer cubes in a luxurious, aromatic cashew tomato gravy.",
-      },
-      {
-        course: "Main Course",
-        title: "Fragrant Dal Tadka",
-        desc: "Slow-simmered yellow lentils tempered with cumin, garlic, and fresh ghee.",
-      },
-      {
-        course: "Bread / Starter",
-        title: "Garlic Naan & Samosas",
-        desc: "Warm flatbread baked fresh alongside crispy spiced potato pastries.",
-      },
-    ],
-    customerReviews: [
-      {
-        author: "Deepak R.",
-        date: "4 days ago",
-        rating: 5,
-        text: "Incredibly authentic and flavorful. Priya customized the spice levels perfectly for our young children. Highest recommendation!",
-      },
-      {
-        author: "Clara M.",
-        date: "2 weeks ago",
-        rating: 5,
-        text: "Having Priya cook in our home has completely changed how we eat. Healthy, clean, and absolutely delicious Indian food.",
-      },
-    ],
-  },
-};
+const DEFAULT_MENUS = [
+  { course: "Main Course", title: "Seasonal Home-Cooked Entrée", desc: "Fresh, customized main dish prepared with your preferred ingredients." },
+  { course: "Main Course", title: "Family Comfort Classic", desc: "A wholesome favorite tailored to your household's tastes and dietary needs." },
+  { course: "Starter", title: "Fresh Garden Salad", desc: "Crisp seasonal greens with a house-made dressing." },
+];
+
+const DEFAULT_REVIEWS = [
+  { author: "Verified Family", date: "Recent", rating: 5, text: "Wonderful experience — professional, punctual, and left the kitchen spotless." },
+];
 
 export default function ChefProfile() {
   const { id } = useParams();
+  const [chef, setChef] = useState<(CookCardData & { menus: typeof DEFAULT_MENUS; customerReviews: typeof DEFAULT_REVIEWS }) | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState("");
 
-  // Default to Priya if id not matched
-  const chefId =
-    id && CHEFS_DATA[id.toLowerCase()] ? id.toLowerCase() : "priya";
-  const chef = CHEFS_DATA[chefId];
+  useEffect(() => {
+    if (!id) return;
+    api
+      .getChefById(id)
+      .then((data) => {
+        if (data) {
+          const card = mapChefToCard(data);
+          setChef({ ...card, menus: DEFAULT_MENUS, customerReviews: DEFAULT_REVIEWS });
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [id]);
 
   // Booking widget state
   const [bookingDate, setBookingDate] = useState("");
@@ -166,11 +68,55 @@ export default function ChefProfile() {
   const platformFee = calculatePlatformFee(totalCost);
   const cookPayout = calculateCookPayout(totalCost);
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bookingDate) return;
-    setBookingBooked(true);
+    if (!bookingDate || !chef || !id) return;
+    setBookingSubmitting(true);
+    setBookingError("");
+    try {
+      const user = AuthService.getCurrentUser();
+      const result = await BookingService.createBooking({
+        cook_id: id,
+        family_name: user?.name || "Guest Family",
+        service_type: serviceType,
+        date: bookingDate,
+        guests_count: guestsCount,
+        price: totalCost,
+      });
+      setBookingBooked(true);
+      if (user?.id) {
+        await NotificationService.notify(user.id, {
+          title: "Booking Request Sent",
+          message: result.message,
+          type: "success",
+        });
+      }
+    } catch (err) {
+      setBookingError("Unable to submit booking. Please try again or log in.");
+      console.error(err);
+    } finally {
+      setBookingSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#111111] text-white flex items-center justify-center">
+        <p className="text-[#A8A8A8] text-sm">Loading cook profile...</p>
+      </div>
+    );
+  }
+
+  if (!chef) {
+    return (
+      <div className="min-h-screen bg-[#111111] text-white flex flex-col items-center justify-center gap-4">
+        <p className="text-lg font-serif">Cook not found</p>
+        <Link to="/browse-chefs" className="text-[#FF7A59] text-sm font-bold hover:underline">
+          Back to Browse Cooks
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
@@ -379,6 +325,9 @@ export default function ChefProfile() {
                   </div>
                 ) : (
                   <form onSubmit={handleBookingSubmit} className="space-y-6">
+                    {bookingError && (
+                      <p className="text-xs text-red-400 font-semibold">{bookingError}</p>
+                    )}
                     <div>
                       <h3 className="text-xl font-bold font-serif text-white">
                         Book Cooking Session
@@ -492,9 +441,10 @@ export default function ChefProfile() {
 
                     <button
                       type="submit"
-                      className="w-full py-4 bg-[#FF7A59] hover:bg-[#e96a49] text-white font-bold rounded-xl text-xs hover:scale-[1.01] transition-all shadow-md flex items-center justify-center gap-2 group"
+                      disabled={bookingSubmitting}
+                      className="w-full py-4 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-60 text-white font-bold rounded-xl text-xs hover:scale-[1.01] transition-all shadow-md flex items-center justify-center gap-2 group"
                     >
-                      Request Cooking Session
+                      {bookingSubmitting ? "Submitting..." : "Request Cooking Session"}
                       <ArrowRight
                         size={14}
                         className="group-hover:translate-x-1 transition-transform"

@@ -1,21 +1,30 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Mail, Phone, MapPin, Send, CheckCircle, ArrowRight } from "lucide-react";
+import { Mail, Phone, MapPin, CheckCircle, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 
 export default function Contact() {
   const [formState, setFormState] = useState({ name: "", email: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formState.name || !formState.email || !formState.message) return;
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
+    setLoading(true);
+    setError("");
+    try {
+      await api.submitContact(formState);
+      setSubmitted(true);
       setFormState({ name: "", email: "", message: "" });
-    }, 2500);
+      setTimeout(() => setSubmitted(false), 4000);
+    } catch {
+      setError("Failed to send message. Please try again or email hello@servdco.com.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -147,11 +156,15 @@ export default function Contact() {
                     </div>
                   </div>
 
+                  {error && (
+                    <p className="text-xs text-red-400 font-semibold">{error}</p>
+                  )}
                   <button
                     type="submit"
-                    className="w-full py-4 bg-[#FF7A59] hover:bg-[#e96a49] text-white font-bold rounded-xl text-xs hover:scale-[1.01] transition-all shadow-md flex items-center justify-center gap-2 group"
+                    disabled={loading}
+                    className="w-full py-4 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-60 text-white font-bold rounded-xl text-xs hover:scale-[1.01] transition-all shadow-md flex items-center justify-center gap-2 group"
                   >
-                    Send Message 
+                    {loading ? "Sending..." : "Send Message"}
                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 </form>

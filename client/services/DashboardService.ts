@@ -13,7 +13,7 @@ export const DashboardService = {
       totalChefs: chefs.length,
       totalBookings: bookings.length,
       totalUsers: users.length,
-      pendingChefs: chefs.filter(c => c.status === "pending").length,
+      pendingChefs: chefs.filter(c => c.verification_status === "pending").length,
       activeBookings: bookings.filter(b => b.status === "confirmed").length
     };
   }

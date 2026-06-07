@@ -2,7 +2,9 @@ import { Calendar, Users, FileText, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
-  type: "bookings" | "chefs" | "requests" | "documents";
+  type?: "bookings" | "chefs" | "requests" | "documents";
+  /** @deprecated Use description — kept for admin table compatibility */
+  message?: string;
   title?: string;
   description?: string;
   actionLabel?: string;
@@ -11,7 +13,8 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({
-  type,
+  type = "requests",
+  message,
   title,
   description,
   actionLabel,
@@ -60,7 +63,7 @@ export function EmptyState({
           {title || config.defaultTitle}
         </h3>
         <p className="text-xs text-[#A8A8A8] leading-relaxed max-w-xs font-medium">
-          {description || config.defaultDesc}
+          {description || message || config.defaultDesc}
         </p>
       </div>
 

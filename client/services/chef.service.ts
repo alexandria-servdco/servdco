@@ -12,10 +12,9 @@ export const ChefService = {
    * Retrieves a chef profile by their unique ID identifier.
    */
   async getChefById(id: string) {
-    const allChefs = await api.getChefs();
-    const chef = allChefs.find(c => c.id === id);
+    const chef = await api.getChefById(id);
     if (!chef) {
-      throw new Error(`Chef with ID ${id} was not found.`);
+      throw new Error(`Cook with ID ${id} was not found.`);
     }
     return chef;
   },

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import ChefCard from "./ChefCard";
 
 export default function ChefsSection() {
@@ -59,12 +60,12 @@ export default function ChefsSection() {
           <h2 className="text-4xl md:text-5xl font-bold text-foreground">
             Meet Some of Our Amazing Cooks
           </h2>
-          <a
-            href="#"
+          <Link
+            to="/browse-chefs"
             className="text-primary font-semibold hover:opacity-80 transition-opacity whitespace-nowrap"
           >
             View all cooks
-          </a>
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">

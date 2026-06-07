@@ -276,5 +276,134 @@ export const api = {
       throw new Error(`Failed to update document status: ${response.statusText}`);
     }
     return response.json();
-  }
+  },
+
+  // ─── Cook Profile & Booking ────────────────────────────────────────────────────
+
+  async getChefById(id: string): Promise<Chef | null> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.getChefById(id);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/chef.php?id=${encodeURIComponent(id)}`);
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error(`Failed to fetch cook: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async createBooking(params: {
+    cook_id: string;
+    family_name: string;
+    service_type: string;
+    date: string;
+    guests_count: number;
+    price: number;
+  }): Promise<{ success: boolean; booking: Booking; message: string }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.createBooking(params);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/create-booking.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to create booking: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  // ─── Contact ───────────────────────────────────────────────────────────────────
+
+  async submitContact(params: {
+    name: string;
+    email: string;
+    message: string;
+  }): Promise<{ success: boolean; message: string }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.submitContact(params);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/contact.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to submit contact form: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  // ─── Documents Submit ────────────────────────────────────────────────────────────
+
+  async submitDocuments(params: {
+    chef_name: string;
+    documents: Array<{ type: ChefDocument["type"]; url: string }>;
+  }): Promise<{ success: boolean; documents: ChefDocument[] }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.submitDocuments(params);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/submit-documents.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to submit documents: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async deleteUser(id: string): Promise<{ success: boolean }> {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.deleteUser(id);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/delete-user.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete user: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  // ─── User Notifications ────────────────────────────────────────────────────────
+
+  async getUserNotifications(userId: string) {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.getUserNotifications(userId);
+    }
+    const response = await fetch(
+      `${apiConfig.API_BASE_URL}/notifications.php?user_id=${encodeURIComponent(userId)}`,
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch notifications: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async addUserNotification(
+    userId: string,
+    notification: {
+      title: string;
+      message: string;
+      type: "info" | "success" | "warning" | "error";
+    },
+  ) {
+    if (apiConfig.USE_MOCK_API) {
+      return mockLaunchControl.addUserNotification(userId, notification);
+    }
+    const response = await fetch(`${apiConfig.API_BASE_URL}/notifications.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, ...notification }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to add notification: ${response.statusText}`);
+    }
+    return response.json();
+  },
 };

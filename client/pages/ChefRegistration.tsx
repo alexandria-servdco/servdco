@@ -49,7 +49,11 @@ export default function ChefRegistration() {
     phone: "",
     city: "",
     state: "Ohio",
-    zip: ""
+    zip: "",
+    yearsExperience: "",
+    primaryCuisine: "",
+    bio: "",
+    serviceTypes: [] as string[],
   });
 
   const [uploads, setUploads] = useState({
@@ -66,6 +70,13 @@ export default function ChefRegistration() {
       }
       if (!emailValid) {
         setError("Please provide a valid email address.");
+        return;
+      }
+    }
+
+    if (currentStep === 2) {
+      if (!formData.yearsExperience || !formData.primaryCuisine || !formData.bio) {
+        setError("Please complete your experience and cuisine details.");
         return;
       }
     }
@@ -92,6 +103,18 @@ export default function ChefRegistration() {
           city: formData.city,
           zip: formData.zip
         });
+
+        if (uploads.servSafe && uploads.insurance && uploads.background) {
+          const { api } = await import("@/lib/api");
+          await api.submitDocuments({
+            chef_name: formData.fullName,
+            documents: [
+              { type: "ServSafe Certificate", url: uploads.servSafe.url },
+              { type: "Insurance", url: uploads.insurance.url },
+              { type: "Background Check", url: uploads.background.url },
+            ],
+          });
+        }
 
         await new Promise((resolve) => setTimeout(resolve, 800));
         setLoading(false);
@@ -335,12 +358,83 @@ export default function ChefRegistration() {
                 </div>
               )}
 
-              {/* Steps 2 & 4 Placeholders */}
-              {currentStep !== 1 && currentStep !== 3 && (
-                <div className="flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01] py-16 px-4">
-                  <Utensils size={36} className="text-[#FF7A59]/40 mb-3" />
-                  <p className="text-xs text-white/50 font-bold uppercase tracking-wider">Form fields for {STEPS[currentStep - 1]}</p>
-                  <p className="text-[10px] text-white/30 text-center mt-1">Simulated steps for background checks, kitchen preferences, and review approvals.</p>
+              {/* Step 2: Experience */}
+              {currentStep === 2 && (
+                <div className="space-y-4 animate-fadeIn">
+                  <FormInput
+                    type="text"
+                    label="Years of Cooking Experience"
+                    id="yearsExperience"
+                    value={formData.yearsExperience}
+                    onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
+                    icon={<TrendingUp size={16} />}
+                    required
+                  />
+                  <FormInput
+                    type="text"
+                    label="Primary Cuisine Specialty"
+                    id="primaryCuisine"
+                    value={formData.primaryCuisine}
+                    onChange={(e) => setFormData({ ...formData, primaryCuisine: e.target.value })}
+                    icon={<Utensils size={16} />}
+                    required
+                  />
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-1.5">
+                      Cook Bio
+                    </label>
+                    <textarea
+                      rows={4}
+                      required
+                      value={formData.bio}
+                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                      placeholder="Tell families about your cooking style, specialties, and kitchen experience..."
+                      className="w-full p-4 bg-[#161616] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {["Breakfast", "Dinner", "Meal Prep"].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          const has = formData.serviceTypes.includes(type);
+                          setFormData({
+                            ...formData,
+                            serviceTypes: has
+                              ? formData.serviceTypes.filter((t) => t !== type)
+                              : [...formData.serviceTypes, type],
+                          });
+                        }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-[10px] font-bold border transition-colors",
+                          formData.serviceTypes.includes(type)
+                            ? "bg-[#FF7A59]/20 border-[#FF7A59] text-[#FF7A59]"
+                            : "bg-white/5 border-white/10 text-[#A8A8A8]",
+                        )}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Review */}
+              {currentStep === 4 && (
+                <div className="space-y-4 animate-fadeIn bg-white/[0.02] border border-white/5 rounded-2xl p-5">
+                  <h4 className="text-sm font-bold text-white font-serif">Review Your Application</h4>
+                  <div className="space-y-2 text-xs text-[#A8A8A8]">
+                    <p><span className="text-white font-semibold">Name:</span> {formData.fullName}</p>
+                    <p><span className="text-white font-semibold">Email:</span> {formData.email}</p>
+                    <p><span className="text-white font-semibold">Location:</span> {formData.city}, {formData.state} {formData.zip}</p>
+                    <p><span className="text-white font-semibold">Experience:</span> {formData.yearsExperience} years — {formData.primaryCuisine}</p>
+                    <p><span className="text-white font-semibold">Services:</span> {formData.serviceTypes.join(", ") || "Not specified"}</p>
+                    <p><span className="text-white font-semibold">Documents:</span> {uploads.servSafe && uploads.insurance && uploads.background ? "All uploaded" : "Incomplete"}</p>
+                  </div>
+                  <p className="text-[10px] text-[#A8A8A8] leading-relaxed">
+                    By submitting, you agree to Servd Co verification, background checks, and marketplace terms.
+                  </p>
                 </div>
               )}
             </div>

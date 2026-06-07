@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { NotificationService } from "@/services/notification.service";
 
 export interface RegisterUserParams {
   name: string;
@@ -61,6 +62,7 @@ export const AuthService = {
       localStorage.setItem("profileCompleted", "100");
       localStorage.setItem("verificationStatus", matchingUser.role === "chef" ? "approved" : "approved");
 
+      await NotificationService.syncUserNotifications(matchingUser.id);
       return formattedUser;
     }
 
@@ -93,6 +95,12 @@ export const AuthService = {
     localStorage.setItem("userRole", mockRole);
     localStorage.setItem("profileCompleted", mockRole === "admin" ? "100" : "50");
     localStorage.setItem("verificationStatus", mockRole === "chef" ? "pending" : "approved");
+
+    await NotificationService.notify(defaultMock.id, {
+      title: "Welcome to Servd Co",
+      message: `Signed in as ${mockName}. Explore your dashboard to get started.`,
+      type: "success",
+    });
 
     return defaultMock;
   },

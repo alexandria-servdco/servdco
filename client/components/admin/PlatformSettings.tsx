@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "sonner";
 import { usePlatformStore } from "@/store/usePlatformStore";
 
 export function PlatformSettings() {
@@ -14,12 +15,16 @@ export function PlatformSettings() {
 
   const handleSaveFee = () => {
     setPlatformFeePercentage(localFee);
-    alert(`Platform fee updated to ${localFee}% globally!`);
+    toast.success("Platform fee updated", {
+      description: `${localFee}% applied globally.`,
+    });
   };
 
   const handleSavePremium = () => {
     setChefPremiumPrice(localPremium);
-    alert(`Cook Premium Price updated to $${localPremium}/mo globally!`);
+    toast.success("Cook Premium Price updated", {
+      description: `$${localPremium}/mo applied globally.`,
+    });
   };
 
   return (

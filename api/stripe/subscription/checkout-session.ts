@@ -1,14 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { json, methodNotAllowed, readBearerToken } from "../../_lib/http";
-import { enforceRateLimit } from "../../_lib/rateLimit";
-import { verifySupabaseUser, requireChefProfile } from "../../_lib/auth";
-import { isStripeCheckoutEnabled } from "../../../lib/stripe/featureFlag";
+import { json, methodNotAllowed, readBearerToken } from "../../_lib/http.js";
+import { enforceRateLimit } from "../../_lib/rateLimit.js";
+import { verifySupabaseUser, requireChefProfile } from "../../_lib/auth.js";
+import { isStripeCheckoutEnabled } from "../../_lib/stripe/featureFlag.js";
 import {
   createPremiumSubscriptionCheckout,
   subscriptionCheckoutSchema,
-} from "../../../lib/stripe/subscription";
-import { validateStripeEnvOnStartup } from "../../../lib/stripe/env";
-import { apiLogger } from "../../../lib/logger";
+} from "../../_lib/stripe/subscription.js";
+import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
+import { apiLogger } from "../../_lib/logger.js";
 
 export default async function handler(
   req: VercelRequest,

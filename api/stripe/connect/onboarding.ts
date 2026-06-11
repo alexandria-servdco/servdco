@@ -1,15 +1,15 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { json, methodNotAllowed, readBearerToken } from "../../_lib/http";
-import { enforceRateLimit } from "../../_lib/rateLimit";
-import { requireChefProfile, verifySupabaseUser } from "../../_lib/auth";
-import { isStripeCheckoutEnabled } from "../../../lib/stripe/featureFlag";
+import { json, methodNotAllowed, readBearerToken } from "../../_lib/http.js";
+import { enforceRateLimit } from "../../_lib/rateLimit.js";
+import { requireChefProfile, verifySupabaseUser } from "../../_lib/auth.js";
+import { isStripeCheckoutEnabled } from "../../_lib/stripe/featureFlag.js";
 import {
   createOnboardingLink,
   ensureConnectAccount,
-} from "../../../lib/stripe/connect";
-import { validateStripeEnvOnStartup } from "../../../lib/stripe/env";
-import { apiLogger } from "../../../lib/logger";
+} from "../../_lib/stripe/connect.js";
+import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
+import { apiLogger } from "../../_lib/logger.js";
 
 const bodySchema = z.object({
   returnUrl: z.string().url(),

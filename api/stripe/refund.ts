@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { json, methodNotAllowed, readBearerToken } from "../_lib/http";
-import { enforceRateLimit } from "../_lib/rateLimit";
-import { requireAdmin, verifySupabaseUser } from "../_lib/auth";
-import { isStripeCheckoutEnabled } from "../../lib/stripe/featureFlag";
-import { processRefund, refundSchema } from "../../lib/stripe/refund";
-import { validateStripeEnvOnStartup } from "../../lib/stripe/env";
-import { apiLogger } from "../../lib/logger";
+import { json, methodNotAllowed, readBearerToken } from "../_lib/http.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
+import { requireAdmin, verifySupabaseUser } from "../_lib/auth.js";
+import { isStripeCheckoutEnabled } from "../_lib/stripe/featureFlag.js";
+import { processRefund, refundSchema } from "../_lib/stripe/refund.js";
+import { validateStripeEnvOnStartup } from "../_lib/stripe/env.js";
+import { apiLogger } from "../_lib/logger.js";
 
 export default async function handler(
   req: VercelRequest,

@@ -2,10 +2,16 @@
   "buildCommand": "pnpm run build",
   "installCommand": "pnpm install",
   "outputDirectory": "dist",
+  "functions": {
+    "api/**/*.ts": {
+      "maxDuration": 30,
+      "includeFiles": "lib/**"
+    }
+  },
   "crons": [
     {
       "path": "/api/stripe/transfers/process",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ],
   "headers": [

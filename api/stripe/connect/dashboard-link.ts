@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { json, methodNotAllowed, readBearerToken } from "../../_lib/http";
-import { enforceRateLimit } from "../../_lib/rateLimit";
-import { requireChefProfile, verifySupabaseUser } from "../../_lib/auth";
-import { apiLogger } from "../../../lib/logger";
-import { isStripeCheckoutEnabled } from "../../../lib/stripe/featureFlag";
-import { createDashboardLink } from "../../../lib/stripe/connect";
-import { getServiceRoleClient } from "../../../lib/supabase/serviceRole";
-import { validateStripeEnvOnStartup } from "../../../lib/stripe/env";
+import { json, methodNotAllowed, readBearerToken } from "../../_lib/http.js";
+import { enforceRateLimit } from "../../_lib/rateLimit.js";
+import { requireChefProfile, verifySupabaseUser } from "../../_lib/auth.js";
+import { apiLogger } from "../../_lib/logger.js";
+import { isStripeCheckoutEnabled } from "../../_lib/stripe/featureFlag.js";
+import { createDashboardLink } from "../../_lib/stripe/connect.js";
+import { getServiceRoleClient } from "../../_lib/supabase/serviceRole.js";
+import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
 
 export default async function handler(
   req: VercelRequest,

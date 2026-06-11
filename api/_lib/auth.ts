@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getStripeEnv } from "../../lib/stripe/env";
+import { getStripeEnv } from "./stripe/env.js";
 
 export async function verifySupabaseUser(accessToken: string) {
   const env = getStripeEnv();
@@ -17,8 +17,11 @@ export async function verifySupabaseUser(accessToken: string) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data, error } = await client.auth.getUser(accessToken);
-  if (error || !data.user) {
+  const authApi = client.auth as unknown as {
+    getUser: (jwt: string) => Promise<{ data: { user: { id: string; email?: string } | null }; error: Error | null }>;
+  };
+  const { data, error } = await authApi.getUser(accessToken);
+  if (error || !data?.user) {
     return null;
   }
   return data.user;

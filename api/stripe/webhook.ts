@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { buffer } from "node:stream/consumers";
 import { Readable } from "node:stream";
-import { getStripe } from "../../lib/stripe/server";
-import { getStripeEnv, validateStripeEnvOnStartup } from "../../lib/stripe/env";
-import { claimStripeEvent } from "../../lib/stripe/events";
-import { processStripeWebhookEvent } from "../../lib/stripe/webhooks";
-import { json } from "../_lib/http";
-import { apiLogger } from "../../lib/logger";
+import { getStripe } from "../_lib/stripe/server.js";
+import { getStripeEnv, validateStripeEnvOnStartup } from "../_lib/stripe/env.js";
+import { claimStripeEvent } from "../_lib/stripe/events.js";
+import { processStripeWebhookEvent } from "../_lib/stripe/webhooks.js";
+import { json } from "../_lib/http.js";
+import { apiLogger } from "../_lib/logger.js";
 
 export const config = {
   api: {

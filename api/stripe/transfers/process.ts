@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { json, methodNotAllowed, readBearerToken } from "../../_lib/http";
-import { isAuthorizedCronRequest } from "../../_lib/cronAuth";
-import { verifySupabaseUser, requireAdmin } from "../../_lib/auth";
-import { isStripeCheckoutEnabled } from "../../../lib/stripe/featureFlag";
-import { processEligibleTransfers } from "../../../lib/stripe/transfers";
-import { processPendingTipTransfers } from "../../../lib/stripe/tips";
-import { validateStripeEnvOnStartup } from "../../../lib/stripe/env";
-import { apiLogger } from "../../../lib/logger";
+import { json, methodNotAllowed, readBearerToken } from "../../_lib/http.js";
+import { isAuthorizedCronRequest } from "../../_lib/cronAuth.js";
+import { verifySupabaseUser, requireAdmin } from "../../_lib/auth.js";
+import { isStripeCheckoutEnabled } from "../../_lib/stripe/featureFlag.js";
+import { processEligibleTransfers } from "../../_lib/stripe/transfers.js";
+import { processPendingTipTransfers } from "../../_lib/stripe/tips.js";
+import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
+import { apiLogger } from "../../_lib/logger.js";
 
 /**
  * Transfer + tip retry processor.

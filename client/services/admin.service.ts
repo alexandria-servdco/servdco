@@ -1,30 +1,43 @@
-import { api } from "@/lib/api";
+import { DocumentsSupabaseService } from "@/services/supabase/documents.service";
+import { InterestSupabaseService } from "@/services/supabase/interest.service";
+import { AdminModerationSupabaseService } from "@/services/supabase/admin-moderation.service";
+import { assertSupabaseConfigured } from "@/services/supabase/fallback";
+import {
+  adminDocumentStatusSchema,
+  chefVerificationStatusSchema,
+  interestSchema,
+  formatZodError,
+} from "@shared/validation";
 
 export const AdminService = {
-  /**
-   * Retrieves all background checks / ServSafe documents uploads.
-   */
   async getDocuments() {
-    return api.getDocuments();
+    assertSupabaseConfigured();
+    return DocumentsSupabaseService.list();
   },
 
-  /**
-   * Reviews and overrides document validation status.
-   */
-  async verifyDocument(id: string, status: "pending" | "approved" | "rejected") {
-    return api.updateDocumentStatus(id, status);
+  async verifyDocument(
+    id: string,
+    status: "pending" | "approved" | "rejected",
+    reviewNotes?: string,
+  ) {
+    assertSupabaseConfigured();
+    const statusParsed = adminDocumentStatusSchema.safeParse(status);
+    if (!statusParsed.success) {
+      throw new Error(formatZodError(statusParsed.error));
+    }
+    const doc = await DocumentsSupabaseService.updateStatus(
+      id,
+      statusParsed.data,
+      reviewNotes,
+    );
+    return { success: true, document: doc };
   },
 
-  /**
-   * Returns list of "Bring Servd Co to My City" requests.
-   */
   async getInterestRequests() {
-    return api.getInterestRequests();
+    assertSupabaseConfigured();
+    return InterestSupabaseService.list();
   },
 
-  /**
-   * Submits a new interest request for bringing Servd Co to a city.
-   */
   async submitInterest(params: {
     name: string;
     email: string;
@@ -32,6 +45,47 @@ export const AdminService = {
     state: string;
     role: "family" | "chef" | "both";
   }) {
-    return api.registerInterest(params);
-  }
+    assertSupabaseConfigured();
+    const parsed = interestSchema.safeParse(params);
+    if (parsed.success === false) {
+      throw new Error(formatZodError(parsed.error));
+    }
+    return InterestSupabaseService.register({
+      name: parsed.data.name,
+      email: parsed.data.email,
+      city: parsed.data.city,
+      state: parsed.data.state,
+      role: parsed.data.role,
+    });
+  },
+
+  async submitDocuments(params: {
+    chefProfileId: string;
+    documents: Array<{
+      type: string;
+      url: string;
+      storagePath?: string;
+      bucket?: string;
+    }>;
+  }) {
+    assertSupabaseConfigured();
+    const docs = await DocumentsSupabaseService.submit(params);
+    return { success: true, documents: docs };
+  },
+
+  async updateChefStatus(
+    id: string,
+    status: "approved" | "pending" | "rejected" | "suspended",
+  ) {
+    assertSupabaseConfigured();
+    const parsed = chefVerificationStatusSchema.safeParse(status);
+    if (!parsed.success) {
+      throw new Error(formatZodError(parsed.error));
+    }
+    await AdminModerationSupabaseService.updateChefVerification(
+      id,
+      parsed.data,
+    );
+    return { success: true };
+  },
 };

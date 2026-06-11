@@ -3,7 +3,7 @@ import { UploadDropzone } from "./UploadDropzone";
 import { UploadProgress } from "./UploadProgress";
 import { UploadError } from "./UploadError";
 import { UploadPreview } from "./UploadPreview";
-import { UploadResponse } from "../../types/upload.types";
+import { StorageBucket, UploadResponse } from "../../types/upload.types";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
 
@@ -14,6 +14,8 @@ interface ImageUploadProps {
   initialUrl?: string;
   variant?: "avatar" | "cover";
   className?: string;
+  pathPrefix?: string;
+  bucket?: StorageBucket;
 }
 
 export function ImageUpload({
@@ -23,6 +25,8 @@ export function ImageUpload({
   initialUrl,
   variant = "cover",
   className,
+  pathPrefix,
+  bucket,
 }: ImageUploadProps) {
   const { status, progress, error, result, previewUrl, upload, remove } = useImageUpload();
 
@@ -30,7 +34,11 @@ export function ImageUpload({
   const displayUrl = previewUrl || result?.url || initialUrl; // Local preview takes precedence during upload
 
   const handleFileSelect = async (file: File) => {
-    const res = await upload(file, { folder: "profiles" });
+    const res = await upload(file, {
+      folder: variant === "avatar" ? "avatars" : "portfolio",
+      bucket: bucket ?? (variant === "avatar" ? "avatars" : "cook-portfolio"),
+      pathPrefix,
+    });
     if (res && onUploadSuccess) {
       onUploadSuccess(res);
     }

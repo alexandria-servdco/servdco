@@ -1,18 +1,18 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
 
 export default function Unauthorized() {
   const navigate = useNavigate();
-  const userRole = localStorage.getItem("userRole");
+  const { role } = useCurrentUserRole();
 
   const handleReturn = () => {
-    if (userRole === "family") {
+    if (role === "family") {
       navigate("/family-dashboard");
-    } else if (userRole === "chef") {
+    } else if (role === "chef") {
       navigate("/chef-dashboard");
-    } else if (userRole === "admin") {
+    } else if (role === "admin") {
       navigate("/admin-dashboard");
     } else {
       navigate("/");

@@ -1,28 +1,33 @@
-import { api } from "@/lib/api";
+import { isUuid, type MarketplaceChef } from "@/lib/marketplaceTypes";
+import { ChefsSupabaseService } from "@/services/supabase/chefs.service";
+
+export type ChefListItem = MarketplaceChef;
 
 export const ChefService = {
-  /**
-   * Retrieves all verified/pending chefs.
-   */
-  async getChefs() {
-    return api.getChefs();
+  /** Public cooks for browse pages. */
+  async getChefs(): Promise<ChefListItem[]> {
+    return ChefsSupabaseService.listPublicChefs();
   },
 
-  /**
-   * Retrieves a chef profile by their unique ID identifier.
-   */
-  async getChefById(id: string) {
-    const chef = await api.getChefById(id);
-    if (!chef) {
-      throw new Error(`Cook with ID ${id} was not found.`);
+  async getChefById(id: string): Promise<ChefListItem | null> {
+    if (!isUuid(id)) return null;
+    return ChefsSupabaseService.getChefById(id);
+  },
+
+  async getChefProfileByUserId(
+    userId: string,
+  ): Promise<MarketplaceChef | null> {
+    return ChefsSupabaseService.getChefByUserId(userId);
+  },
+
+  async updateStatus(
+    id: string,
+    status: "approved" | "pending" | "rejected" | "suspended",
+  ) {
+    if (!isUuid(id)) {
+      throw new Error("Chef status update requires a valid chef profile id.");
     }
-    return chef;
+    const { AdminService } = await import("@/services/admin.service");
+    return AdminService.updateChefStatus(id, status);
   },
-
-  /**
-   * Updates safety validation or profile parameters of a chef (Admin task).
-   */
-  async updateStatus(id: string, status: "approved" | "pending" | "rejected" | "suspended") {
-    return api.updateChefStatus(id, status);
-  }
 };

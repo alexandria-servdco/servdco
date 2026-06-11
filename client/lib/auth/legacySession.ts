@@ -1,0 +1,48 @@
+import type { ProfileRow } from "@/lib/supabase/types";
+import type { AppUser } from "@/lib/auth/types";
+
+type Listener = () => void;
+
+let legacyUser: AppUser | null = null;
+const listeners = new Set<Listener>();
+
+/** In-memory legacy auth (replaces localStorage session bridge). */
+export function setLegacyUser(user: AppUser | null): void {
+  legacyUser = user;
+  listeners.forEach((listener) => listener());
+}
+
+export function getLegacyUser(): AppUser | null {
+  return legacyUser;
+}
+
+export function subscribeLegacyAuth(listener: Listener): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function legacyUserToProfileRow(user: AppUser): ProfileRow {
+  return {
+    id: user.id,
+    email: user.email,
+    full_name: user.name,
+    avatar_url: null,
+    role: user.role,
+    status: user.status,
+    city: user.city ?? null,
+    state: user.state ?? null,
+    zip: user.zip ?? null,
+    phone: user.phone ?? null,
+    dietary_preferences: [],
+    email_alerts: true,
+    sms_alerts: true,
+    profile_completed:
+      user.profile_completed ?? (user.role === "admin" ? 100 : 50),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    created_by: null,
+    updated_by: null,
+    deleted_at: null,
+    deleted_by: null,
+  };
+}

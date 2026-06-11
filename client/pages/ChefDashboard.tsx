@@ -36,9 +36,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { BookingService } from "@/services/booking.service";
+import { useBookings, useUpdateBookingStatus } from "@/hooks/useBookings";
+import { useReviews } from "@/hooks/useReviews";
 import { ChefService } from "@/services/chef.service";
-import { ReviewService } from "@/services/ReviewService";
 import {
   AvailabilityService,
   AvailabilitySlot,
@@ -61,7 +61,23 @@ import { ChefAnalytics } from "@/components/chef/ChefAnalytics";
 import { AvailabilityManager } from "@/components/chef/AvailabilityManager";
 import { ProfileEditor } from "@/components/chef/ProfileEditor";
 import { PayoutLogs } from "@/components/chef/PayoutLogs";
+import { ChefTipsSummary } from "@/components/chef/ChefTipsSummary";
+import { BookingMessaging } from "@/components/messaging/BookingMessaging";
+import { MessagingHub } from "@/components/messaging/MessagingHub";
+import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
+import { useUnreadMessageCount } from "@/hooks/useConversations";
+import { useCurrentProfile } from "@/hooks/useCurrentProfile";
+import { useChefProfileByUser } from "@/hooks/useChefProfileByUser";
+import { useQueryClient } from "@tanstack/react-query";
+import { profileQueryKeys } from "@/services/supabase/profiles.service";
+import { ProfilesSupabaseService } from "@/services/supabase/profiles.service";
+import { getLegacyUser, setLegacyUser } from "@/lib/auth/legacySession";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useIsPremiumChef } from "@/hooks/useSubscription";
+import { usePlatformStore } from "@/store/usePlatformStore";
+import { StripeService } from "@/services/stripe.service";
+import { useOwnDocuments, useSubmitChefDocuments } from "@/hooks/useOwnDocuments";
 
 const initialChartData = [
   { date: "May 1", earnings: 180 },
@@ -73,22 +89,36 @@ const initialChartData = [
 ];
 
 export default function ChefDashboard() {
+  useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
+  const [chefProfileId, setChefProfileId] = useState("chef-maria");
+  const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
+  const { data: reviews = [], isLoading: reviewsLoading } = useReviews(chefProfileId);
+  const updateBookingStatus = useUpdateBookingStatus();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
   const [availabilitySlots, setAvailabilitySlots] = useState<
     AvailabilitySlot[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const [profileProgress, setProfileProgress] = useState<number>(() => {
-    const saved = localStorage.getItem("profileCompleted");
-    return saved ? parseInt(saved, 10) : 50;
-  });
-  const [verificationStatus, setVerificationStatus] = useState<string>(() => {
-    return localStorage.getItem("verificationStatus") || "pending";
-  });
+  const queryClient = useQueryClient();
+  const { profile } = useCurrentProfile();
+  const { data: ownChefProfile } = useChefProfileByUser(profile?.id);
+  const { data: isPremium = false } = useIsPremiumChef(ownChefProfile?.id);
+  const chefPremiumPrice = usePlatformStore((s) => s.chefPremiumPrice);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const { data: ownDocuments = [] } = useOwnDocuments(ownChefProfile?.id);
+  const submitChefDocuments = useSubmitChefDocuments();
+  const profileProgress = profile?.profile_completed ?? 50;
+  const verificationStatus = ownChefProfile?.verification_status ?? "pending";
+
+  const docStatus = (type: string) =>
+    ownDocuments.find((d) => d.type === type)?.status ?? "missing";
+
+  const approvedDocCount = ["ServSafe Certificate", "Insurance", "Background Check"].filter(
+    (t) => docStatus(t) === "approved",
+  ).length;
+  const approvalPercent = Math.round((approvedDocCount / 3) * 100);
 
   // Filter state for Bookings subtab
   const [bookingFilter, setBookingFilter] = useState("all");
@@ -115,15 +145,6 @@ export default function ChefDashboard() {
   const [newTime, setNewTime] = useState("09:00 AM - 12:00 PM");
   const [availabilitySuccess, setAvailabilitySuccess] = useState(false);
 
-  // Verification document state
-  const [documentStatus, setDocumentStatus] = useState({
-    servSafe: "approved",
-    insurance: "pending",
-    insuranceFile: "",
-    servSafeUpload: null as UploadResponse | null,
-    insuranceUpload: null as UploadResponse | null,
-  });
-
   // Settings states
   const [settingsData, setSettingsData] = useState({
     emailAlerts: true,
@@ -138,26 +159,37 @@ export default function ChefDashboard() {
   const [avgSessionCost, setAvgSessionCost] = useState(120);
 
   useEffect(() => {
-    const user = AuthService.getCurrentUser();
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    setCurrentUser(user);
+    if (!profile) return;
+
+    setCurrentUser({
+      id: profile.id,
+      name: profile.full_name ?? profile.email,
+      email: profile.email,
+    });
     setProfileData((prev) => ({
       ...prev,
-      name: user.name || "Cook Maria",
+      name: profile.full_name || "Cook Maria",
     }));
 
     const fetchData = async () => {
       try {
-        const fetchedBookings = await BookingService.getBookings();
-        const fetchedReviews =
-          await ReviewService.getReviewsByChef("chef-maria");
+        const chefProfile = await ChefService.getChefProfileByUserId(profile.id);
+        const availabilityKey = chefProfile?.id ?? "chef-maria";
+        setChefProfileId(availabilityKey);
+
+        if (chefProfile) {
+          setProfileData((prev) => ({
+            ...prev,
+            name: chefProfile.name || prev.name,
+            bio: chefProfile.bio ?? prev.bio,
+            cuisines: chefProfile.cuisine
+              ? chefProfile.cuisine.split(/[\/,]/).map((s) => s.trim()).filter(Boolean)
+              : prev.cuisines,
+          }));
+        }
+
         const fetchedAvailability =
-          await AvailabilityService.getAvailability("chef-maria");
-        setBookings(fetchedBookings);
-        setReviews(fetchedReviews);
+          await AvailabilityService.getAvailability(availabilityKey);
         setAvailabilitySlots(fetchedAvailability);
       } catch (err) {
         console.error("Failed to load chef resources", err);
@@ -166,11 +198,16 @@ export default function ChefDashboard() {
       }
     };
     fetchData();
-  }, [navigate]);
+  }, [profile]);
+
+  const isLoading = loading || bookingsLoading || reviewsLoading;
+  const { data: messagingEnabled = false } = useMessagingEnabled();
+  const { data: unreadTotal = 0 } = useUnreadMessageCount();
 
   const getSubTab = () => {
     const path = location.pathname;
     if (path.endsWith("/bookings")) return "bookings";
+    if (path.endsWith("/messages")) return "messages";
     if (path.endsWith("/calendar")) return "calendar";
     if (path.endsWith("/reviews")) return "reviews";
     if (path.endsWith("/verification")) return "verification";
@@ -187,12 +224,10 @@ export default function ChefDashboard() {
 
   const handleUpdateBookingStatus = async (
     id: string,
-    status: "confirmed" | "cancelled",
+    status: "confirmed" | "cancelled" | "completed",
   ) => {
     try {
-      await BookingService.updateStatus(id, status);
-      const updated = await BookingService.getBookings();
-      setBookings(updated);
+      await updateBookingStatus.mutateAsync({ id, status });
     } catch (err) {
       console.error(err);
     }
@@ -215,7 +250,7 @@ export default function ChefDashboard() {
       ];
     }
     setAvailabilitySlots(updated);
-    await AvailabilityService.saveAvailability("chef-maria", updated);
+    await AvailabilityService.saveAvailability(chefProfileId, updated);
     setAvailabilitySuccess(true);
     setTimeout(() => setAvailabilitySuccess(false), 2500);
   };
@@ -236,15 +271,21 @@ export default function ChefDashboard() {
       })
       .filter((s) => s.timeSlots.length > 0);
     setAvailabilitySlots(updated);
-    await AvailabilityService.saveAvailability("chef-maria", updated);
+    await AvailabilityService.saveAvailability(chefProfileId, updated);
   };
 
-  const handleProfileSave = (e: React.FormEvent) => {
+  const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Save completion to 100%
-    localStorage.setItem("profileCompleted", "100");
-    setProfileProgress(100);
+    try {
+      await ProfilesSupabaseService.updateOwnProfile({ profile_completed: 100 });
+    } catch {
+      const legacy = getLegacyUser();
+      if (legacy) {
+        setLegacyUser({ ...legacy, profile_completed: 100 });
+      }
+    }
+    await queryClient.invalidateQueries({ queryKey: profileQueryKeys.own() });
 
     setProfileSuccess(true);
     setTimeout(() => setProfileSuccess(false), 3000);
@@ -267,16 +308,6 @@ export default function ChefDashboard() {
     e.preventDefault();
     setSettingsSuccess(true);
     setTimeout(() => setSettingsSuccess(false), 3000);
-  };
-
-  const handleUploadDocument = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setDocumentStatus((prev) => ({
-        ...prev,
-        insurance: "pending",
-        insuranceFile: e.target.files![0].name,
-      }));
-    }
   };
 
   return (
@@ -339,6 +370,16 @@ export default function ChefDashboard() {
                 path: "/chef-dashboard/bookings",
                 icon: Users,
               },
+              ...(messagingEnabled
+                ? [
+                    {
+                      label: "Messages",
+                      path: "/chef-dashboard/messages",
+                      icon: MessageSquare,
+                      badge: unreadTotal,
+                    },
+                  ]
+                : []),
               {
                 label: "Calendar",
                 path: "/chef-dashboard/calendar",
@@ -394,6 +435,11 @@ export default function ChefDashboard() {
                 >
                   <link.icon size={15} />
                   <span>{link.label}</span>
+                  {"badge" in link && link.badge > 0 && (
+                    <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF7A59] text-white text-[9px] font-bold flex items-center justify-center">
+                      {link.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -486,7 +532,7 @@ export default function ChefDashboard() {
 
         {/* Tab content panel */}
         <div className="p-8 space-y-8 max-w-7xl mx-auto">
-          {loading ? (
+          {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <DashboardWidgetSkeleton />
               <DashboardWidgetSkeleton />
@@ -805,8 +851,13 @@ export default function ChefDashboard() {
                               {b.status}
                             </span>
                           </td>
-                          <td className="p-4 font-serif font-bold text-white">
-                            ${b.price || "120.00"}
+                          <td className="p-4">
+                            <span className="font-serif font-bold text-white block">
+                              ${b.price || "120.00"}
+                            </span>
+                            {b.status !== "cancelled" && (
+                              <BookingMessaging bookingId={b.id} />
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -823,6 +874,11 @@ export default function ChefDashboard() {
                 )}
               </div>
             </div>
+          ) : currentTab === "messages" ? (
+            <MessagingHub
+              title="Messages"
+              subtitle="Chat with families about confirmed bookings."
+            />
           ) : currentTab === "calendar" ? (
             /* Interactive Calendar grid */
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1001,44 +1057,75 @@ export default function ChefDashboard() {
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                    {/* ServSafe Card */}
-                    <div className="bg-[#161616] border border-white/5 p-6 rounded-2xl space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div className="p-3 bg-[#2E7D66]/10 text-[#2E7D66] rounded-xl">
-                          <Award size={20} />
+                    {[
+                      { type: "ServSafe Certificate", label: "ServSafe Certificate", icon: Award, color: "#2E7D66" },
+                      { type: "Insurance", label: "General Liability Insurance", icon: FileText, color: "#FF7A59" },
+                      { type: "Background Check", label: "Background Check", icon: Shield, color: "#8B5CF6" },
+                    ].map((doc) => {
+                      const status = docStatus(doc.type);
+                      const statusLabel =
+                        status === "approved"
+                          ? "APPROVED"
+                          : status === "rejected"
+                            ? "REJECTED"
+                            : status === "pending"
+                              ? "PENDING"
+                              : "MISSING";
+                      const Icon = doc.icon;
+                      return (
+                        <div
+                          key={doc.type}
+                          className="bg-[#161616] border border-white/5 p-6 rounded-2xl space-y-4"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="p-3 rounded-xl" style={{ background: `${doc.color}15`, color: doc.color }}>
+                              <Icon size={20} />
+                            </div>
+                            <span
+                              className="text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border"
+                              style={{
+                                color: doc.color,
+                                background: `${doc.color}10`,
+                                borderColor: `${doc.color}20`,
+                              }}
+                            >
+                              {statusLabel}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-white text-xs uppercase tracking-wider">
+                              {doc.label}
+                            </h4>
+                            {ownDocuments.find((d) => d.type === doc.type)?.review_notes && (
+                              <p className="text-[10px] text-red-400 mt-1">
+                                {ownDocuments.find((d) => d.type === doc.type)?.review_notes}
+                              </p>
+                            )}
+                          </div>
+                          {(status === "missing" || status === "rejected") && ownChefProfile?.id && (
+                            <FileUpload
+                              label={doc.label}
+                              description="Upload or resubmit for admin review."
+                              pathPrefix={ownChefProfile.id}
+                              documentType={doc.type}
+                              onUploadSuccess={async (res) => {
+                                await submitChefDocuments.mutateAsync({
+                                  chefProfileId: ownChefProfile.id,
+                                  documents: [
+                                    {
+                                      type: doc.type,
+                                      url: res.url,
+                                      storagePath: res.storagePath,
+                                      bucket: res.bucket,
+                                    },
+                                  ],
+                                });
+                              }}
+                            />
+                          )}
                         </div>
-                        <span className="text-[9px] font-bold text-[#2E7D66] uppercase tracking-wider bg-[#2E7D66]/5 border border-[#2E7D66]/10 px-2.5 py-0.5 rounded-full">
-                          APPROVED
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white text-xs uppercase tracking-wider">
-                          ServSafe Certificate
-                        </h4>
-                        <p className="text-[10px] text-[#A8A8A8] mt-1 font-medium">
-                          Verified by administrator auditing teams.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Insurance Card */}
-                    <div className="bg-[#161616] border border-white/5 p-6 rounded-2xl space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div className="p-3 bg-[#FF7A59]/10 text-[#FF7A59] rounded-xl">
-                          <FileText size={20} />
-                        </div>
-                        <span className="text-[9px] font-bold text-[#FF7A59] uppercase tracking-wider bg-[#FF7A59]/5 border border-[#FF7A59]/10 px-2.5 py-0.5 rounded-full">
-                          PENDING
-                        </span>
-                      </div>
-                      
-                      <FileUpload
-                        label="General Liability Insurance"
-                        description="Currently under review or awaiting upload."
-                        onUploadSuccess={(res) => setDocumentStatus({ ...documentStatus, insuranceUpload: res })}
-                        onUploadRemove={() => setDocumentStatus({ ...documentStatus, insuranceUpload: null })}
-                      />
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -1049,21 +1136,25 @@ export default function ChefDashboard() {
                 </h4>
                 <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
                   <div className="w-full h-full rounded-full border-4 border-[#2E7D66] border-r-transparent flex items-center justify-center font-bold text-white text-sm font-serif">
-                    75%
+                    {approvalPercent}%
                   </div>
                 </div>
                 <div className="space-y-3 pt-2">
+                  {["ServSafe Certificate", "Insurance", "Background Check"].map((type) => {
+                    const s = docStatus(type);
+                    return (
+                      <div key={type} className="flex gap-2 items-center text-xs text-[#A8A8A8]">
+                        {s === "approved" ? (
+                          <Check size={14} className="text-[#2E7D66]" />
+                        ) : (
+                          <Clock size={14} className="text-[#FF7A59]" />
+                        )}
+                        {type} — {s}
+                      </div>
+                    );
+                  })}
                   <div className="flex gap-2 items-center text-xs text-[#A8A8A8]">
-                    <Check size={14} className="text-[#2E7D66]" /> Identity
-                    check passed
-                  </div>
-                  <div className="flex gap-2 items-center text-xs text-[#A8A8A8]">
-                    <Check size={14} className="text-[#2E7D66]" /> ServSafe
-                    verified
-                  </div>
-                  <div className="flex gap-2 items-center text-xs text-[#A8A8A8]">
-                    <Clock size={14} className="text-[#FF7A59]" /> Insurance
-                    document review
+                    Chef status: {verificationStatus}
                   </div>
                 </div>
               </div>
@@ -1082,10 +1173,14 @@ export default function ChefDashboard() {
             />
           ) : currentTab === "earnings" ? (
             /* Earnings charts & income calculator */
-            <PayoutLogs />
+            <div className="space-y-8">
+              <ChefTipsSummary chefProfileId={ownChefProfile?.id} />
+              <PayoutLogs chefProfileId={chefProfileId} />
+            </div>
           ) : currentTab === "profile" ? (
             /* Biography Profile Editor */
             <ProfileEditor
+              chefProfileId={ownChefProfile?.id}
               profileData={profileData}
               profileProgress={profileProgress}
               profileSuccess={profileSuccess}
@@ -1094,8 +1189,8 @@ export default function ChefDashboard() {
             />
           ) : currentTab === "analytics" ? (
             /* Analytics Dashboard */
-            currentUser?.isPremium ? (
-              <ChefAnalytics />
+            isPremium && ownChefProfile?.id ? (
+              <ChefAnalytics chefProfileId={ownChefProfile.id} />
             ) : (
               <div className="velvet-card p-12 text-center max-w-2xl mx-auto space-y-4 mt-8">
                 <Crown size={48} className="mx-auto text-[#FF7A59]/40 mb-4" />
@@ -1167,13 +1262,36 @@ export default function ChefDashboard() {
                       Membership Plan
                     </p>
                     <p className="text-2xl font-serif text-[#FF7A59] font-bold">
-                      $29{" "}
+                      ${chefPremiumPrice}{" "}
                       <span className="text-sm text-[#A8A8A8] font-sans font-normal">
                         / month
                       </span>
                     </p>
                   </div>
-                  <Button className="px-8 font-bold">Upgrade to Premium</Button>
+                  {isPremium ? (
+                    <span className="px-6 py-3 rounded-full bg-[#2E7D66]/20 text-[#2E7D66] text-xs font-bold uppercase tracking-wider border border-[#2E7D66]/30">
+                      Premium Active
+                    </span>
+                  ) : (
+                    <Button
+                      className="px-8 font-bold"
+                      disabled={premiumLoading}
+                      onClick={async () => {
+                        setPremiumLoading(true);
+                        try {
+                          const res = await StripeService.createPremiumCheckout({
+                            successUrl: `${window.location.origin}/chef-dashboard/premium?subscribed=1`,
+                            cancelUrl: `${window.location.origin}/chef-dashboard/premium`,
+                          });
+                          window.location.href = res.url;
+                        } catch {
+                          setPremiumLoading(false);
+                        }
+                      }}
+                    >
+                      {premiumLoading ? "Redirecting…" : "Upgrade to Premium"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

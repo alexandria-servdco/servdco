@@ -1,7 +1,6 @@
 /**
- * ServdCo — Shared API contracts for frontend ↔ PHP backend integration.
- * All endpoints are prefixed with `/api` (see client/lib/apiConfig.ts).
- * Set USE_MOCK_API=false in apiConfig when PHP endpoints are live.
+ * ServdCo — Shared API contracts (reference shapes).
+ * Phase 10: runtime data is Supabase-only; Stripe uses Vercel `/api/stripe/*`.
  */
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────

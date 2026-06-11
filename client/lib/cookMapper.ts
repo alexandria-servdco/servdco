@@ -1,4 +1,4 @@
-import { Chef } from "./mockLaunchControl";
+import type { MarketplaceChef } from "./marketplaceTypes";
 
 /** UI-facing cook card used by browse & profile pages */
 export interface CookCardData {
@@ -13,6 +13,7 @@ export interface CookCardData {
   bio: string;
   premium_status: boolean;
   isVerified: boolean;
+  portfolioImages?: string[];
 }
 
 const BIO_BY_CUISINE: Record<string, string> = {
@@ -30,35 +31,48 @@ function displayName(name: string): string {
   return `Cook ${name}`;
 }
 
-export function mapChefToCard(chef: Chef): CookCardData {
-  const specialties = chef.cuisine
+function splitSpecialties(cuisine: string): string[] {
+  return cuisine
     .split(/[\/,]/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function defaultBio(cuisine: string): string {
+  return (
+    BIO_BY_CUISINE[cuisine] ||
+    `Trusted local cook specializing in ${cuisine.toLowerCase()} for private home dining.`
+  );
+}
+
+export function mapMarketplaceChefToCard(chef: MarketplaceChef): CookCardData {
+  const specialties = splitSpecialties(chef.cuisine);
 
   return {
     id: chef.id,
     name: displayName(chef.name),
     image: chef.avatar,
     rating: chef.rating > 0 ? chef.rating.toFixed(1) : "New",
-    reviews: `${chef.bookings_count} reviews`,
+    reviews:
+      chef.reviews_count > 0
+        ? `${chef.reviews_count} reviews`
+        : `${chef.bookings_count} reviews`,
     location: chef.location,
     specialties: specialties.length ? specialties : [chef.cuisine],
     specialty: specialties[0] || chef.cuisine,
-    bio:
-      BIO_BY_CUISINE[chef.cuisine] ||
-      `Trusted local cook specializing in ${chef.cuisine.toLowerCase()} for private home dining.`,
+    bio: chef.bio?.trim() || defaultBio(chef.cuisine),
     premium_status: chef.premium_status,
     isVerified: chef.verification_status === "approved",
+    portfolioImages: chef.portfolioImages,
   };
 }
 
-export function mapChefsToCards(chefs: Chef[]): CookCardData[] {
+export function mapChefsToCards(chefs: MarketplaceChef[]): CookCardData[] {
   return chefs
     .filter(
-      (c) =>
-        c.verification_status === "approved" &&
-        c.profile_visibility === "public",
+      (chef) =>
+        chef.verification_status === "approved" &&
+        chef.profile_visibility === "public",
     )
-    .map(mapChefToCard);
+    .map((chef) => mapMarketplaceChefToCard(chef));
 }

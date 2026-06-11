@@ -1,30 +1,50 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { usePlatformStore } from "@/store/usePlatformStore";
+import { useUpdatePlatformSettings } from "@/hooks/usePlatformSettings";
 
 export function PlatformSettings() {
-  const {
-    platformFeePercentage,
-    chefPremiumPrice,
-    setPlatformFeePercentage,
-    setChefPremiumPrice,
-  } = usePlatformStore();
+  const { platformFeePercentage, chefPremiumPrice } = usePlatformStore();
+  const updateSettings = useUpdatePlatformSettings();
 
   const [localFee, setLocalFee] = useState(platformFeePercentage);
   const [localPremium, setLocalPremium] = useState(chefPremiumPrice);
 
+  useEffect(() => {
+    setLocalFee(platformFeePercentage);
+    setLocalPremium(chefPremiumPrice);
+  }, [platformFeePercentage, chefPremiumPrice]);
+
   const handleSaveFee = () => {
-    setPlatformFeePercentage(localFee);
-    toast.success("Platform fee updated", {
-      description: `${localFee}% applied globally.`,
-    });
+    updateSettings.mutate(
+      { platformFeePercentage: localFee },
+      {
+        onSuccess: () => {
+          toast.success("Platform fee updated", {
+            description: `${localFee}% applied globally.`,
+          });
+        },
+        onError: () => {
+          toast.error("Failed to save platform fee.");
+        },
+      },
+    );
   };
 
   const handleSavePremium = () => {
-    setChefPremiumPrice(localPremium);
-    toast.success("Cook Premium Price updated", {
-      description: `$${localPremium}/mo applied globally.`,
-    });
+    updateSettings.mutate(
+      { chefPremiumPriceMonthly: localPremium },
+      {
+        onSuccess: () => {
+          toast.success("Cook Premium Price updated", {
+            description: `$${localPremium}/mo applied globally.`,
+          });
+        },
+        onError: () => {
+          toast.error("Failed to save premium price.");
+        },
+      },
+    );
   };
 
   return (
@@ -117,6 +137,7 @@ export function PlatformSettings() {
 
           <button
             onClick={handleSaveFee}
+            disabled={updateSettings.isPending}
             style={{
               marginTop: "20px",
               padding: "8px 16px",
@@ -190,6 +211,7 @@ export function PlatformSettings() {
 
           <button
             onClick={handleSavePremium}
+            disabled={updateSettings.isPending}
             style={{
               marginTop: "20px",
               padding: "8px 16px",

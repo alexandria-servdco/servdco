@@ -10,7 +10,21 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Environment & secrets — NEVER commit real keys
+.env
+.env.*
+!.env.example
+
+# Local overrides (e.g. .env.local)
 *.local
+
+# Vercel
+.vercel
+
+# Supabase CLI temp
+supabase/.branches
+supabase/.temp
 
 # Editor directories and files
 .vscode/*
@@ -24,5 +38,3 @@ dist-ssr
 *.sw?
 
 .config/
-!.env
-.env

@@ -1,5 +1,4 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
 
 interface PlatformState {
   platformFeePercentage: number;
@@ -8,16 +7,10 @@ interface PlatformState {
   setChefPremiumPrice: (price: number) => void;
 }
 
-export const usePlatformStore = create<PlatformState>()(
-  persist(
-    (set) => ({
-      platformFeePercentage: 13, // Default 13%
-      chefPremiumPrice: 49,      // Default $49/mo
-      setPlatformFeePercentage: (fee) => set({ platformFeePercentage: fee }),
-      setChefPremiumPrice: (price) => set({ chefPremiumPrice: price }),
-    }),
-    {
-      name: 'platform-settings-storage', // unique name for localStorage key
-    }
-  )
-);
+/** In-memory cache hydrated from Supabase via usePlatformSettings (no localStorage). */
+export const usePlatformStore = create<PlatformState>()((set) => ({
+  platformFeePercentage: 13,
+  chefPremiumPrice: 15,
+  setPlatformFeePercentage: (fee) => set({ platformFeePercentage: fee }),
+  setChefPremiumPrice: (price) => set({ chefPremiumPrice: price }),
+}));

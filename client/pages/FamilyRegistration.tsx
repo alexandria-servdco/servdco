@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Mail, Phone, MapPin, ShieldCheck, ArrowLeft, ArrowRight, HelpCircle, Users, Heart } from "lucide-react";
+import { User, Mail, Phone, MapPin, ShieldCheck, ArrowLeft, ArrowRight, HelpCircle, Users, Heart, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
+import { familyRegisterCoreSchema, safeParse } from "@shared/validation";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -33,6 +34,8 @@ export default function FamilyRegistration() {
     fullName: "",
     email: "",
     phone: "",
+    password: "",
+    confirmPassword: "",
     city: "",
     state: "Ohio",
     zip: ""
@@ -42,8 +45,16 @@ export default function FamilyRegistration() {
     e.preventDefault();
     setError("");
 
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.city || !formData.state || !formData.zip) {
-      setError("Please complete all required fields.");
+    const parsed = safeParse(familyRegisterCoreSchema, {
+      name: formData.fullName,
+      email: formData.email,
+      state: formData.state,
+      city: formData.city,
+      zip: formData.zip,
+      phone: formData.phone,
+    });
+    if (parsed.success === false) {
+      setError(parsed.error);
       return;
     }
 
@@ -52,12 +63,26 @@ export default function FamilyRegistration() {
       return;
     }
 
+    const usesSupabase = await AuthService.usesSupabaseAuth();
+    if (usesSupabase) {
+      if (!formData.password || formData.password.length < 8) {
+        setError("Password must be at least 8 characters.");
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       const result = await AuthService.register({
         name: formData.fullName,
         email: formData.email,
+        password: formData.password || undefined,
+        phone: formData.phone,
         role: "family",
         state: formData.state,
         city: formData.city,
@@ -67,6 +92,12 @@ export default function FamilyRegistration() {
       await new Promise((resolve) => setTimeout(resolve, 800));
       setLoading(false);
 
+      if (result.needsEmailConfirmation) {
+        setError("");
+        navigate(`/login?registered=1&email=${encodeURIComponent(formData.email)}`);
+        return;
+      }
+
       if (result.status === "active") {
         navigate("/dashboard");
       } else {
@@ -75,7 +106,7 @@ export default function FamilyRegistration() {
     } catch (err) {
       console.error(err);
       setLoading(false);
-      setError("Failed to register. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to register. Please try again.");
     }
   };
 
@@ -153,6 +184,26 @@ export default function FamilyRegistration() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   icon={<Phone size={16} />}
+                  required
+                />
+
+                <FormInput
+                  type="password"
+                  label="Password"
+                  id="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  icon={<Lock size={16} />}
+                  required
+                />
+
+                <FormInput
+                  type="password"
+                  label="Confirm Password"
+                  id="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  icon={<Lock size={16} />}
                   required
                 />
 

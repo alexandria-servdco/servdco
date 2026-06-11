@@ -2,14 +2,17 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   User, Mail, Phone, MapPin, ShieldCheck, ArrowLeft, ArrowRight,
-  HelpCircle, Utensils, Calendar, TrendingUp, Home
+  HelpCircle, Utensils, Calendar, TrendingUp, Home, Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
-import { FileUpload } from "@/components/upload/FileUpload";
-import { UploadResponse } from "@/types/upload.types";
+import { validateDocument } from "@/utils/validateFile";
+import { UploadService } from "@/services/upload.service";
+import { getSupabaseClient } from "@/lib/supabase/client";
+import { ChefsSupabaseService } from "@/services/supabase/chefs.service";
+import { chefRegisterCoreSchema, safeParse } from "@shared/validation";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -47,6 +50,8 @@ export default function ChefRegistration() {
     fullName: "",
     email: "",
     phone: "",
+    password: "",
+    confirmPassword: "",
     city: "",
     state: "Ohio",
     zip: "",
@@ -56,21 +61,41 @@ export default function ChefRegistration() {
     serviceTypes: [] as string[],
   });
 
-  const [uploads, setUploads] = useState({
-    servSafe: null as UploadResponse | null,
-    insurance: null as UploadResponse | null,
-    background: null as UploadResponse | null,
+  const [pendingDocs, setPendingDocs] = useState({
+    servSafe: null as File | null,
+    insurance: null as File | null,
+    background: null as File | null,
   });
 
   const handleNext = async () => {
     if (currentStep === 1) {
-      if (!formData.fullName || !formData.email || !formData.phone || !formData.city || !formData.zip) {
-        setError("Please complete all required fields.");
+      const parsed = safeParse(chefRegisterCoreSchema, {
+        name: formData.fullName,
+        email: formData.email,
+        state: formData.state,
+        city: formData.city,
+        zip: formData.zip,
+        phone: formData.phone,
+      });
+      if (parsed.success === false) {
+        setError(parsed.error);
         return;
       }
+
       if (!emailValid) {
         setError("Please provide a valid email address.");
         return;
+      }
+      const usesSupabase = await AuthService.usesSupabaseAuth();
+      if (usesSupabase) {
+        if (!formData.password || formData.password.length < 8) {
+          setError("Password must be at least 8 characters.");
+          return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match.");
+          return;
+        }
       }
     }
 
@@ -82,8 +107,8 @@ export default function ChefRegistration() {
     }
 
     if (currentStep === 3) {
-      if (!uploads.servSafe || !uploads.insurance || !uploads.background) {
-        setError("Please upload all required documents to proceed.");
+      if (!pendingDocs.servSafe || !pendingDocs.insurance || !pendingDocs.background) {
+        setError("Please select all required documents to proceed.");
         return;
       }
     }
@@ -98,26 +123,72 @@ export default function ChefRegistration() {
         const result = await AuthService.register({
           name: formData.fullName,
           email: formData.email,
+          password: formData.password || undefined,
+          phone: formData.phone,
           role: "chef",
           state: formData.state,
           city: formData.city,
-          zip: formData.zip
+          zip: formData.zip,
+          yearsExperience: formData.yearsExperience,
+          primaryCuisine: formData.primaryCuisine,
+          bio: formData.bio,
         });
 
-        if (uploads.servSafe && uploads.insurance && uploads.background) {
-          const { api } = await import("@/lib/api");
-          await api.submitDocuments({
-            chef_name: formData.fullName,
-            documents: [
-              { type: "ServSafe Certificate", url: uploads.servSafe.url },
-              { type: "Insurance", url: uploads.insurance.url },
-              { type: "Background Check", url: uploads.background.url },
-            ],
-          });
+        if (!result.needsEmailConfirmation) {
+          const client = getSupabaseClient();
+          const { data: authData } = await client?.auth.getUser() ?? { data: { user: null } };
+          const chef = authData.user
+            ? await ChefsSupabaseService.getChefByUserId(authData.user.id)
+            : null;
+
+          if (chef && pendingDocs.servSafe && pendingDocs.insurance && pendingDocs.background) {
+            const { api } = await import("@/lib/api");
+            const uploadOne = async (file: File, type: string) =>
+              UploadService.uploadDocument(file, undefined, {
+                bucket: "cook-documents",
+                pathPrefix: chef.id,
+                documentType: type,
+              });
+
+            const [servSafe, insurance, background] = await Promise.all([
+              uploadOne(pendingDocs.servSafe, "ServSafe Certificate"),
+              uploadOne(pendingDocs.insurance, "Insurance"),
+              uploadOne(pendingDocs.background, "Background Check"),
+            ]);
+
+            await api.submitDocuments({
+              chef_name: formData.fullName,
+              documents: [
+                {
+                  type: "ServSafe Certificate",
+                  url: servSafe.url,
+                  storagePath: servSafe.storagePath,
+                  bucket: servSafe.bucket,
+                },
+                {
+                  type: "Insurance",
+                  url: insurance.url,
+                  storagePath: insurance.storagePath,
+                  bucket: insurance.bucket,
+                },
+                {
+                  type: "Background Check",
+                  url: background.url,
+                  storagePath: background.storagePath,
+                  bucket: background.bucket,
+                },
+              ],
+            });
+          }
         }
 
         await new Promise((resolve) => setTimeout(resolve, 800));
         setLoading(false);
+
+        if (result.needsEmailConfirmation) {
+          navigate(`/login?registered=1&email=${encodeURIComponent(formData.email)}`);
+          return;
+        }
 
         if (result.status === "active") {
           navigate("/chef-dashboard");
@@ -127,7 +198,7 @@ export default function ChefRegistration() {
       } catch (err) {
         console.error(err);
         setLoading(false);
-        setError("Failed to register. Please try again.");
+        setError(err instanceof Error ? err.message : "Failed to register. Please try again.");
       }
     }
   };
@@ -274,6 +345,26 @@ export default function ChefRegistration() {
                       required
                     />
 
+                    <FormInput
+                      type="password"
+                      label="Password"
+                      id="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      icon={<Lock size={16} />}
+                      required
+                    />
+
+                    <FormInput
+                      type="password"
+                      label="Confirm Password"
+                      id="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                      icon={<Lock size={16} />}
+                      required
+                    />
+
                     {/* ZIP Code */}
                     <FormInput
                       type="text"
@@ -334,26 +425,38 @@ export default function ChefRegistration() {
               {currentStep === 3 && (
                 <div className="space-y-6 animate-fadeIn">
                   <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-5">
-                    <FileUpload
-                      label="ServSafe Food Handler Certificate"
-                      description="Required. Must be valid and current."
-                      onUploadSuccess={(res) => setUploads({ ...uploads, servSafe: res })}
-                      onUploadRemove={() => setUploads({ ...uploads, servSafe: null })}
-                    />
-                    
-                    <FileUpload
-                      label="General Liability Insurance"
-                      description="Required. Proof of minimum $1M coverage."
-                      onUploadSuccess={(res) => setUploads({ ...uploads, insurance: res })}
-                      onUploadRemove={() => setUploads({ ...uploads, insurance: null })}
-                    />
-
-                    <FileUpload
-                      label="Background Check Consent / Document"
-                      description="Required. Recent background check results."
-                      onUploadSuccess={(res) => setUploads({ ...uploads, background: res })}
-                      onUploadRemove={() => setUploads({ ...uploads, background: null })}
-                    />
+                    {(
+                      [
+                        ["servSafe", "ServSafe Food Handler Certificate"],
+                        ["insurance", "General Liability Insurance"],
+                        ["background", "Background Check Consent / Document"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <label key={key} className="block space-y-2">
+                        <span className="text-xs font-bold text-white">{label}</span>
+                        <input
+                          type="file"
+                          accept="application/pdf,image/jpeg,image/png"
+                          className="w-full text-xs text-[#A8A8A8] file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-[#FF7A59] file:text-black file:font-bold"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const v = validateDocument(file);
+                            if (!v.isValid) {
+                              setError(v.error ?? "Invalid file");
+                              return;
+                            }
+                            setError("");
+                            setPendingDocs((prev) => ({ ...prev, [key]: file }));
+                          }}
+                        />
+                        {pendingDocs[key] && (
+                          <span className="text-[10px] text-[#2E7D66]">
+                            Selected: {pendingDocs[key]!.name}
+                          </span>
+                        )}
+                      </label>
+                    ))}
                   </div>
                 </div>
               )}
@@ -430,7 +533,7 @@ export default function ChefRegistration() {
                     <p><span className="text-white font-semibold">Location:</span> {formData.city}, {formData.state} {formData.zip}</p>
                     <p><span className="text-white font-semibold">Experience:</span> {formData.yearsExperience} years — {formData.primaryCuisine}</p>
                     <p><span className="text-white font-semibold">Services:</span> {formData.serviceTypes.join(", ") || "Not specified"}</p>
-                    <p><span className="text-white font-semibold">Documents:</span> {uploads.servSafe && uploads.insurance && uploads.background ? "All uploaded" : "Incomplete"}</p>
+                    <p><span className="text-white font-semibold">Documents:</span> {pendingDocs.servSafe && pendingDocs.insurance && pendingDocs.background ? "All selected" : "Incomplete"}</p>
                   </div>
                   <p className="text-[10px] text-[#A8A8A8] leading-relaxed">
                     By submitting, you agree to Servd Co verification, background checks, and marketplace terms.

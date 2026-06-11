@@ -18,6 +18,7 @@ interface ProfileData {
 }
 
 interface ProfileEditorProps {
+  chefProfileId?: string;
   profileData: ProfileData;
   profileProgress: number;
   profileSuccess: boolean;
@@ -26,6 +27,7 @@ interface ProfileEditorProps {
 }
 
 export function ProfileEditor({
+  chefProfileId,
   profileData,
   profileProgress,
   profileSuccess,
@@ -152,6 +154,8 @@ export function ProfileEditor({
         </h4>
         <ImageUpload
           variant="avatar"
+          pathPrefix={chefProfileId}
+          bucket="avatars"
           initialUrl={profileData.avatarUrl}
           onUploadSuccess={(res) => onUpdate({ avatarUrl: res.url })}
         />
@@ -163,6 +167,8 @@ export function ProfileEditor({
         </h4>
         <MultiImageUploader
           maxFiles={12}
+          pathPrefix={chefProfileId}
+          bucket="cook-portfolio"
           onImagesUploaded={(responses) => 
             onUpdate({ portfolioImages: [...profileData.portfolioImages, ...responses] })
           }

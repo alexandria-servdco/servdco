@@ -1,16 +1,20 @@
-import { api } from "@/lib/api";
+import { isUuid } from "@/lib/marketplaceTypes";
+import type { UiBooking } from "@/lib/bookingTypes";
+import { bookingCreateSchema, formatZodError } from "@shared/validation";
+import { BookingsSupabaseService } from "@/services/supabase/bookings.service";
+
+export type BookingListItem = UiBooking;
 
 export const BookingService = {
-  /**
-   * Retrieves all user bookings in the system.
-   */
-  async getBookings() {
-    return api.getBookings();
+  async getBookings(): Promise<BookingListItem[]> {
+    return BookingsSupabaseService.listBookings();
   },
 
-  /**
-   * Creates a new booking request from a family account.
-   */
+  async getBookingById(id: string): Promise<BookingListItem | null> {
+    if (!isUuid(id)) return null;
+    return BookingsSupabaseService.getBooking(id);
+  },
+
   async createBooking(params: {
     cook_id: string;
     family_name: string;
@@ -19,13 +23,31 @@ export const BookingService = {
     guests_count: number;
     price: number;
   }) {
-    return api.createBooking(params);
+    if (!isUuid(params.cook_id)) {
+      throw new Error("Booking creation requires a valid chef profile id.");
+    }
+    const parsed = bookingCreateSchema.safeParse(params);
+    if (parsed.success === false) {
+      throw new Error(formatZodError(parsed.error));
+    }
+    return BookingsSupabaseService.createBooking({
+      cook_id: parsed.data.cook_id,
+      family_name: parsed.data.family_name,
+      service_type: parsed.data.service_type,
+      date: parsed.data.date,
+      guests_count: parsed.data.guests_count,
+      price: parsed.data.price,
+    });
   },
 
-  /**
-   * Updates state status of a reservation (confirmed, pending, cancelled, etc.)
-   */
-  async updateStatus(id: string, status: "pending" | "confirmed" | "completed" | "cancelled") {
-    return api.updateBookingStatus(id, status);
-  }
+  async updateStatus(
+    id: string,
+    status: "pending" | "confirmed" | "completed" | "cancelled",
+    reason?: string,
+  ) {
+    if (!isUuid(id)) {
+      throw new Error("Booking update requires a valid booking id.");
+    }
+    return BookingsSupabaseService.updateBookingStatus(id, status, reason);
+  },
 };

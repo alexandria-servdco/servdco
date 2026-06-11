@@ -1,23 +1,18 @@
 import { api } from "@/lib/api";
 import { useNotificationStore } from "@/store/useNotificationStore";
+import { NotificationsSupabaseService } from "@/services/supabase/notifications.service";
 
 export const NotificationService = {
-  /**
-   * Retrieves active region notification alerts (admin launch control).
-   */
   async getRegionAlerts() {
     const { notifications } = await api.getRegions();
-    return notifications;
+    return notifications ?? [];
   },
 
-  /**
-   * Loads persisted user notifications from API and hydrates the in-app store.
-   */
-  async syncUserNotifications(userId: string) {
-    const notifications = await api.getUserNotifications(userId);
+  async syncUserNotifications(_userId: string) {
+    const rows = await NotificationsSupabaseService.listOwn();
     const store = useNotificationStore.getState();
 
-    notifications.forEach((n) => {
+    rows.forEach((n) => {
       const exists = store.notifications.some((s) => s.id === n.id);
       if (!exists) {
         useNotificationStore.setState((state) => ({
@@ -38,11 +33,8 @@ export const NotificationService = {
     });
   },
 
-  /**
-   * Pushes a notification to the UI store and persists via API.
-   */
   async notify(
-    userId: string | undefined,
+    _userId: string | undefined,
     payload: {
       title: string;
       message: string;
@@ -50,12 +42,24 @@ export const NotificationService = {
     },
   ) {
     useNotificationStore.getState().addNotification(payload);
-    if (userId) {
-      try {
-        await api.addUserNotification(userId, payload);
-      } catch {
-        // UI toast already shown; persistence optional until backend is live
-      }
+    // Supabase booking/review/messaging triggers persist server-side notifications.
+  },
+
+  async markRead(notificationId: string) {
+    useNotificationStore.getState().markAsRead(notificationId);
+    try {
+      await NotificationsSupabaseService.markRead(notificationId);
+    } catch (err) {
+      console.warn("[NotificationService] markRead failed:", err);
+    }
+  },
+
+  async markAllRead() {
+    useNotificationStore.getState().markAllAsRead();
+    try {
+      await NotificationsSupabaseService.markAllRead();
+    } catch (err) {
+      console.warn("[NotificationService] markAllRead failed:", err);
     }
   },
 };

@@ -4,15 +4,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { QueryProvider } from "@/providers/QueryProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
+import { lazy, Suspense, useEffect } from "react";
 import { motion } from "framer-motion";
+import { GlobalErrorBoundary } from "@/components/errors/GlobalErrorBoundary";
+import { RouteErrorBoundary } from "@/components/errors/RouteErrorBoundary";
+import { validateClientStartup } from "@/lib/env/validateStartup";
 
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import ChefDashboard from "./pages/ChefDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ChefRegistration from "./pages/ChefRegistration";
@@ -23,8 +24,6 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import ForChefs from "./pages/ForChefs";
 import HowItWorks from "./pages/HowItWorks";
-import BrowseChefs from "./pages/BrowseChefs";
-import ChefProfile from "./pages/ChefProfile";
 import FAQ from "./pages/FAQ";
 import Pricing from "./pages/Pricing";
 import Blog from "./pages/Blog";
@@ -35,10 +34,28 @@ import CookiePolicy from "./pages/CookiePolicy";
 import LegalHub from "./pages/LegalHub";
 import { GuestGuard, AuthGuard, RoleGuard } from "./components/Guards";
 import ScrollToTopButton from "./components/ScrollToTopButton";
+import { PlatformSettingsHydrator } from "./components/PlatformSettingsHydrator";
 
-const queryClient = new QueryClient();
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ChefDashboard = lazy(() => import("./pages/ChefDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const BrowseChefs = lazy(() => import("./pages/BrowseChefs"));
+const ChefProfile = lazy(() => import("./pages/ChefProfile"));
 
-// Scroll restoration component
+validateClientStartup();
+
+function RouteFallback() {
+  return (
+    <div
+      className="min-h-[40vh] flex items-center justify-center text-[#A8A8A8] text-sm"
+      role="status"
+      aria-live="polite"
+    >
+      Loading…
+    </div>
+  );
+}
+
 function ScrollToTop() {
   const { pathname } = useLocation();
 
@@ -49,82 +66,291 @@ function ScrollToTop() {
   return null;
 }
 
-// Fade + slide transition wrapper
-function PageWrapper({ children }: { children: React.ReactNode }) {
+function PageWrapper({
+  children,
+  routeLabel,
+}: {
+  children: React.ReactNode;
+  routeLabel?: string;
+}) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
-      className="w-full min-h-screen flex flex-col"
-    >
-      {children}
-    </motion.div>
+    <RouteErrorBoundary label={routeLabel}>
+      <motion.div
+        id="main-content"
+        tabIndex={-1}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
+        className="w-full min-h-screen flex flex-col outline-none"
+      >
+        {children}
+      </motion.div>
+    </RouteErrorBoundary>
+  );
+}
+
+function LazyRoute({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <PageWrapper routeLabel={label}>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </PageWrapper>
   );
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <ScrollToTopButton />
-        <Routes>
-          {/* Public pages accessible to everyone */}
-          <Route path="/" element={<PageWrapper><Index /></PageWrapper>} />
-          <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
-          <Route path="/how-it-works" element={<PageWrapper><HowItWorks /></PageWrapper>} />
-          <Route path="/browse-chefs" element={<PageWrapper><BrowseChefs /></PageWrapper>} />
-          <Route path="/chef/:id" element={<PageWrapper><ChefProfile /></PageWrapper>} />
-          <Route path="/for-chefs" element={<PageWrapper><ForChefs /></PageWrapper>} />
-          <Route path="/contact" element={<PageWrapper><Contact /></PageWrapper>} />
-          <Route path="/faq" element={<PageWrapper><FAQ /></PageWrapper>} />
-          <Route path="/pricing" element={<PageWrapper><Pricing /></PageWrapper>} />
-          <Route path="/blog" element={<PageWrapper><Blog /></PageWrapper>} />
-          <Route path="/unauthorized" element={<PageWrapper><Unauthorized /></PageWrapper>} />
-          <Route path="/waitlist" element={<PageWrapper><WaitlistPage /></PageWrapper>} />
-          <Route path="/privacy-policy" element={<PageWrapper><PrivacyPolicy /></PageWrapper>} />
-          <Route path="/terms" element={<PageWrapper><Terms /></PageWrapper>} />
-          <Route path="/cookie-policy" element={<PageWrapper><CookiePolicy /></PageWrapper>} />
-          <Route path="/legal" element={<PageWrapper><LegalHub /></PageWrapper>} />
+  <GlobalErrorBoundary>
+    <QueryProvider>
+      <AuthProvider>
+        <PlatformSettingsHydrator />
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[#FF7A59] focus:text-white focus:rounded-md focus:font-bold focus:text-sm"
+            >
+              Skip to main content
+            </a>
+            <ScrollToTop />
+            <ScrollToTopButton />
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <PageWrapper routeLabel="home">
+                    <Index />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/about"
+                element={
+                  <PageWrapper routeLabel="about">
+                    <About />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/how-it-works"
+                element={
+                  <PageWrapper routeLabel="how-it-works">
+                    <HowItWorks />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/browse-chefs"
+                element={
+                  <LazyRoute label="browse-chefs">
+                    <BrowseChefs />
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path="/chef/:id"
+                element={
+                  <LazyRoute label="chef-profile">
+                    <ChefProfile />
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path="/for-chefs"
+                element={
+                  <PageWrapper routeLabel="for-chefs">
+                    <ForChefs />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/contact"
+                element={
+                  <PageWrapper routeLabel="contact">
+                    <Contact />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/faq"
+                element={
+                  <PageWrapper routeLabel="faq">
+                    <FAQ />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/pricing"
+                element={
+                  <PageWrapper routeLabel="pricing">
+                    <Pricing />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/blog"
+                element={
+                  <PageWrapper routeLabel="blog">
+                    <Blog />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/unauthorized"
+                element={
+                  <PageWrapper routeLabel="unauthorized">
+                    <Unauthorized />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/waitlist"
+                element={
+                  <PageWrapper routeLabel="waitlist">
+                    <WaitlistPage />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/privacy-policy"
+                element={
+                  <PageWrapper routeLabel="privacy">
+                    <PrivacyPolicy />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/terms"
+                element={
+                  <PageWrapper routeLabel="terms">
+                    <Terms />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/cookie-policy"
+                element={
+                  <PageWrapper routeLabel="cookies">
+                    <CookiePolicy />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/legal"
+                element={
+                  <PageWrapper routeLabel="legal">
+                    <LegalHub />
+                  </PageWrapper>
+                }
+              />
 
-          {/* Guest-only pages (redirects if already authenticated) */}
-          <Route element={<GuestGuard />}>
-            <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
-            <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
-            <Route path="/register/family" element={<PageWrapper><FamilyRegistration /></PageWrapper>} />
-            <Route path="/register/chef" element={<PageWrapper><ChefRegistration /></PageWrapper>} />
-          </Route>
+              <Route element={<GuestGuard />}>
+                <Route
+                  path="/login"
+                  element={
+                    <PageWrapper routeLabel="login">
+                      <Login />
+                    </PageWrapper>
+                  }
+                />
+                <Route
+                  path="/register"
+                  element={
+                    <PageWrapper routeLabel="register">
+                      <Register />
+                    </PageWrapper>
+                  }
+                />
+                <Route
+                  path="/register/family"
+                  element={
+                    <PageWrapper routeLabel="register-family">
+                      <FamilyRegistration />
+                    </PageWrapper>
+                  }
+                />
+                <Route
+                  path="/register/chef"
+                  element={
+                    <PageWrapper routeLabel="register-chef">
+                      <ChefRegistration />
+                    </PageWrapper>
+                  }
+                />
+              </Route>
 
-          {/* Protected routes */}
-          <Route element={<AuthGuard />}>
-            {/* Family Dashboard routes */}
-            <Route element={<RoleGuard allowedRoles={["family"]} />}>
-              <Route path="/dashboard/*" element={<PageWrapper><Dashboard /></PageWrapper>} />
-              <Route path="/family-dashboard/*" element={<PageWrapper><Dashboard /></PageWrapper>} />
-            </Route>
+              <Route element={<AuthGuard />}>
+                <Route element={<RoleGuard allowedRoles={["family"]} />}>
+                  <Route
+                    path="/dashboard/*"
+                    element={
+                      <LazyRoute label="family-dashboard">
+                        <Dashboard />
+                      </LazyRoute>
+                    }
+                  />
+                  <Route
+                    path="/family-dashboard/*"
+                    element={
+                      <LazyRoute label="family-dashboard">
+                        <Dashboard />
+                      </LazyRoute>
+                    }
+                  />
+                </Route>
 
-            {/* Chef Dashboard routes */}
-            <Route element={<RoleGuard allowedRoles={["chef"]} />}>
-              <Route path="/chef-dashboard/*" element={<PageWrapper><ChefDashboard /></PageWrapper>} />
-            </Route>
+                <Route element={<RoleGuard allowedRoles={["chef"]} />}>
+                  <Route
+                    path="/chef-dashboard/*"
+                    element={
+                      <LazyRoute label="chef-dashboard">
+                        <ChefDashboard />
+                      </LazyRoute>
+                    }
+                  />
+                </Route>
 
-            {/* Admin Dashboard routes */}
-            <Route element={<RoleGuard allowedRoles={["admin"]} />}>
-              <Route path="/admin-dashboard/*" element={<PageWrapper><AdminDashboard /></PageWrapper>} />
-              <Route path="/admin/launch-control" element={<PageWrapper><AdminDashboard initialTab="launch_control" /></PageWrapper>} />
-            </Route>
-          </Route>
+                <Route element={<RoleGuard allowedRoles={["admin"]} />}>
+                  <Route
+                    path="/admin-dashboard/*"
+                    element={
+                      <LazyRoute label="admin-dashboard">
+                        <AdminDashboard />
+                      </LazyRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/launch-control"
+                    element={
+                      <LazyRoute label="admin-launch-control">
+                        <AdminDashboard initialTab="launch_control" />
+                      </LazyRoute>
+                    }
+                  />
+                </Route>
+              </Route>
 
-          {/* Catch-all */}
-          <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+              <Route
+                path="*"
+                element={
+                  <PageWrapper routeLabel="not-found">
+                    <NotFound />
+                  </PageWrapper>
+                }
+              />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryProvider>
+  </GlobalErrorBoundary>
 );
 
 createRoot(document.getElementById("root")!).render(<App />);

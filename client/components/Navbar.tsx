@@ -14,6 +14,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthService } from "@/services/auth.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -22,9 +24,8 @@ export default function Navbar() {
   const lastScrollY = useRef(0);
   const location = useLocation();
   const navigate = useNavigate();
-
-  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-  const userRole = localStorage.getItem("userRole");
+  const { isAuthenticated } = useAuth();
+  const { role: userRole } = useCurrentUserRole();
 
   useEffect(() => {
     const handleScroll = () => {

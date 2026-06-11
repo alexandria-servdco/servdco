@@ -25,12 +25,11 @@ To run the application locally, you must use `pnpm`.
    ```
 
 2. **Environment Variables**
-   Create a `.env` file in the root directory and ensure the following keys are populated:
-   ```env
-   # Cloudinary configuration for chef verification uploads and portfolio galleries
-   VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
-   VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset
+   Copy the template and fill in your values locally only:
+   ```bash
+   cp .env.example .env.local
    ```
+   Never commit `.env.local` — it is gitignored. See `.env.example` for the full list.
 
 3. **Start Development Server**
    ```bash
@@ -70,13 +69,39 @@ To integrate this frontend with the planned PHP backend:
 - `client/store/`: Zustand global stores. Only used when prop-drilling becomes excessive (e.g., notifications, platform fees).
 - `client/services/`: The API abstraction layer. This is where you will inject PHP backend hooks.
 
-## Deployment Flow
+## GitHub + Vercel Deployment
 
-The project is built for static deployment or serverless deployment (Vercel/Netlify) alongside the Express proxy.
+### Safe push checklist
+
+- Commit `.env.example` only (placeholders, no secrets)
+- Never commit `.env.local`, `.env`, or `.vercel/`
+- The `api/` folder must be in the repo — Vercel uses it for Stripe serverless routes
 
 ```bash
-# Generate the production build
+git add .
+git status   # confirm .env.local is NOT listed
+git commit -m "your message"
+git push origin main
+```
+
+### Vercel project settings
+
+| Setting | Value |
+|---------|-------|
+| Framework | Vite |
+| Build Command | `pnpm run build` |
+| Output Directory | `dist` |
+| Install Command | `pnpm install` |
+
+Connect the GitHub repo in Vercel, then add environment variables (see `.env.example`). After the first deploy with `api/` included, verify:
+
+- `POST https://your-app.vercel.app/api/stripe/webhook` returns **400** (missing signature), not **405** or HTML
+- Vercel Cron → `/api/stripe/transfers/process` runs hourly
+
+### Local production build
+
+```bash
 pnpm build
 ```
 
-The output will be placed in the `dist/` directory, ready to be served by Nginx, Apache, or any static hosting provider.
+Output is in `dist/`.

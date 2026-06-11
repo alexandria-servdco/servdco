@@ -13,11 +13,16 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { calculatePlatformFee, calculateCookPayout } from "@/utils/platformFee";
-import { api } from "@/lib/api";
-import { mapChefToCard, CookCardData } from "@/lib/cookMapper";
-import { BookingService } from "@/services/booking.service";
-import { AuthService } from "@/services/auth.service";
+import type { CookCardData } from "@/lib/cookMapper";
+import { useChefProfile } from "@/hooks/useChefProfile";
+import { useCreateBooking } from "@/hooks/useBookings";
+import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
+import { useCurrentProfile } from "@/hooks/useCurrentProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { NotificationService } from "@/services/notification.service";
+import { StripeService } from "@/services/stripe.service";
+import { isUuid } from "@/lib/marketplaceTypes";
+import { AnalyticsSupabaseService } from "@/services/supabase/analytics.service";
 
 const DEFAULT_MENUS = [
   { course: "Main Course", title: "Seasonal Home-Cooked Entrée", desc: "Fresh, customized main dish prepared with your preferred ingredients." },
@@ -31,24 +36,15 @@ const DEFAULT_REVIEWS = [
 
 export default function ChefProfile() {
   const { id } = useParams();
-  const [chef, setChef] = useState<(CookCardData & { menus: typeof DEFAULT_MENUS; customerReviews: typeof DEFAULT_REVIEWS }) | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const { data: chefCard, isLoading: loading } = useChefProfile(id);
+  const chef = chefCard
+    ? { ...chefCard, menus: DEFAULT_MENUS, customerReviews: DEFAULT_REVIEWS }
+    : null;
+  const createBooking = useCreateBooking();
+  const { data: stripeCheckoutEnabled = false } = useStripeCheckoutEnabled();
+  const { profile } = useCurrentProfile();
+  const { isAuthenticated } = useAuth();
   const [bookingError, setBookingError] = useState("");
-
-  useEffect(() => {
-    if (!id) return;
-    api
-      .getChefById(id)
-      .then((data) => {
-        if (data) {
-          const card = mapChefToCard(data);
-          setChef({ ...card, menus: DEFAULT_MENUS, customerReviews: DEFAULT_REVIEWS });
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [id]);
 
   // Booking widget state
   const [bookingDate, setBookingDate] = useState("");
@@ -56,6 +52,12 @@ export default function ChefProfile() {
   const [guestsCount, setGuestsCount] = useState(4);
   const [bookingBooked, setBookingBooked] = useState(false);
   const [favorite, setFavorite] = useState(false);
+
+  useEffect(() => {
+    if (id && isUuid(id)) {
+      AnalyticsSupabaseService.recordProfileView(id, profile?.id ?? null);
+    }
+  }, [id, profile?.id]);
 
   // Pricing calculations
   const baseRate =
@@ -70,22 +72,41 @@ export default function ChefProfile() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      setBookingError("Please sign in to request a booking.");
+      return;
+    }
     if (!bookingDate || !chef || !id) return;
-    setBookingSubmitting(true);
     setBookingError("");
     try {
-      const user = AuthService.getCurrentUser();
-      const result = await BookingService.createBooking({
+      const result = await createBooking.mutateAsync({
         cook_id: id,
-        family_name: user?.name || "Guest Family",
+        family_name: profile?.full_name ?? profile?.email ?? "Guest Family",
         service_type: serviceType,
         date: bookingDate,
         guests_count: guestsCount,
         price: totalCost,
       });
+
+      const bookingId = result.booking?.id;
+      if (
+        stripeCheckoutEnabled &&
+        bookingId &&
+        isUuid(bookingId)
+      ) {
+        const origin = window.location.origin;
+        const checkout = await StripeService.createCheckoutSession({
+          bookingId,
+          successUrl: `${origin}/dashboard?booking=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${origin}/chef/${id}?booking=cancelled`,
+        });
+        window.location.href = checkout.url;
+        return;
+      }
+
       setBookingBooked(true);
-      if (user?.id) {
-        await NotificationService.notify(user.id, {
+      if (profile?.id) {
+        await NotificationService.notify(profile.id, {
           title: "Booking Request Sent",
           message: result.message,
           type: "success",
@@ -94,8 +115,6 @@ export default function ChefProfile() {
     } catch (err) {
       setBookingError("Unable to submit booking. Please try again or log in.");
       console.error(err);
-    } finally {
-      setBookingSubmitting(false);
     }
   };
 
@@ -323,6 +342,23 @@ export default function ChefProfile() {
                       </Link>
                     </div>
                   </div>
+                ) : !isAuthenticated ? (
+                  <div className="text-center py-10 space-y-4">
+                    <UserCircle className="w-12 h-12 text-[#FF7A59] mx-auto opacity-80" />
+                    <h3 className="text-xl font-bold font-serif text-white">
+                      Sign in to book
+                    </h3>
+                    <p className="text-xs text-[#A8A8A8] max-w-[260px] mx-auto">
+                      Create a family account or sign in to request a cooking session with{" "}
+                      {chef.name}.
+                    </p>
+                    <Link
+                      to={`/login?from=/chef/${id}`}
+                      className="px-6 py-2.5 bg-[#FF7A59] text-white font-bold rounded-xl text-xs hover:bg-[#e96a49] transition-all inline-flex items-center gap-2"
+                    >
+                      Sign in <ArrowRight size={14} />
+                    </Link>
+                  </div>
                 ) : (
                   <form onSubmit={handleBookingSubmit} className="space-y-6">
                     {bookingError && (
@@ -441,10 +477,10 @@ export default function ChefProfile() {
 
                     <button
                       type="submit"
-                      disabled={bookingSubmitting}
+                      disabled={createBooking.isPending}
                       className="w-full py-4 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-60 text-white font-bold rounded-xl text-xs hover:scale-[1.01] transition-all shadow-md flex items-center justify-center gap-2 group"
                     >
-                      {bookingSubmitting ? "Submitting..." : "Request Cooking Session"}
+                      {createBooking.isPending ? "Submitting..." : "Request Cooking Session"}
                       <ArrowRight
                         size={14}
                         className="group-hover:translate-x-1 transition-transform"

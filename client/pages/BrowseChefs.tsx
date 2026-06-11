@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useBrowseChefs } from "@/hooks/useChefs";
 import {
   Search,
   Star,
@@ -11,8 +12,7 @@ import {
   Shield,
   Crown,
 } from "lucide-react";
-import { api } from "@/lib/api";
-import { mapChefsToCards, CookCardData } from "@/lib/cookMapper";
+import type { CookCardData } from "@/lib/cookMapper";
 
 const SPECIALTIES_LIST = [
   "All Specialties",
@@ -34,21 +34,12 @@ const CITIES_LIST = [
 ];
 
 export default function BrowseChefs() {
-  const [cooks, setCooks] = useState<CookCardData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: cooks = [], isLoading: loading } = useBrowseChefs();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All Specialties");
   const [selectedCity, setSelectedCity] = useState("All Cities");
   const [sortBy, setSortBy] = useState("Recommended");
   const [favorites, setFavorites] = useState<string[]>([]);
-
-  useEffect(() => {
-    api
-      .getChefs()
-      .then((data) => setCooks(mapChefsToCards(data)))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
 
   // Toggle favorite
   const toggleFavorite = (id: string) => {
@@ -80,24 +71,21 @@ export default function BrowseChefs() {
     return matchesSearch && matchesSpecialty && matchesCity && isVerified;
   });
 
-  // Sort logic with Premium tie-breaker
+  // Premium cooks always rank above non-premium; then existing sort
   filteredChefs.sort((a, b) => {
-    let diff = 0;
+    if (a.premium_status && !b.premium_status) return -1;
+    if (!a.premium_status && b.premium_status) return 1;
+
     if (sortBy === "Rating: High to Low") {
-      diff = Number(b.rating) - Number(a.rating);
-    } else if (sortBy === "Most Reviewed") {
+      return Number(b.rating) - Number(a.rating);
+    }
+    if (sortBy === "Most Reviewed") {
       const bRev = parseInt(b.reviews) || 0;
       const aRev = parseInt(a.reviews) || 0;
-      diff = bRev - aRev;
+      return bRev - aRev;
     }
 
-    // Tie breaker or if Recommended
-    if (diff === 0) {
-      if (a.premium_status && !b.premium_status) return -1;
-      if (!a.premium_status && b.premium_status) return 1;
-    }
-
-    return diff;
+    return Number(b.rating) - Number(a.rating);
   });
 
   return (

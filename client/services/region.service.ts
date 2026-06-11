@@ -1,26 +1,20 @@
-import { api } from "@/lib/api";
-import { LaunchRegion } from "@/lib/mockLaunchControl";
+import type { LaunchRegion } from "@/lib/launchOpsTypes";
+import { LaunchRegionsSupabaseService } from "@/services/supabase/launch-regions.service";
+import { assertSupabaseConfigured } from "@/services/supabase/fallback";
 
 export const RegionService = {
-  /**
-   * Retrieves traction figures and state indicators.
-   */
-  async getRegions() {
-    const { regions } = await api.getRegions();
-    return regions;
+  async getRegions(): Promise<LaunchRegion[]> {
+    assertSupabaseConfigured();
+    return LaunchRegionsSupabaseService.listRegions();
   },
 
-  /**
-   * Updates Launch rules and targets (such as threshold counts).
-   */
   async updateRegion(id: string, updates: Partial<LaunchRegion>) {
-    return api.updateRegionSettings(id, updates);
+    assertSupabaseConfigured();
+    return LaunchRegionsSupabaseService.updateRegion(id, updates);
   },
 
-  /**
-   * Creates a new region profile inside databases.
-   */
-  async addRegion(id: string, name: string) {
-    return api.initializeState(id, name);
-  }
+  async initializeRegion(id: string, name: string) {
+    assertSupabaseConfigured();
+    return LaunchRegionsSupabaseService.initializeRegion(id, name);
+  },
 };

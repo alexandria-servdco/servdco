@@ -1,5 +1,35 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
+
+function AuthLoadingGate({ children }: { children: React.ReactNode }) {
+  const { isLoading, supabaseAuthEnabled } = useAuth();
+  if (supabaseAuthEnabled && isLoading) {
+    return (
+      <div className="min-h-screen bg-[#111111] flex items-center justify-center">
+        <p className="text-[#A8A8A8] text-xs font-bold uppercase tracking-wider">
+          Loading session...
+        </p>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
+function RoleLoadingGate({ children }: { children: React.ReactNode }) {
+  const { isLoading } = useCurrentUserRole();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#111111] flex items-center justify-center">
+        <p className="text-[#A8A8A8] text-xs font-bold uppercase tracking-wider">
+          Loading profile...
+        </p>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
 
 /**
  * GuestGuard ensures that users who are already logged in
@@ -7,20 +37,34 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
  * while guest users can access login/register pages.
  */
 export function GuestGuard() {
-  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-  const userRole = localStorage.getItem("userRole");
+  const { isAuthenticated } = useAuth();
+  const { role, isLoading } = useCurrentUserRole();
 
-  if (isAuthenticated) {
-    if (userRole === "family") {
+  if (isAuthenticated && isLoading) {
+    return (
+      <RoleLoadingGate>
+        <div className="min-h-screen bg-[#111111]" />
+      </RoleLoadingGate>
+    );
+  }
+
+  if (isAuthenticated && role) {
+    if (role === "family") {
       return <Navigate to="/family-dashboard" replace />;
-    } else if (userRole === "chef") {
+    }
+    if (role === "chef") {
       return <Navigate to="/chef-dashboard" replace />;
-    } else if (userRole === "admin") {
+    }
+    if (role === "admin") {
       return <Navigate to="/admin-dashboard" replace />;
     }
   }
 
-  return <Outlet />;
+  return (
+    <AuthLoadingGate>
+      <Outlet />
+    </AuthLoadingGate>
+  );
 }
 
 /**
@@ -28,14 +72,18 @@ export function GuestGuard() {
  * and redirects users to the login screen.
  */
 export function AuthGuard() {
-  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return <Outlet />;
+  return (
+    <AuthLoadingGate>
+      {!isAuthenticated ? (
+        <Navigate to="/login" state={{ from: location }} replace />
+      ) : (
+        <Outlet />
+      )}
+    </AuthLoadingGate>
+  );
 }
 
 interface RoleGuardProps {
@@ -44,14 +92,17 @@ interface RoleGuardProps {
 
 /**
  * RoleGuard prevents users from accessing pages meant for other roles.
- * e.g., a family account cannot view /chef-dashboard or /admin-dashboard.
  */
 export function RoleGuard({ allowedRoles }: RoleGuardProps) {
-  const userRole = localStorage.getItem("userRole") as any;
+  const { role } = useCurrentUserRole();
 
-  if (!allowedRoles.includes(userRole)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  return <Outlet />;
+  return (
+    <RoleLoadingGate>
+      {!role || !allowedRoles.includes(role) ? (
+        <Navigate to="/unauthorized" replace />
+      ) : (
+        <Outlet />
+      )}
+    </RoleLoadingGate>
+  );
 }

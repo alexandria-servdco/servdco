@@ -3,16 +3,23 @@ import { useImageUpload } from "../../hooks/useImageUpload";
 import { UploadDropzone } from "./UploadDropzone";
 import { UploadProgress } from "./UploadProgress";
 import { UploadError } from "./UploadError";
-import { UploadResponse } from "../../types/upload.types";
+import { StorageBucket, UploadResponse } from "../../types/upload.types";
 import { Image as ImageIcon, CheckCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MultiImageUploaderProps {
   onImagesUploaded: (responses: UploadResponse[]) => void;
   maxFiles?: number;
+  pathPrefix?: string;
+  bucket?: StorageBucket;
 }
 
-export function MultiImageUploader({ onImagesUploaded, maxFiles = 10 }: MultiImageUploaderProps) {
+export function MultiImageUploader({
+  onImagesUploaded,
+  maxFiles = 10,
+  pathPrefix,
+  bucket = "cook-portfolio",
+}: MultiImageUploaderProps) {
   const [queue, setQueue] = useState<{ file: File; id: string }[]>([]);
   const { upload, status, progress, error, previewUrl } = useImageUpload(); // We reuse the hook logic but manage state locally for multiple
 
@@ -37,7 +44,11 @@ export function MultiImageUploader({ onImagesUploaded, maxFiles = 10 }: MultiIma
     
     for (let i = 0; i < queue.length; i++) {
       setCurrentUploadIndex(i);
-      const res = await upload(queue[i].file, { folder: "portfolio" });
+      const res = await upload(queue[i].file, {
+        folder: "portfolio",
+        bucket,
+        pathPrefix,
+      });
       if (res) {
         results.push(res);
       }

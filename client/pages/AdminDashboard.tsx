@@ -38,6 +38,7 @@ import {
   ShieldAlert,
   Loader2,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import {
   LineChart,
@@ -62,6 +63,7 @@ import { DashboardWidgetSkeleton, CardSkeleton } from "@/components/ui/Skeletons
 
 import { useAdminStore } from "@/store/useAdminStore";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { useNotifications } from "@/hooks/useNotifications";
 
 import { ChartCard } from "@/components/admin/ChartCard";
 import { lazy, Suspense } from "react";
@@ -74,8 +76,10 @@ const BookingsLedgerTable = lazy(() => import("@/components/admin/BookingsLedger
 const PayoutControl = lazy(() => import("@/components/admin/PayoutControl").then(m => ({ default: m.PayoutControl })));
 const ContentModeration = lazy(() => import("@/components/admin/ContentModeration").then(m => ({ default: m.ContentModeration })));
 const GlobalAnnouncements = lazy(() => import("@/components/admin/GlobalAnnouncements").then(m => ({ default: m.GlobalAnnouncements })));
+const AdminNotificationMonitor = lazy(() => import("@/components/admin/AdminNotificationMonitor").then(m => ({ default: m.AdminNotificationMonitor })));
 const PlatformSettings = lazy(() => import("@/components/admin/PlatformSettings").then(m => ({ default: m.PlatformSettings })));
 const MarketInterestRequests = lazy(() => import("@/components/admin/MarketInterestRequests").then(m => ({ default: m.MarketInterestRequests })));
+const AdminMessagingHub = lazy(() => import("@/components/messaging/AdminMessagingHub").then(m => ({ default: m.AdminMessagingHub })));
 
 // ─── Constants & Aesthetics ───────────────────────────────────────────────────
 
@@ -96,6 +100,7 @@ const NAV_ITEMS = [
   { id: "users", label: "Users", icon: Users },
   { id: "chefs", label: "Cooks", icon: ChefHat },
   { id: "bookings", label: "Bookings", icon: CalendarDays },
+  { id: "messaging", label: "Messaging", icon: MessageSquare },
   { id: "documents", label: "Verification", icon: FileText },
   { id: "payouts", label: "Payouts", icon: DollarSign },
   { id: "moderation", label: "Moderation", icon: ShieldAlert },
@@ -175,6 +180,7 @@ export default function AdminDashboard({
 }: {
   initialTab?: string;
 }) {
+  useNotifications();
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState(initialTab);
 
@@ -386,7 +392,13 @@ export default function AdminDashboard({
     status: "approved" | "rejected",
   ) => {
     try {
-      await api.updateDocumentStatus(id, status);
+      let reviewNotes: string | undefined;
+      if (status === "rejected") {
+        reviewNotes =
+          window.prompt("Rejection reason (shown to chef):") ?? undefined;
+        if (!reviewNotes?.trim()) return;
+      }
+      await api.updateDocumentStatus(id, status, reviewNotes);
       await reloadData();
       setPreviewDoc(null);
     } catch (err) {
@@ -762,6 +774,7 @@ export default function AdminDashboard({
               {activeNav === "users" && "User Directory"}
               {activeNav === "chefs" && "Cook Network & Verification"}
               {activeNav === "bookings" && "Marketplace Bookings"}
+              {activeNav === "messaging" && "Platform Messaging"}
               {activeNav === "documents" && "Trust & Verification Center"}
               {activeNav === "payouts" && "Payout Control"}
               {activeNav === "moderation" && "Content Moderation"}
@@ -789,6 +802,8 @@ export default function AdminDashboard({
                 "Review cook cuisines, active marketplace metrics, and approve applications."}
               {activeNav === "bookings" &&
                 "Oversee real-time marketplace bookings, transactions, and status logs."}
+              {activeNav === "messaging" &&
+                "Monitor family ↔ cook conversations linked to bookings."}
               {activeNav === "documents" &&
                 "Inspect submitted cook certifications, ServSafe, ID verification and insurance policies."}
               {activeNav === "payouts" &&
@@ -2549,15 +2564,12 @@ export default function AdminDashboard({
 
             {/* ── Tab: ANALYTICS ────────────────────────────────────────────── */}
             {activeNav === "analytics" && (
-              <AdminAnalytics
-                totalUsersCount={totalUsersCount}
-                totalChefsCount={totalChefsCount}
-                monthlyRevenueTotal={monthlyRevenueTotal}
-                regions={regions}
-              />
+              <AdminAnalytics regions={regions} />
             )}
 
             {/* ── Tab: PAYOUTS ────────────────────────────────────────────── */}
+            {activeNav === "messaging" && <AdminMessagingHub />}
+
             {activeNav === "payouts" && (
               <PayoutControl />
             )}
@@ -2567,7 +2579,12 @@ export default function AdminDashboard({
             )}
             {/* ── Tab: ANNOUNCEMENTS ────────────────────────────────────────────── */}
             {activeNav === "announcements" && (
-              <GlobalAnnouncements />
+              <Suspense fallback={<CardSkeleton />}>
+                <GlobalAnnouncements />
+                <div style={{ marginTop: "32px" }}>
+                  <AdminNotificationMonitor />
+                </div>
+              </Suspense>
             )}
             {/* ── Tab: SETTINGS ────────────────────────────────────────────── */}
             {activeNav === "settings" && (

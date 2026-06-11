@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Mail, Phone, MapPin, CheckCircle, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { contactSchema, safeParse } from "@shared/validation";
 
 export default function Contact() {
   const [formState, setFormState] = useState({ name: "", email: "", message: "" });
@@ -12,11 +13,16 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formState.name || !formState.email || !formState.message) return;
+    const parsed = safeParse(contactSchema, formState);
+    if (parsed.success === false) {
+      setError(parsed.error);
+      return;
+    }
+    const { name, email, message } = parsed.data;
     setLoading(true);
     setError("");
     try {
-      await api.submitContact(formState);
+      await api.submitContact({ name, email, message });
       setSubmitted(true);
       setFormState({ name: "", email: "", message: "" });
       setTimeout(() => setSubmitted(false), 4000);

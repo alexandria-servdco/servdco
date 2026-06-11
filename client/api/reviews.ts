@@ -1,6 +1,5 @@
-import { Review, ReviewService } from "@/services/ReviewService";
+import { ReviewService } from "@/services/ReviewService";
 
 export const reviewsApi = {
-  getReviews: () => ReviewService.getReviews(),
-  getReviewsByChef: (chefId: string) => ReviewService.getReviewsByChef(chefId)
+  getReviewsByChef: (chefId: string) => ReviewService.getReviewsByChef(chefId),
 };

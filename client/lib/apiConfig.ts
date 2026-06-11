@@ -1,10 +1,9 @@
 /**
  * Unified API Configuration
- * 
- * Set USE_MOCK_API to false when you are ready to connect to your PHP backend.
- * Update API_BASE_URL to point to your PHP API folder (e.g. "/api").
+ *
+ * Phase 10: all runtime data flows through Supabase services.
+ * Vercel `/api/stripe/*` routes remain for payment serverless functions.
  */
 export const apiConfig = {
-  USE_MOCK_API: true,
-  API_BASE_URL: "/api" // Relative URL path to PHP endpoints
+  API_BASE_URL: "/api",
 };

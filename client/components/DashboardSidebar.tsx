@@ -7,19 +7,34 @@ import {
   User,
   Settings,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { AuthService } from "@/services/auth.service";
+import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
+import { useUnreadMessageCount } from "@/hooks/useConversations";
 
 export default function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { data: messagingEnabled = false } = useMessagingEnabled();
+  const { data: unreadTotal = 0 } = useUnreadMessageCount();
 
   const menuLinks = [
     { label: "Dashboard", path: "/family-dashboard", icon: LayoutDashboard },
     { label: "Browse Cooks", path: "/browse-chefs", icon: Search },
     { label: "Bookings", path: "/family-dashboard/bookings", icon: Calendar },
+    ...(messagingEnabled
+      ? [
+          {
+            label: "Messages",
+            path: "/family-dashboard/messages",
+            icon: MessageSquare,
+            badge: unreadTotal,
+          },
+        ]
+      : []),
     { label: "History", path: "/family-dashboard/history", icon: Clock },
     { label: "Favorites", path: "/family-dashboard/favorites", icon: Heart },
   ];
@@ -78,7 +93,12 @@ export default function DashboardSidebar() {
                 }
               />
               <span>{link.label}</span>
-              {active && (
+              {"badge" in link && link.badge > 0 && (
+                <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF7A59] text-white text-[9px] font-bold flex items-center justify-center">
+                  {link.badge}
+                </span>
+              )}
+              {active && !("badge" in link && link.badge > 0) && (
                 <span className="absolute right-4 w-1.5 h-1.5 rounded-full bg-[#FF7A59] shadow-[0_0_8px_#FF7A59]" />
               )}
             </Link>

@@ -74,6 +74,8 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
     // Derived error status
     const hasError = !!error || (type === "email" && emailValid === false);
     const isValidSuccess = showSuccess || (type === "email" && emailValid === true);
+    const errorId = id ? `${id}-error` : undefined;
+    const errorMessage = error || (hasError ? "Invalid format." : undefined);
 
     return (
       <div className="form-input-container group font-sans">
@@ -90,6 +92,8 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
             ref={ref}
             type={currentType}
             id={id}
+            aria-invalid={hasError || undefined}
+            aria-describedby={hasError && errorId ? errorId : undefined}
             placeholder=" "
             value={props.value !== undefined ? props.value : localValue}
             onFocus={() => setFocused(true)}
@@ -144,9 +148,13 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
         </div>
 
         {/* Display validation errors */}
-        {hasError && (
-          <p className="text-[11px] text-red-500 font-semibold mt-1.5 ml-1 animate-fadeIn">
-            {error || "Invalid format."}
+        {hasError && errorMessage && (
+          <p
+            id={errorId}
+            role="alert"
+            className="text-[11px] text-red-500 font-semibold mt-1.5 ml-1 animate-fadeIn"
+          >
+            {errorMessage}
           </p>
         )}
       </div>

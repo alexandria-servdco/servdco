@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { 
   Heart, ChevronRight, Calendar, Users, 
@@ -6,22 +7,37 @@ import {
 } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { NotificationBell } from "@/components/ui/NotificationBell";
-import { BookingService } from "@/services/booking.service";
+import { useBookings, useUpdateBookingStatus } from "@/hooks/useBookings";
+import { useNotifications } from "@/hooks/useNotifications";
 import { ChefService } from "@/services/chef.service";
 import { FamilyService } from "@/services/family.service";
 import { AuthService } from "@/services/auth.service";
+import { useCurrentProfile } from "@/hooks/useCurrentProfile";
+import { profileQueryKeys } from "@/services/supabase/profiles.service";
 import { NotificationService } from "@/services/notification.service";
 import { mapChefsToCards } from "@/lib/cookMapper";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BookingCardSkeleton, DashboardWidgetSkeleton } from "@/components/ui/Skeletons";
+import { BookingMessaging } from "@/components/messaging/BookingMessaging";
+import { MessagingHub } from "@/components/messaging/MessagingHub";
+import { TipPrompt } from "@/components/tips/TipPrompt";
+import { useBookingTipStatus } from "@/hooks/useTips";
+import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
 
 export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { profile } = useCurrentProfile();
+  const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
+  const completedIds = bookings.filter((b) => b.status === "completed").map((b) => b.id);
+  const { data: tipMap } = useBookingTipStatus(completedIds);
+  const { data: stripeEnabled = false } = useStripeCheckoutEnabled();
+  const updateBookingStatus = useUpdateBookingStatus();
+  useNotifications();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [bookings, setBookings] = useState<any[]>([]);
   const [chefs, setChefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,10 +55,7 @@ export default function Dashboard() {
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
-  const [profileProgress, setProfileProgress] = useState<number>(() => {
-    const saved = localStorage.getItem("profileCompleted");
-    return saved ? parseInt(saved, 10) : 50;
-  });
+  const profileProgress = profile?.profile_completed ?? 50;
 
   // Settings Form state
   const [settingsData, setSettingsData] = useState({
@@ -54,31 +67,31 @@ export default function Dashboard() {
   const [settingsSuccess, setSettingsSuccess] = useState(false);
 
   useEffect(() => {
-    const user = AuthService.getCurrentUser();
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    setCurrentUser(user);
+    if (!profile) return;
+
+    setCurrentUser({
+      id: profile.id,
+      name: profile.full_name ?? profile.email,
+      email: profile.email,
+      phone: profile.phone,
+      city: profile.city,
+      state: profile.state,
+      zip: profile.zip,
+    });
     setProfileData({
-      name: user.name || "",
-      email: user.email || "",
-      phone: user.phone || "(555) 234-5678",
-      city: user.city || "Columbus",
-      state: user.state || "Ohio",
-      zip: user.zip || "43215",
+      name: profile.full_name || "",
+      email: profile.email || "",
+      phone: profile.phone || "(555) 234-5678",
+      city: profile.city || "Columbus",
+      state: profile.state || "Ohio",
+      zip: profile.zip || "43215",
       dietary: ["Keto", "Organic"]
     });
 
     const fetchData = async () => {
       try {
-        const fetchedBookings = await BookingService.getBookings();
         const fetchedChefs = await ChefService.getChefs();
-        setBookings(fetchedBookings);
         setChefs(mapChefsToCards(fetchedChefs));
-        if (user.id) {
-          await NotificationService.syncUserNotifications(user.id);
-        }
       } catch (err) {
         console.error("Failed to load family dashboard resources", err);
       } finally {
@@ -86,11 +99,14 @@ export default function Dashboard() {
       }
     };
     fetchData();
-  }, [navigate]);
+  }, [profile]);
+
+  const isLoading = loading || bookingsLoading;
 
   const getSubTab = () => {
     const path = location.pathname;
     if (path.endsWith("/bookings")) return "bookings";
+    if (path.endsWith("/messages")) return "messages";
     if (path.endsWith("/history")) return "history";
     if (path.endsWith("/favorites")) return "favorites";
     if (path.endsWith("/profile")) return "profile";
@@ -110,13 +126,11 @@ export default function Dashboard() {
           name: profileData.name,
           email: profileData.email,
           city: profileData.city,
-          state: profileData.state
+          state: profileData.state,
+          profile_completed: 100,
         });
+        await queryClient.invalidateQueries({ queryKey: profileQueryKeys.own() });
       }
-      
-      // Update completion to 100%
-      localStorage.setItem("profileCompleted", "100");
-      setProfileProgress(100);
 
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 3000);
@@ -136,9 +150,7 @@ export default function Dashboard() {
   const handleCancelBooking = async (id: string) => {
     if (confirm("Are you sure you want to cancel this booking request?")) {
       try {
-        await BookingService.updateStatus(id, "cancelled");
-        const updated = await BookingService.getBookings();
-        setBookings(updated);
+        await updateBookingStatus.mutateAsync({ id, status: "cancelled" });
       } catch (err) {
         console.error(err);
       }
@@ -210,7 +222,7 @@ export default function Dashboard() {
 
         {/* Content switch */}
         <div className="p-8 space-y-8 max-w-7xl mx-auto">
-          {loading ? (
+          {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <DashboardWidgetSkeleton />
               <DashboardWidgetSkeleton />
@@ -398,7 +410,7 @@ export default function Dashboard() {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-4 border-b border-white/5">
                 <div className="flex gap-2">
-                  {["all", "confirmed", "pending", "cancelled"].map((filter) => (
+                  {["all", "confirmed", "pending", "completed", "cancelled"].map((filter) => (
                     <button
                       key={filter}
                       onClick={() => setStatusFilter(filter)}
@@ -426,37 +438,57 @@ export default function Dashboard() {
                   .filter((b) => statusFilter === "all" || b.status === statusFilter)
                   .filter((b) => b.chefName?.toLowerCase().includes(searchQuery.toLowerCase()))
                   .map((booking) => (
-                    <div key={booking.id} className="velvet-card p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-[#FF7A59]">
-                          <Calendar size={20} />
+                    <div key={booking.id} className="velvet-card p-6 flex flex-col gap-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-[#FF7A59]">
+                            <Calendar size={20} />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-white font-serif">{booking.chefName || "Cook Priya Patel"}</h4>
+                            <p className="text-xs text-[#A8A8A8] mt-0.5">{booking.date} • {booking.serviceType || "Indian Dinner Prep"}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-bold text-white font-serif">{booking.chefName || "Cook Priya Patel"}</h4>
-                          <p className="text-xs text-[#A8A8A8] mt-0.5">{booking.date} • {booking.serviceType || "Indian Dinner Prep"}</p>
+
+                        <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                            booking.status === "confirmed"
+                              ? "bg-[#2E7D66]/10 text-[#2E7D66] border-[#2E7D66]/20"
+                              : booking.status === "completed"
+                              ? "bg-white/10 text-white border-white/20"
+                              : booking.status === "cancelled"
+                              ? "bg-red-500/10 text-red-500 border-red-500/20"
+                              : "bg-[#FF7A59]/10 text-[#FF7A59] border-[#FF7A59]/20"
+                          }`}>
+                            {booking.status}
+                          </span>
+
+                          <div className="flex flex-col items-end gap-2">
+                            {booking.status !== "cancelled" && (
+                              <>
+                                <BookingMessaging bookingId={booking.id} />
+                                {booking.status !== "completed" && (
+                                  <button
+                                    onClick={() => handleCancelBooking(booking.id)}
+                                    className="text-xs text-red-400 hover:text-red-300 font-bold hover:underline"
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                          booking.status === "confirmed" 
-                            ? "bg-[#2E7D66]/10 text-[#2E7D66] border-[#2E7D66]/20" 
-                            : booking.status === "cancelled"
-                            ? "bg-red-500/10 text-red-500 border-red-500/20"
-                            : "bg-[#FF7A59]/10 text-[#FF7A59] border-[#FF7A59]/20"
-                        }`}>
-                          {booking.status}
-                        </span>
-                        
-                        {booking.status !== "cancelled" && (
-                          <button
-                            onClick={() => handleCancelBooking(booking.id)}
-                            className="text-xs text-red-400 hover:text-red-300 font-bold hover:underline"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </div>
+                      {booking.status === "completed" && stripeEnabled && !tipMap?.get(booking.id) && (
+                        <TipPrompt bookingId={booking.id} chefName={booking.chefName} />
+                      )}
+                      {booking.status === "completed" && tipMap?.get(booking.id) && (
+                        <p className="text-[10px] text-[#2E7D66] font-bold flex items-center gap-1">
+                          <Gift size={12} /> Tip sent — thank you!
+                        </p>
+                      )}
                     </div>
                   ))}
 
@@ -465,6 +497,11 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
+          ) : currentTab === "messages" ? (
+            <MessagingHub
+              title="Messages"
+              subtitle="Chat with cooks about your upcoming and past bookings."
+            />
           ) : currentTab === "history" ? (
             /* Tab 3: History */
             <div className="space-y-6">

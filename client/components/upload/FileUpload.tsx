@@ -16,6 +16,8 @@ interface FileUploadProps {
   initialUrl?: string;
   initialFilename?: string;
   className?: string;
+  pathPrefix?: string;
+  documentType?: string;
 }
 
 export function FileUpload({
@@ -27,6 +29,8 @@ export function FileUpload({
   initialUrl,
   initialFilename,
   className,
+  pathPrefix,
+  documentType,
 }: FileUploadProps) {
   const { status, progress, error, result, upload, remove } = useFileUpload();
 
@@ -36,7 +40,12 @@ export function FileUpload({
   const displayFilename = result?.filename || initialFilename;
 
   const handleFileSelect = async (file: File) => {
-    const res = await upload(file, { folder: "documents" });
+    const res = await upload(file, {
+      folder: "documents",
+      bucket: "cook-documents",
+      pathPrefix,
+      documentType,
+    });
     if (res && onUploadSuccess) {
       onUploadSuccess(res);
     }

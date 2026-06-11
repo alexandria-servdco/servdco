@@ -4,6 +4,20 @@ import { Link, useNavigate } from "react-router-dom";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
+import {
+  loginSchema,
+  passwordResetSchema,
+  safeParse,
+} from "@shared/validation";
+
+function navigateForRole(
+  navigate: ReturnType<typeof useNavigate>,
+  role: string,
+) {
+  if (role === "admin") navigate("/admin-dashboard");
+  else if (role === "chef") navigate("/chef-dashboard");
+  else navigate("/family-dashboard");
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,36 +25,52 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailValid, setEmailValid] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showReset, setShowReset] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailValid) return;
-    
-    setIsLoading(true);
-    try {
-      const user = await AuthService.login(email);
-      setTimeout(() => {
-        setIsLoading(false);
-        
-        // Write auth state tags to localStorage
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("userRole", user.role);
-        
-        // Default mock profile completion parameters
-        const savedProgress = localStorage.getItem("profileCompleted") || (user.role === "admin" ? "100" : "50");
-        localStorage.setItem("profileCompleted", savedProgress);
-        localStorage.setItem("verificationStatus", user.role === "chef" ? "pending" : "approved");
+    const schema = showReset ? passwordResetSchema : loginSchema;
+    const parsed = safeParse(schema, { email, password });
+    if (parsed.success === false) {
+      setError(parsed.error);
+      return;
+    }
 
-        if (user.role === "admin") {
-          navigate("/admin-dashboard");
-        } else if (user.role === "chef") {
-          navigate("/chef-dashboard");
-        } else {
-          navigate("/family-dashboard");
-        }
-      }, 1000);
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const user = await AuthService.login(email, password);
+      navigateForRole(navigate, user.role);
     } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
       console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = safeParse(passwordResetSchema, { email });
+    if (parsed.success === false) {
+      setError(parsed.error);
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      await AuthService.resetPassword(email);
+      setSuccess("Password reset email sent. Check your inbox.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to send reset email.",
+      );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -49,57 +79,8 @@ export default function Login() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userRole", role);
-      localStorage.setItem("profileCompleted", "50"); // initial dev mock progress at 50%
-      localStorage.setItem("verificationStatus", role === "chef" ? "pending" : "approved");
-
-      const defaultUserMap = {
-        family: {
-          id: "dev-family-123",
-          name: "Sarah Johnson",
-          email: "family@servd.co",
-          role: "family",
-          state: "Ohio",
-          city: "Columbus",
-          zip: "43215",
-          phone: "(555) 234-5678",
-          status: "active"
-        },
-        chef: {
-          id: "dev-chef-123",
-          name: "Cook Maria",
-          email: "chef@servd.co",
-          role: "chef",
-          state: "Ohio",
-          city: "Columbus",
-          zip: "43215",
-          phone: "(555) 345-6789",
-          status: "active"
-        },
-        admin: {
-          id: "dev-admin-123",
-          name: "Super Admin",
-          email: "admin@servd.co",
-          role: "admin",
-          state: "Ohio",
-          city: "Columbus",
-          zip: "43215",
-          phone: "(555) 999-9999",
-          status: "active"
-        }
-      };
-
-      localStorage.setItem("servd_user", JSON.stringify(defaultUserMap[role]));
-
-      if (role === "admin") {
-        navigate("/admin-dashboard");
-      } else if (role === "chef") {
-        navigate("/chef-dashboard");
-      } else {
-        navigate("/family-dashboard");
-      }
+      AuthService.devLogin(role);
+      navigateForRole(navigate, role);
     }, 800);
   };
 
@@ -180,13 +161,28 @@ export default function Login() {
           {/* Welcome Section */}
           <div className="space-y-1">
             <h2 className="text-3xl font-bold font-serif text-white leading-tight">
-              Welcome back
+              {showReset ? "Reset password" : "Welcome back"}
             </h2>
-            <p className="text-xs text-[#A8A8A8] font-medium">Log in to your private dining dashboard.</p>
+            <p className="text-xs text-[#A8A8A8] font-medium">
+              {showReset
+                ? "Enter your email to receive a password reset link."
+                : "Log in to your private dining dashboard."}
+            </p>
           </div>
 
+          {error && (
+            <div className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="p-3 bg-green-950/20 border border-green-500/20 rounded-xl text-xs text-green-400 font-semibold">
+              {success}
+            </div>
+          )}
+
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={showReset ? handleResetPassword : handleSubmit} className="space-y-4">
             
             {/* Email Input */}
             <FormInput
@@ -201,34 +197,55 @@ export default function Login() {
               error={!emailValid && email.length > 0 ? "Invalid email address format." : ""}
             />
 
-            {/* Password Input */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center px-1">
-                <span className="text-[0px]">Empty label placeholder for design spacing</span>
-                <a href="#" className="text-[#FF7A59] text-[11px] font-bold hover:underline">
-                  Forgot password?
-                </a>
+            {!showReset && (
+              <div className="space-y-1">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[0px]">Empty label placeholder for design spacing</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReset(true);
+                      setError("");
+                      setSuccess("");
+                    }}
+                    className="text-[#FF7A59] text-[11px] font-bold hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <FormInput
+                  type="password"
+                  label="Password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  icon={<Lock size={16} />}
+                  required
+                />
               </div>
-              <FormInput
-                type="password"
-                label="Password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                icon={<Lock size={16} />}
-                required
-              />
-            </div>
+            )}
 
-            {/* Log In Button */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <Button
                 type="submit"
                 isLoading={isLoading}
                 className="w-full text-xs font-bold"
               >
-                Log In
+                {showReset ? "Send Reset Link" : "Log In"}
               </Button>
+              {showReset && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReset(false);
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className="w-full text-xs text-[#A8A8A8] font-bold hover:text-white transition-colors"
+                >
+                  Back to login
+                </button>
+              )}
             </div>
           </form>
 
@@ -248,7 +265,7 @@ export default function Login() {
             Continue with Google
           </button>
 
-          {/* Dev Access Panel */}
+          {import.meta.env.DEV && (
           <div className="bg-[#161616] border border-white/5 rounded-2xl p-4 mt-6 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-[#A8A8A8] font-bold uppercase tracking-wider">Dev Access Panel (1-Click Login)</span>
@@ -281,6 +298,7 @@ export default function Login() {
               </button>
             </div>
           </div>
+          )}
 
           {/* Footer */}
           <div className="text-center pt-2">

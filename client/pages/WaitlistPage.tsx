@@ -3,6 +3,8 @@ import { useLocation, Link } from "react-router-dom";
 import { MapPin, Users, ChefHat, Mail, Sparkles, Clock, ArrowRight, ShieldCheck, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { waitlistEmailSchema, safeParse } from "@shared/validation";
+import { logger } from "@/lib/logger";
 
 // Logo Component
 function ServdLogo({ className }: { className?: string }) {
@@ -43,7 +45,10 @@ export default function WaitlistPage() {
       setStats(data);
       setLoading(false);
     } catch (err) {
-      console.error("Failed to load waitlist stats:", err);
+      logger.error("Failed to load waitlist stats", {
+        domain: "waitlist",
+        message: err instanceof Error ? err.message : String(err),
+      });
       setLoading(false);
     }
   };
@@ -54,7 +59,8 @@ export default function WaitlistPage() {
 
   const handleJoinWaitlist = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    const parsed = safeParse(waitlistEmailSchema, { email });
+    if (!parsed.success) return;
 
     try {
       // Register in our mock database
@@ -71,7 +77,10 @@ export default function WaitlistPage() {
       // Instantly refresh the stats to show the incremented counts!
       await fetchStats();
     } catch (err) {
-      console.error("Failed to join waitlist:", err);
+      logger.error("Failed to join waitlist", {
+        domain: "waitlist",
+        message: err instanceof Error ? err.message : String(err),
+      });
       setSubmitted(true);
     }
   };

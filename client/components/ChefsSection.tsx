@@ -1,57 +1,15 @@
 import { Link } from "react-router-dom";
 import ChefCard from "./ChefCard";
+import { useBrowseChefs } from "@/hooks/useChefs";
+
+function parseReviewCount(reviews: string): number {
+  const match = reviews.match(/(\d+)/);
+  return match ? Number(match[1]) : 0;
+}
 
 export default function ChefsSection() {
-  const chefs = [
-    {
-      name: "Cook Maria",
-      rating: 4.8,
-      reviewCount: 128,
-      specialties: ["Comfort Food", "Meal Prep"],
-      location: "New York",
-      image:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop",
-      premium_status: true,
-    },
-    {
-      name: "Cook James",
-      rating: 4.9,
-      reviewCount: 94,
-      specialties: ["Southern", "Family Meals"],
-      location: "Atlanta",
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop",
-      premium_status: false,
-    },
-    {
-      name: "Cook Lauren",
-      rating: 4.9,
-      reviewCount: 10,
-      specialties: ["Healthy", "Gluten-Free"],
-      location: "Los Angeles",
-      image:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop",
-      premium_status: true,
-    },
-    {
-      name: "Cook Andre",
-      rating: 4.8,
-      reviewCount: 156,
-      specialties: ["Caribbean", "Fusion"],
-      location: "Miami",
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop",
-    },
-    {
-      name: "Cook Priya",
-      rating: 4.8,
-      reviewCount: 103,
-      specialties: ["Indian", "Vegetarian"],
-      location: "San Francisco",
-      image:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop",
-    },
-  ];
+  const { data: chefs = [], isLoading } = useBrowseChefs();
+  const featured = chefs.slice(0, 5);
 
   return (
     <section id="chefs" className="py-24 md:py-32 px-6 lg:px-8 bg-background">
@@ -68,11 +26,36 @@ export default function ChefsSection() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
-          {chefs.map((chef, index) => (
-            <ChefCard key={index} {...chef} />
-          ))}
-        </div>
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Loading cooks…</p>
+        ) : featured.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            Verified cooks will appear here once they join ServdCo.{" "}
+            <Link to="/register" className="text-primary font-semibold hover:underline">
+              Become a cook
+            </Link>
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
+            {featured.map((chef) => (
+              <Link
+                key={chef.id}
+                to={`/chef/${chef.id}`}
+                className="block h-full"
+              >
+                <ChefCard
+                  name={chef.name}
+                  rating={parseFloat(chef.rating) || 0}
+                  reviewCount={parseReviewCount(chef.reviews)}
+                  specialties={chef.specialties}
+                  location={chef.location}
+                  image={chef.image}
+                  premium_status={chef.premium_status}
+                />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

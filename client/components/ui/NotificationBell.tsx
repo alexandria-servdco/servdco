@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, Check, Trash2, X } from "lucide-react";
 import { useNotificationStore } from "@/store/useNotificationStore";
+import { NotificationService } from "@/services/notification.service";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotificationStore();
+  const { notifications, unreadCount, removeNotification } = useNotificationStore();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export function NotificationBell() {
               <h3 className="text-sm font-semibold text-white">Notifications</h3>
               {unreadCount > 0 && (
                 <button
-                  onClick={() => markAllAsRead()}
+                  onClick={() => void NotificationService.markAllRead()}
                   className="text-[11px] font-medium text-[#FF7A59] hover:text-[#FF8D6B] transition-colors flex items-center gap-1"
                 >
                   <Check size={12} />
@@ -67,7 +68,9 @@ export function NotificationBell() {
                   {notifications.map((notif) => (
                     <div
                       key={notif.id}
-                      onClick={() => !notif.read && markAsRead(notif.id)}
+                      onClick={() =>
+                        !notif.read && void NotificationService.markRead(notif.id)
+                      }
                       className={cn(
                         "group relative px-4 py-3 border-b border-white/5 transition-colors cursor-default",
                         notif.read ? "bg-transparent" : "bg-white/[0.02]"

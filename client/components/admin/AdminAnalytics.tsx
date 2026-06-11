@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BarChart,
   Bar,
@@ -12,29 +11,66 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ChartCard } from "./ChartCard";
+import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
+import { Loader2 } from "lucide-react";
 
 interface AdminAnalyticsProps {
-  totalUsersCount: number;
-  totalChefsCount: number;
-  monthlyRevenueTotal: number;
-  regions: any[];
+  regions: Array<{ state: string; waitlist_count: number }>;
 }
 
-export function AdminAnalytics({
-  totalUsersCount,
-  totalChefsCount,
-  monthlyRevenueTotal,
-  regions,
-}: AdminAnalyticsProps) {
+export function AdminAnalytics({ regions }: AdminAnalyticsProps) {
+  const { data, isLoading } = useAdminAnalytics();
+
+  if (isLoading || !data) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", padding: "48px" }}>
+        <Loader2 className="animate-spin" color="#FF7A59" size={24} />
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "24px",
-      }}
-    >
-      {/* Visual Row 1 */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "12px",
+        }}
+      >
+        {[
+          {
+            label: "Tips (Succeeded)",
+            value: `$${(data.totalTipsCents / 100).toLocaleString()}`,
+          },
+          {
+            label: "Transfers Paid",
+            value: String(data.totalTransfersPaid),
+          },
+          {
+            label: "Active Subscriptions",
+            value: String(data.activeSubscriptions),
+          },
+        ].map(({ label, value }) => (
+          <div
+            key={label}
+            style={{
+              background: "rgba(25,25,25,0.4)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "12px",
+              padding: "16px",
+            }}
+          >
+            <p style={{ fontSize: "11px", color: "#A8A8A8", margin: "0 0 8px" }}>
+              {label}
+            </p>
+            <p style={{ fontSize: "20px", fontWeight: 600, color: "#FFF", margin: 0 }}>
+              {value}
+            </p>
+          </div>
+        ))}
+      </div>
+
       <div
         style={{
           display: "grid",
@@ -42,21 +78,9 @@ export function AdminAnalytics({
           gap: "20px",
         }}
       >
-        <ChartCard title="Monthly User & Cook Signups">
+        <ChartCard title="Monthly User & Cook Signups (Last 6 Months)">
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart
-              data={[
-                { month: "Jan", users: 180, chefs: 30 },
-                { month: "Feb", users: 240, chefs: 45 },
-                { month: "Mar", users: 310, chefs: 60 },
-                { month: "Apr", users: 450, chefs: 92 },
-                {
-                  month: "May",
-                  users: totalUsersCount,
-                  chefs: totalChefsCount,
-                },
-              ]}
-            >
+            <BarChart data={data.monthlySignups}>
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="rgba(255,255,255,0.04)"
@@ -97,34 +121,13 @@ export function AdminAnalytics({
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Marketplace Revenue Conversion">
+        <ChartCard title="Platform Revenue (Last 14 Days)">
           <ResponsiveContainer width="100%" height={260}>
-            <AreaChart
-              data={[
-                { date: "May 10", rev: 1200 },
-                { date: "May 15", rev: 3800 },
-                { date: "May 20", rev: 8400 },
-                { date: "May 23", rev: monthlyRevenueTotal },
-              ]}
-            >
+            <AreaChart data={data.dailyRevenue}>
               <defs>
-                <linearGradient
-                  id="colorRev"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="5%"
-                    stopColor="#2E7D66"
-                    stopOpacity={0.2}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="#2E7D66"
-                    stopOpacity={0}
-                  />
+                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#2E7D66" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#2E7D66" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
@@ -157,14 +160,13 @@ export function AdminAnalytics({
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#colorRev)"
-                name="Net Revenue ($)"
+                name="Platform Fee ($)"
               />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
       </div>
 
-      {/* Visual Row 2 */}
       <div
         style={{
           display: "grid",
@@ -173,15 +175,9 @@ export function AdminAnalytics({
         }}
       >
         <ChartCard title="Demand Density by Waitlist States">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "14px",
-            }}
-          >
-            {regions.slice(0, 5).map((reg, idx) => (
-              <div key={idx}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {regions.slice(0, 5).map((reg) => (
+              <div key={reg.state}>
                 <div
                   style={{
                     display: "flex",
@@ -189,22 +185,10 @@ export function AdminAnalytics({
                     marginBottom: "4px",
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#F5F5F5",
-                      fontWeight: "600",
-                    }}
-                  >
+                  <span style={{ fontSize: "12px", color: "#F5F5F5", fontWeight: 600 }}>
                     {reg.state}
                   </span>
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#FF7A59",
-                      fontWeight: "700",
-                    }}
-                  >
+                  <span style={{ fontSize: "12px", color: "#FF7A59", fontWeight: 700 }}>
                     {reg.waitlist_count} users wait
                   </span>
                 </div>
@@ -218,7 +202,7 @@ export function AdminAnalytics({
                 >
                   <div
                     style={{
-                      width: `${(reg.waitlist_count / 100) * 100}%`,
+                      width: `${Math.min(100, reg.waitlist_count)}%`,
                       height: "100%",
                       background: "#FF7A59",
                       borderRadius: "99px",
@@ -230,18 +214,9 @@ export function AdminAnalytics({
           </div>
         </ChartCard>
 
-        <ChartCard title="Cuisine Popularity and Booking Share">
+        <ChartCard title="Bookings by Service Type">
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart
-              data={[
-                { cuisine: "Italian", bookings: 45 },
-                { cuisine: "Indian", bookings: 38 },
-                { cuisine: "Comfort Food", bookings: 29 },
-                { cuisine: "Healthy", bookings: 24 },
-                { cuisine: "Mexican", bookings: 18 },
-              ]}
-              layout="vertical"
-            >
+            <BarChart data={data.cuisineBookings} layout="vertical">
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="rgba(255,255,255,0.04)"
@@ -259,7 +234,7 @@ export function AdminAnalytics({
                 tick={{ fontSize: 11, fill: "#A8A8A8" }}
                 axisLine={false}
                 tickLine={false}
-                width={80}
+                width={100}
               />
               <Tooltip
                 contentStyle={{
@@ -267,11 +242,7 @@ export function AdminAnalytics({
                   border: "1px solid rgba(255,255,255,0.08)",
                 }}
               />
-              <Bar
-                dataKey="bookings"
-                fill="#FF7A59"
-                radius={[0, 4, 4, 0]}
-              />
+              <Bar dataKey="bookings" fill="#FF7A59" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>

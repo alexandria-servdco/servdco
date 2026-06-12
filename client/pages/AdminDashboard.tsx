@@ -69,6 +69,9 @@ import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { AdminOverviewService } from "@/services/supabase/admin-overview.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
+import { DocumentPreviewModal } from "@/components/admin/DocumentPreviewModal";
+import { useDocumentModeration } from "@/hooks/useDocumentModeration";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -249,6 +252,8 @@ export default function AdminDashboard({
 
   // Document modal preview state
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const [pendingDocAction, setPendingDocAction] = useState<string | null>(null);
+  const moderateDocument = useDocumentModeration();
 
   const location = useLocation();
 
@@ -441,7 +446,12 @@ export default function AdminDashboard({
     setDocReasonText("");
   };
 
-  const handleDocumentAction = async (
+  const syncDocumentsAfterModeration = async () => {
+    const dData = await api.getDocuments();
+    setDocuments(dData);
+  };
+
+  const handleDocumentAction = (
     id: string,
     status: "approved" | "rejected" | "resubmit",
   ) => {
@@ -450,41 +460,44 @@ export default function AdminDashboard({
       return;
     }
 
-    try {
-      await api.updateDocumentStatus(id, status);
-      await reloadData();
-      setPreviewDoc(null);
-    } catch (err) {
-      console.error(err);
-    }
+    setPendingDocAction("approved");
+    moderateDocument.mutate(
+      { id, action: "approved" },
+      {
+        onSuccess: async () => {
+          setPreviewDoc(null);
+          await syncDocumentsAfterModeration();
+        },
+        onSettled: () => setPendingDocAction(null),
+      },
+    );
   };
 
-  const submitDocumentReason = async () => {
-    if (!docReasonModal || !docReasonText.trim()) return;
-
-    setDocActionLoading(true);
-    try {
-      if (docReasonModal.action === "rejected") {
-        await api.updateDocumentStatus(
-          docReasonModal.id,
-          "rejected",
-          docReasonText.trim(),
-        );
-      } else {
-        await api.requestDocumentResubmission(
-          docReasonModal.id,
-          docReasonText.trim(),
-        );
-      }
-      await reloadData();
-      setPreviewDoc(null);
-      setDocReasonModal(null);
-      setDocReasonText("");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDocActionLoading(false);
+  const submitDocumentReason = () => {
+    if (!docReasonModal || !docReasonText.trim()) {
+      toast.error("Please enter a reason or instructions.");
+      return;
     }
+
+    const action =
+      docReasonModal.action === "rejected" ? "rejected" : "resubmit";
+    setDocActionLoading(true);
+    setPendingDocAction(action);
+    moderateDocument.mutate(
+      { id: docReasonModal.id, action, reason: docReasonText.trim() },
+      {
+        onSuccess: async () => {
+          setPreviewDoc(null);
+          setDocReasonModal(null);
+          setDocReasonText("");
+          await syncDocumentsAfterModeration();
+        },
+        onSettled: () => {
+          setDocActionLoading(false);
+          setPendingDocAction(null);
+        },
+      },
+    );
   };
 
   // Export CSV Helper
@@ -3135,235 +3148,15 @@ export default function AdminDashboard({
         </div>
       )}
 
-      {/* ── DOCUMENT PREVIEW MODAL ───────────────────────────────────────────── */}
-      {previewDoc && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.75)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            padding: "16px",
-          }}
-        >
-          <div
-            style={{
-              background: "#1A1A1A",
-              borderRadius: "24px",
-              width: "100%",
-              maxWidth: "600px",
-              boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                padding: "20px 24px",
-                borderBottom: "1px solid rgba(255,255,255,0.08)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    fontSize: "16.5px",
-                    fontWeight: "700",
-                    color: "#F5F5F5",
-                    margin: 0,
-                  }}
-                >
-                  Review: {previewDoc.type}
-                </h3>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#A8A8A8",
-                    margin: "2px 0 0",
-                  }}
-                >
-                  Submitted by {previewDoc.chef_name}
-                </p>
-              </div>
-              <button
-                onClick={() => setPreviewDoc(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#A8A8A8",
-                  cursor: "pointer",
-                  display: "flex",
-                }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div
-              style={{
-                padding: "24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
-              }}
-            >
-              {/* Image Preview frame */}
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "320px",
-                  background: "#111111",
-                  borderRadius: "16px",
-                  overflow: "hidden",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                }}
-              >
-                {previewDoc.url?.toLowerCase().includes(".pdf") ||
-                previewDoc.type?.toLowerCase().includes("pdf") ? (
-                  <iframe
-                    src={previewDoc.url}
-                    title={previewDoc.type}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      minHeight: "420px",
-                      border: "none",
-                    }}
-                  />
-                ) : (
-                  <img
-                    src={previewDoc.url}
-                    alt={previewDoc.type}
-                    style={{
-                      maxWidth: "100%",
-                      maxHeight: "100%",
-                      objectFit: "contain",
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* Status details */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyItems: "space-between",
-                  alignItems: "center",
-                  background: "#161616",
-                  borderRadius: "14px",
-                  padding: "12px 16px",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "#A8A8A8",
-                      textTransform: "uppercase",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Validation Status
-                  </span>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#F5F5F5",
-                      margin: "2px 0 0",
-                    }}
-                  >
-                    {previewDoc.status}
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {previewDoc.status === "pending" ? (
-                    <>
-                      <button
-                        onClick={() =>
-                          handleDocumentAction(previewDoc.id, "approved")
-                        }
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "10px",
-                          background: "#2E7D66",
-                          color: "white",
-                          fontWeight: "600",
-                          fontSize: "12.5px",
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Approve Document
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleDocumentAction(previewDoc.id, "resubmit")
-                        }
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "10px",
-                          background: "rgba(245,158,11,0.2)",
-                          color: "#F59E0B",
-                          fontWeight: "600",
-                          fontSize: "12.5px",
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Request Resubmission
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleDocumentAction(previewDoc.id, "rejected")
-                        }
-                        style={{
-                          padding: "8px 16px",
-                          borderRadius: "10px",
-                          background: "#EF4444",
-                          color: "white",
-                          fontWeight: "600",
-                          fontSize: "12.5px",
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setPreviewDoc(null)}
-                      style={{
-                        padding: "8px 16px",
-                        borderRadius: "10px",
-                        background: "rgba(255,255,255,0.05)",
-                        color: "#F5F5F5",
-                        fontWeight: "600",
-                        fontSize: "12.5px",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Close Review
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <DocumentPreviewModal
+        document={previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        onApprove={(id) => handleDocumentAction(id, "approved")}
+        onReject={(id) => handleDocumentAction(id, "rejected")}
+        onResubmit={(id) => handleDocumentAction(id, "resubmit")}
+        pendingAction={pendingDocAction}
+        isPending={moderateDocument.isPending || docActionLoading}
+      />
 
       <Dialog
         open={docReasonModal !== null}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -85,6 +85,10 @@ import { StripeService } from "@/services/stripe.service";
 import { useOwnDocuments, useSubmitChefDocuments } from "@/hooks/useOwnDocuments";
 import { useChefAnalytics } from "@/hooks/useChefAnalytics";
 import type { BookingStatus } from "@shared/booking";
+import {
+  calculateChefProfileCompletion,
+  profileCompletionLabel,
+} from "@shared/profileCompletion";
 
 const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
   "accepted",
@@ -119,16 +123,25 @@ export default function ChefDashboard() {
   const [premiumLoading, setPremiumLoading] = useState(false);
   const { data: ownDocuments = [] } = useOwnDocuments(ownChefProfile?.id);
   const submitChefDocuments = useSubmitChefDocuments();
-  const profileProgress = profile?.profile_completed ?? 0;
   const verificationStatus = ownChefProfile?.verification_status ?? "pending";
 
   const docStatus = (type: string) =>
     ownDocuments.find((d) => d.type === type)?.status ?? "missing";
 
-  const approvedDocCount = ["ServSafe Certificate", "Insurance", "Background Check"].filter(
+  const requiredDocTypes = [
+    "ServSafe Certificate",
+    "Insurance",
+    "Background Check",
+  ] as const;
+  const submittedDocCount = requiredDocTypes.filter(
+    (t) => docStatus(t) !== "missing",
+  ).length;
+  const approvedDocCount = requiredDocTypes.filter(
     (t) => docStatus(t) === "approved",
   ).length;
-  const approvalPercent = Math.round((approvedDocCount / 3) * 100);
+  const verificationDocPercent = Math.round(
+    (approvedDocCount / requiredDocTypes.length) * 100,
+  );
 
   // Filter state for Bookings subtab
   const [bookingFilter, setBookingFilter] = useState("all");
@@ -149,6 +162,39 @@ export default function ChefDashboard() {
     portfolioImages: [] as UploadResponse[],
   });
   const [profileSuccess, setProfileSuccess] = useState(false);
+
+  const profileProgress = useMemo(
+    () =>
+      calculateChefProfileCompletion({
+        full_name: profile?.full_name,
+        avatar_url: profile?.avatar_url ?? profileData.avatarUrl,
+        city: profile?.city,
+        state: profile?.state,
+        phone: profile?.phone,
+        bio: ownChefProfile?.bio ?? profileData.bio,
+        cuisines: ownChefProfile?.cuisine
+          ? ownChefProfile.cuisine
+              .split(/[\/,]/)
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : profileData.cuisines,
+        availabilityCount: availabilitySlots.length,
+        documentsSubmittedCount: submittedDocCount,
+        verification_status: verificationStatus,
+      }),
+    [
+      profile,
+      profileData.avatarUrl,
+      profileData.bio,
+      profileData.cuisines,
+      ownChefProfile?.bio,
+      ownChefProfile?.cuisine,
+      availabilitySlots.length,
+      submittedDocCount,
+      verificationStatus,
+    ],
+  );
+  const profileProgressLabel = profileCompletionLabel(profileProgress);
 
   // Weekly Schedule states
   const [newDay, setNewDay] = useState("Monday");
@@ -295,7 +341,6 @@ export default function ChefDashboard() {
     await ProfilesSupabaseService.updateOwnProfile({
       full_name: profileData.name,
       avatar_url: profileData.avatarUrl || null,
-      profile_completed: 100,
     });
     await queryClient.invalidateQueries({ queryKey: profileQueryKeys.own() });
     if (profile?.id) {
@@ -528,7 +573,7 @@ export default function ChefDashboard() {
               </div>
               <div>
                 <p className="text-sm font-bold text-white">
-                  Complete your professional cook profile to receive bookings!
+                  {profileProgressLabel} to receive bookings!
                 </p>
                 <p className="text-xs text-[#A8A8A8] mt-0.5">
                   Please update your culinary bio, cuisines list, and schedule
@@ -766,11 +811,12 @@ export default function ChefDashboard() {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-white">
-                          Almost active!
+                          {profileProgressLabel}
                         </p>
                         <p className="text-[10px] text-[#A8A8A8] mt-0.5">
-                          Upload remaining background insurance paperwork to hit
-                          100%.
+                          {profileProgress >= 100
+                            ? "Your profile is ready for bookings."
+                            : "Add bio, cuisines, availability, avatar, and verification documents."}
                         </p>
                       </div>
                     </div>
@@ -1119,7 +1165,7 @@ export default function ChefDashboard() {
                 </h4>
                 <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
                   <div className="w-full h-full rounded-full border-4 border-[#2E7D66] border-r-transparent flex items-center justify-center font-bold text-white text-sm font-serif">
-                    {approvalPercent}%
+                    {verificationDocPercent}%
                   </div>
                 </div>
                 <div className="space-y-3 pt-2">

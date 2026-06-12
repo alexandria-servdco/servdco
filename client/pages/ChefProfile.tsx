@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { bookingCreateSchema, formatZodError } from "@shared/validation";
+import { extractErrorMessage } from "@/lib/errors";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -24,9 +28,10 @@ import { AnalyticsSupabaseService } from "@/services/supabase/analytics.service"
 import { useReviews } from "@/hooks/useReviews";
 import { calculateBookingPrice } from "@/lib/bookingPricing";
 import { UserAvatar } from "@/components/ui/UserAvatar";
-import { resolveAvatarUrl } from "@/lib/avatar";
+import { normalizeAvatarUrl } from "@/lib/avatar";
 
 export default function ChefProfile() {
+  const navigate = useNavigate();
   const { id } = useParams();
   const { data: chefCard, isLoading: loading } = useChefProfile(id);
   const { data: dbReviews = [] } = useReviews(isUuid(id ?? "") ? id : undefined);
@@ -83,46 +88,78 @@ export default function ChefProfile() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setBookingError("");
+
     if (!isAuthenticated) {
-      setBookingError("Please sign in to request a booking.");
+      const msg = "Please sign in as a family account to request a booking.";
+      setBookingError(msg);
+      toast.error(msg);
       return;
     }
-    if (!bookingDate || !chef || !id) return;
-    setBookingError("");
+
+    if (profile?.role && profile.role !== "family") {
+      const msg =
+        "Only family accounts can request bookings. Sign in with a family profile.";
+      setBookingError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (!bookingDate || !chef || !id || !isUuid(id)) {
+      const msg = "Select a date and choose a valid cook profile.";
+      setBookingError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    const payload = {
+      cook_id: id,
+      family_name: profile?.full_name ?? profile?.email ?? "Guest Family",
+      service_type: serviceType,
+      date: bookingDate,
+      booking_time: bookingTime || undefined,
+      booking_end_time: bookingEndTime || undefined,
+      guests_count: guestsCount,
+      price: totalCost,
+      special_instructions: specialInstructions || undefined,
+      allergies: allergies || undefined,
+      dietary_restrictions: dietaryRestrictions
+        ? dietaryRestrictions
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined,
+      parking_instructions: parkingInstructions || undefined,
+      gate_code: gateCode || undefined,
+      emergency_contact_name: emergencyName || undefined,
+      emergency_contact_phone: emergencyPhone || undefined,
+      address: {
+        street_address: streetAddress,
+        apartment: apartment || undefined,
+        city,
+        state,
+        zip,
+        country: "US" as const,
+        location_notes: locationNotes || undefined,
+      },
+    };
+
+    const parsed = bookingCreateSchema.safeParse(payload);
+    if (!parsed.success) {
+      const msg = formatZodError(parsed.error);
+      setBookingError(msg);
+      toast.error(msg);
+      return;
+    }
+
     try {
-      const result = await createBooking.mutateAsync({
-        cook_id: id,
-        family_name: profile?.full_name ?? profile?.email ?? "Guest Family",
-        service_type: serviceType,
-        date: bookingDate,
-        booking_time: bookingTime || undefined,
-        booking_end_time: bookingEndTime || undefined,
-        guests_count: guestsCount,
-        price: totalCost,
-        special_instructions: specialInstructions || undefined,
-        allergies: allergies || undefined,
-        dietary_restrictions: dietaryRestrictions
-          ? dietaryRestrictions
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean)
-          : undefined,
-        parking_instructions: parkingInstructions || undefined,
-        gate_code: gateCode || undefined,
-        emergency_contact_name: emergencyName || undefined,
-        emergency_contact_phone: emergencyPhone || undefined,
-        address: {
-          street_address: streetAddress,
-          apartment: apartment || undefined,
-          city,
-          state,
-          zip,
-          country: "US",
-          location_notes: locationNotes || undefined,
-        },
-      });
+      const result = await createBooking.mutateAsync(payload);
 
       setBookingBooked(true);
+      toast.success("Booking request sent!", {
+        description: result.message,
+      });
+
       if (profile?.id) {
         await NotificationService.notify(profile.id, {
           title: "Booking Request Sent",
@@ -130,11 +167,22 @@ export default function ChefProfile() {
           type: "success",
         });
       }
+
+      setTimeout(() => {
+        navigate("/family-dashboard/bookings?booking=requested");
+      }, 1200);
     } catch (err) {
-      setBookingError("Unable to submit booking. Please try again or log in.");
-      console.error(err);
+      const msg = extractErrorMessage(
+        err,
+        "Unable to submit booking. Please try again.",
+      );
+      setBookingError(msg);
+      toast.error(msg);
+      console.error("[booking.create]", err);
     }
   };
+
+  const chefAvatarUrl = normalizeAvatarUrl(chef?.image);
 
   if (loading) {
     return (
@@ -180,9 +228,9 @@ export default function ChefProfile() {
 
                 {/* Chef Photo */}
                 <div className="w-40 h-40 rounded-[24px] overflow-hidden border border-white/10 flex-shrink-0 bg-black/10 flex items-center justify-center">
-                  {resolveAvatarUrl(chef.image) ? (
+                  {chefAvatarUrl ? (
                     <img
-                      src={chef.image}
+                      src={chefAvatarUrl}
                       alt={chef.name}
                       className="w-full h-full object-cover"
                     />
@@ -619,16 +667,31 @@ export default function ChefProfile() {
                       </p>
                     </div>
 
+                    {bookingError && (
+                      <p className="text-xs text-red-400 font-medium text-center">
+                        {bookingError}
+                      </p>
+                    )}
+
                     <button
                       type="submit"
                       disabled={createBooking.isPending}
                       className="w-full py-4 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-60 text-white font-bold rounded-xl text-xs hover:scale-[1.01] transition-all shadow-md flex items-center justify-center gap-2 group"
                     >
-                      {createBooking.isPending ? "Submitting..." : "Request Cooking Session"}
-                      <ArrowRight
-                        size={14}
-                        className="group-hover:translate-x-1 transition-transform"
-                      />
+                      {createBooking.isPending ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          Submitting request...
+                        </>
+                      ) : (
+                        <>
+                          Request Cooking Session
+                          <ArrowRight
+                            size={14}
+                            className="group-hover:translate-x-1 transition-transform"
+                          />
+                        </>
+                      )}
                     </button>
                   </form>
                 )}

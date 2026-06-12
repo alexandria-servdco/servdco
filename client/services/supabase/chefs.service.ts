@@ -1,6 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { ChefProfileRow } from "@/lib/supabase/types";
-import { resolveAvatarUrl } from "@/lib/avatar";
+import { normalizeAvatarUrl } from "@/lib/avatar";
 import type { MarketplaceChef } from "@/lib/marketplaceTypes";
 import { SupabaseQueryError } from "./fallback";
 
@@ -23,7 +23,7 @@ function pickAvatar(
   images: PortfolioImage[],
   profileAvatarUrl?: string | null,
 ): string {
-  const fromProfile = resolveAvatarUrl(profileAvatarUrl);
+  const fromProfile = normalizeAvatarUrl(profileAvatarUrl);
   if (fromProfile) return fromProfile;
 
   const match = images

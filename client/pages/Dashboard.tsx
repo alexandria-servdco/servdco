@@ -26,6 +26,10 @@ import { BookingCardSkeleton, DashboardWidgetSkeleton } from "@/components/ui/Sk
 import { MessagingHub } from "@/components/messaging/MessagingHub";
 import { TipPrompt } from "@/components/tips/TipPrompt";
 import { useBookingTipStatus } from "@/hooks/useTips";
+import {
+  calculateFamilyProfileCompletion,
+  profileCompletionLabel,
+} from "@shared/profileCompletion";
 import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
 
 export default function Dashboard() {
@@ -56,7 +60,15 @@ export default function Dashboard() {
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
-  const profileProgress = profile?.profile_completed ?? 0;
+  const profileProgress = calculateFamilyProfileCompletion({
+    full_name: profile?.full_name,
+    phone: profile?.phone,
+    city: profile?.city,
+    state: profile?.state,
+    zip: profile?.zip,
+    email: profile?.email,
+  });
+  const profileProgressLabel = profileCompletionLabel(profileProgress);
 
   // Settings Form state
   const [settingsData, setSettingsData] = useState({
@@ -128,7 +140,6 @@ export default function Dashboard() {
           email: profileData.email,
           city: profileData.city,
           state: profileData.state,
-          profile_completed: 100,
         });
         await queryClient.invalidateQueries({ queryKey: profileQueryKeys.own() });
       }
@@ -197,7 +208,7 @@ export default function Dashboard() {
                 {profileProgress}%
               </div>
               <div>
-                <p className="text-sm font-bold text-white">Complete your profile to unlock full private dining bookings!</p>
+                <p className="text-sm font-bold text-white">{profileProgressLabel} to unlock full private dining bookings!</p>
                 <p className="text-xs text-[#A8A8A8] mt-0.5">Please add your contact details and dining preferences to reach 100%.</p>
               </div>
             </div>

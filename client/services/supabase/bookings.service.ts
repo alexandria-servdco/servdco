@@ -270,17 +270,34 @@ export const BookingsSupabaseService = {
 
     if (error) throw new SupabaseQueryError(error.message, error);
 
-    await BookingAddressesSupabaseService.createForBooking(data.id, {
-      street_address: p.address.street_address,
-      apartment: p.address.apartment,
-      city: p.address.city,
-      state: p.address.state,
-      zip: p.address.zip,
-      country: p.address.country ?? "US",
-      location_notes: p.address.location_notes,
-    });
+    try {
+      await BookingAddressesSupabaseService.createForBooking(data.id, {
+        street_address: p.address.street_address,
+        apartment: p.address.apartment,
+        city: p.address.city,
+        state: p.address.state,
+        zip: p.address.zip,
+        country: p.address.country ?? "US",
+        location_notes: p.address.location_notes,
+      });
+    } catch (addrErr) {
+      await client
+        .from("bookings")
+        .update({
+          status: "cancelled",
+          cancellation_reason: "Address could not be saved",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.id);
+      throw addrErr;
+    }
 
     const booking = (await this.getBooking(data.id))!;
+    if (!booking) {
+      throw new SupabaseQueryError(
+        "Booking was created but could not be loaded. Check your dashboard.",
+      );
+    }
     const chefLabel = booking.chef_name ?? "your cook";
 
     return {

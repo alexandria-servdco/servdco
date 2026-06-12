@@ -1,14 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
 
 describe("messaging feature flag default", () => {
-  it("enable_messaging is false without env override", async () => {
+  it("enable_messaging reads cloud flag when no env override", async () => {
     vi.stubEnv("VITE_ENABLE_MESSAGING", "");
     const { isMessagingEnabled, resetFeatureFlagCache } = await import(
       "@/services/featureFlags.service"
     );
     resetFeatureFlagCache();
     const enabled = await isMessagingEnabled();
-    expect(enabled).toBe(false);
+    expect(enabled).toBe(true);
   });
 });
 

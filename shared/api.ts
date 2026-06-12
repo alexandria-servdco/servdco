@@ -84,7 +84,17 @@ export interface BookingRecord {
   chef_id?: string;
   service_type: string;
   date: string;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  status:
+    | "pending"
+    | "accepted"
+    | "awaiting_payment"
+    | "confirmed"
+    | "en_route"
+    | "arrived"
+    | "cooking"
+    | "awaiting_family_confirmation"
+    | "completed"
+    | "cancelled";
   price: number;
   guests_count?: number;
   created_at: string;

@@ -16,11 +16,9 @@ import { calculatePlatformFee, calculateCookPayout } from "@/utils/platformFee";
 import type { CookCardData } from "@/lib/cookMapper";
 import { useChefProfile } from "@/hooks/useChefProfile";
 import { useCreateBooking } from "@/hooks/useBookings";
-import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationService } from "@/services/notification.service";
-import { StripeService } from "@/services/stripe.service";
 import { isUuid } from "@/lib/marketplaceTypes";
 import { AnalyticsSupabaseService } from "@/services/supabase/analytics.service";
 import { useReviews } from "@/hooks/useReviews";
@@ -40,17 +38,36 @@ export default function ChefProfile() {
     text: r.text,
   }));
   const createBooking = useCreateBooking();
-  const { data: stripeCheckoutEnabled = false } = useStripeCheckoutEnabled();
   const { profile } = useCurrentProfile();
   const { isAuthenticated } = useAuth();
   const [bookingError, setBookingError] = useState("");
 
   // Booking widget state
   const [bookingDate, setBookingDate] = useState("");
-  const [serviceType, setServiceType] = useState("dinner"); // breakfast, dinner, mealprep
+  const [bookingTime, setBookingTime] = useState("");
+  const [bookingEndTime, setBookingEndTime] = useState("");
+  const [serviceType, setServiceType] = useState("dinner");
   const [guestsCount, setGuestsCount] = useState(4);
+  const [streetAddress, setStreetAddress] = useState("");
+  const [apartment, setApartment] = useState("");
+  const [city, setCity] = useState(profile?.city ?? "");
+  const [state, setState] = useState(profile?.state ?? "Ohio");
+  const [zip, setZip] = useState("");
+  const [locationNotes, setLocationNotes] = useState("");
+  const [specialInstructions, setSpecialInstructions] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [dietaryRestrictions, setDietaryRestrictions] = useState("");
+  const [parkingInstructions, setParkingInstructions] = useState("");
+  const [gateCode, setGateCode] = useState("");
+  const [emergencyName, setEmergencyName] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
   const [bookingBooked, setBookingBooked] = useState(false);
   const [favorite, setFavorite] = useState(false);
+
+  useEffect(() => {
+    if (profile?.city) setCity(profile.city);
+    if (profile?.state) setState(profile.state);
+  }, [profile?.city, profile?.state]);
 
   useEffect(() => {
     if (id && isUuid(id)) {
@@ -78,25 +95,32 @@ export default function ChefProfile() {
         family_name: profile?.full_name ?? profile?.email ?? "Guest Family",
         service_type: serviceType,
         date: bookingDate,
+        booking_time: bookingTime || undefined,
+        booking_end_time: bookingEndTime || undefined,
         guests_count: guestsCount,
         price: totalCost,
+        special_instructions: specialInstructions || undefined,
+        allergies: allergies || undefined,
+        dietary_restrictions: dietaryRestrictions
+          ? dietaryRestrictions
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : undefined,
+        parking_instructions: parkingInstructions || undefined,
+        gate_code: gateCode || undefined,
+        emergency_contact_name: emergencyName || undefined,
+        emergency_contact_phone: emergencyPhone || undefined,
+        address: {
+          street_address: streetAddress,
+          apartment: apartment || undefined,
+          city,
+          state,
+          zip,
+          country: "US",
+          location_notes: locationNotes || undefined,
+        },
       });
-
-      const bookingId = result.booking?.id;
-      if (
-        stripeCheckoutEnabled &&
-        bookingId &&
-        isUuid(bookingId)
-      ) {
-        const origin = window.location.origin;
-        const checkout = await StripeService.createCheckoutSession({
-          bookingId,
-          successUrl: `${origin}/dashboard?booking=success&session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${origin}/chef/${id}?booking=cancelled`,
-        });
-        window.location.href = checkout.url;
-        return;
-      }
 
       setBookingBooked(true);
       if (profile?.id) {
@@ -309,7 +333,7 @@ export default function ChefProfile() {
                     </h3>
                     <p className="text-xs text-[#A8A8A8] leading-relaxed max-w-[260px] mx-auto">
                       Your booking request has been sent to {chef.name}. You
-                      will be notified in your family dashboard once confirmed.
+                      will review your request. You&apos;ll pay after they accept.
                     </p>
                     <div className="pt-4">
                       <Link
@@ -384,6 +408,145 @@ export default function ChefProfile() {
                             Weekly Meal Prep ($70)
                           </option>
                         </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                            Start Time
+                          </label>
+                          <input
+                            type="time"
+                            value={bookingTime}
+                            onChange={(e) => setBookingTime(e.target.value)}
+                            className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                            End Time
+                          </label>
+                          <input
+                            type="time"
+                            value={bookingEndTime}
+                            onChange={(e) => setBookingEndTime(e.target.value)}
+                            className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          Street Address *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={streetAddress}
+                          onChange={(e) => setStreetAddress(e.target.value)}
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          Apartment / Suite
+                        </label>
+                        <input
+                          type="text"
+                          value={apartment}
+                          onChange={(e) => setApartment(e.target.value)}
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                            City *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                            ZIP *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={zip}
+                            onChange={(e) => setZip(e.target.value)}
+                            className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          State *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          Special Location Notes
+                        </label>
+                        <textarea
+                          value={locationNotes}
+                          onChange={(e) => setLocationNotes(e.target.value)}
+                          rows={2}
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          Special Instructions
+                        </label>
+                        <textarea
+                          value={specialInstructions}
+                          onChange={(e) => setSpecialInstructions(e.target.value)}
+                          rows={2}
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          Allergies
+                        </label>
+                        <input
+                          type="text"
+                          value={allergies}
+                          onChange={(e) => setAllergies(e.target.value)}
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          Dietary Restrictions
+                        </label>
+                        <input
+                          type="text"
+                          value={dietaryRestrictions}
+                          onChange={(e) => setDietaryRestrictions(e.target.value)}
+                          placeholder="e.g. vegetarian, gluten-free"
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
                       </div>
 
                       {/* Number of guests */}

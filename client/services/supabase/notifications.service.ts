@@ -1,6 +1,9 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
-import type { Tables } from "@/lib/supabase/types";
+import { toJson } from "@/lib/supabase/json";
+import type { Database, Tables } from "@/lib/supabase/types";
 import { SupabaseQueryError } from "./fallback";
+
+type NotificationInsert = Database["public"]["Tables"]["notifications"]["Insert"];
 
 export type NotificationRow = Tables<"notifications">;
 
@@ -92,8 +95,8 @@ export const NotificationsSupabaseService = {
       title: params.title,
       message: params.message,
       type: params.type,
-      metadata: params.metadata ?? {},
-    });
+      metadata: toJson(params.metadata ?? {}),
+    } as NotificationInsert);
 
     if (error) throw new SupabaseQueryError(error.message, error);
   },

@@ -36,7 +36,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useBookings, useUpdateBookingStatus } from "@/hooks/useBookings";
+import { useBookings } from "@/hooks/useBookings";
 import { useReviews } from "@/hooks/useReviews";
 import { ChefService } from "@/services/chef.service";
 import {
@@ -63,7 +63,7 @@ import { AvailabilityManager } from "@/components/chef/AvailabilityManager";
 import { ProfileEditor } from "@/components/chef/ProfileEditor";
 import { PayoutLogs } from "@/components/chef/PayoutLogs";
 import { ChefTipsSummary } from "@/components/chef/ChefTipsSummary";
-import { BookingMessaging } from "@/components/messaging/BookingMessaging";
+import { BookingOperationalPanel } from "@/components/booking/BookingOperationalPanel";
 import { MessagingHub } from "@/components/messaging/MessagingHub";
 import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
 import { useUnreadMessageCount } from "@/hooks/useConversations";
@@ -83,23 +83,37 @@ import { useIsPremiumChef } from "@/hooks/useSubscription";
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { StripeService } from "@/services/stripe.service";
 import { useOwnDocuments, useSubmitChefDocuments } from "@/hooks/useOwnDocuments";
+import { useChefAnalytics } from "@/hooks/useChefAnalytics";
+import type { BookingStatus } from "@shared/booking";
+
+const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
+  "accepted",
+  "awaiting_payment",
+  "confirmed",
+  "en_route",
+  "arrived",
+  "cooking",
+  "awaiting_family_confirmation",
+];
 
 export default function ChefDashboard() {
   useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
-  const [chefProfileId, setChefProfileId] = useState("chef-maria");
+  const [chefProfileId, setChefProfileId] = useState("");
   const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
-  const { data: reviews = [], isLoading: reviewsLoading } = useReviews(chefProfileId);
-  const updateBookingStatus = useUpdateBookingStatus();
+  const { profile } = useCurrentProfile();
+  const { data: ownChefProfile } = useChefProfileByUser(profile?.id);
+  const resolvedChefId = ownChefProfile?.id ?? chefProfileId;
+  const { data: reviews = [], isLoading: reviewsLoading } =
+    useReviews(resolvedChefId || undefined);
+  const { data: chefAnalytics } = useChefAnalytics(resolvedChefId || undefined);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [availabilitySlots, setAvailabilitySlots] = useState<
     AvailabilitySlot[]
   >([]);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
-  const { profile } = useCurrentProfile();
-  const { data: ownChefProfile } = useChefProfileByUser(profile?.id);
   const { data: isPremium = false } = useIsPremiumChef(ownChefProfile?.id);
   const chefPremiumPrice = usePlatformStore((s) => s.chefPremiumPrice);
   const [premiumLoading, setPremiumLoading] = useState(false);
@@ -125,11 +139,11 @@ export default function ChefDashboard() {
 
   // Profile Editor state
   const [profileData, setProfileData] = useState({
-    name: "Cook Maria",
-    specialty: "Comfort Food Specialist",
-    bio: "Passionate about healthy comfort dining, sourcing fresh local ingredients to make home cooking memorable for families.",
-    experience: "12 years in private cooking",
-    cuisines: ["American", "Italian", "Gluten-Free"],
+    name: "",
+    specialty: "",
+    bio: "",
+    experience: "",
+    cuisines: [] as string[],
     newCuisine: "",
     avatarUrl: "",
     portfolioImages: [] as UploadResponse[],
@@ -171,7 +185,7 @@ export default function ChefDashboard() {
     const fetchData = async () => {
       try {
         const chefProfile = await ChefService.getChefProfileByUserId(profile.id);
-        const availabilityKey = chefProfile?.id ?? "chef-maria";
+        const availabilityKey = chefProfile?.id ?? "";
         setChefProfileId(availabilityKey);
 
         if (chefProfile) {
@@ -219,16 +233,6 @@ export default function ChefDashboard() {
 
   const currentTab = getSubTab();
 
-  const handleUpdateBookingStatus = async (
-    id: string,
-    status: "confirmed" | "cancelled" | "completed",
-  ) => {
-    try {
-      await updateBookingStatus.mutateAsync({ id, status });
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleAddAvailability = async () => {
     const exist = availabilitySlots.find((s) => s.day === newDay);
@@ -560,26 +564,56 @@ export default function ChefDashboard() {
                   icon={Users}
                   label="Active Reservations"
                   value={bookings
-                    .filter((b) => b.status === "confirmed")
+                    .filter((b) =>
+                      ACTIVE_BOOKING_STATUSES.includes(b.status as BookingStatus),
+                    )
                     .length.toString()}
                 />
                 <StatItem
                   icon={TrendingUp}
                   label="Total Earnings"
-                  value="$1,840"
-                  change="+12%"
+                  value={
+                    chefAnalytics && chefAnalytics.earningsLifetime > 0
+                      ? `$${chefAnalytics.earningsLifetime.toFixed(2)}`
+                      : "—"
+                  }
+                  subtext={
+                    chefAnalytics && chefAnalytics.earningsLifetime > 0
+                      ? "lifetime payouts"
+                      : "No payouts yet"
+                  }
                 />
                 <StatItem
                   icon={Star}
                   label="Rating Avg"
-                  value="5.0"
-                  subtext="(4 reviews)"
+                  value={
+                    (ownChefProfile?.rating ?? chefAnalytics?.avgRating ?? 0) > 0
+                      ? (
+                          ownChefProfile?.rating ??
+                          chefAnalytics?.avgRating ??
+                          0
+                        ).toFixed(1)
+                      : "—"
+                  }
+                  subtext={
+                    (chefAnalytics?.reviewsCount ?? reviews.length) > 0
+                      ? `(${chefAnalytics?.reviewsCount ?? reviews.length} reviews)`
+                      : "No reviews yet"
+                  }
                 />
                 <StatItem
                   icon={Shield}
                   label="Verification Status"
-                  value="Vetted"
-                  status="verified"
+                  value={
+                    verificationStatus === "approved"
+                      ? "Vetted"
+                      : verificationStatus === "pending"
+                        ? "Pending"
+                        : verificationStatus === "rejected"
+                          ? "Rejected"
+                          : "Suspended"
+                  }
+                  status={verificationStatus === "approved" ? "verified" : undefined}
                 />
               </div>
 
@@ -680,29 +714,8 @@ export default function ChefDashboard() {
                               </div>
                             </div>
 
-                            <div className="flex sm:flex-col gap-2 w-full sm:w-auto">
-                              <button
-                                onClick={() =>
-                                  handleUpdateBookingStatus(
-                                    request.id,
-                                    "confirmed",
-                                  )
-                                }
-                                className="flex-1 px-4 py-2 bg-[#FF7A59] hover:bg-[#e96a49] text-white text-[11px] font-bold rounded-xl transition-all"
-                              >
-                                Accept Booking
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleUpdateBookingStatus(
-                                    request.id,
-                                    "cancelled",
-                                  )
-                                }
-                                className="flex-1 px-4 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[11px] font-bold rounded-xl transition-all"
-                              >
-                                Reject Request
-                              </button>
+                            <div className="w-full sm:max-w-md">
+                              <BookingOperationalPanel booking={request} role="chef" />
                             </div>
                           </div>
                         ))}
@@ -796,72 +809,35 @@ export default function ChefDashboard() {
                 />
               </div>
 
-              {/* Bookings table list */}
-              <div className="velvet-card overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/5 bg-white/[0.01] text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider">
-                      <th className="p-4">Booking ID</th>
-                      <th className="p-4">Family</th>
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Service Type</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bookings
-                      .filter(
-                        (b) =>
-                          bookingFilter === "all" || b.status === bookingFilter,
-                      )
-                      .filter((b) =>
-                        (b.family || b.chefName || "")
-                          .toLowerCase()
-                          .includes(bookingSearch.toLowerCase()),
-                      )
-                      .map((b) => (
-                        <tr
-                          key={b.id}
-                          className="border-b border-white/5 hover:bg-white/[0.01] text-xs transition-colors"
-                        >
-                          <td className="p-4 font-mono text-[#A8A8A8]">
+              <div className="space-y-4">
+                {bookings
+                  .filter(
+                    (b) =>
+                      bookingFilter === "all" || b.status === bookingFilter,
+                  )
+                  .filter((b) =>
+                    (b.family || b.family_name || "")
+                      .toLowerCase()
+                      .includes(bookingSearch.toLowerCase()),
+                  )
+                  .map((b) => (
+                    <div key={b.id} className="velvet-card p-6 space-y-2">
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <h4 className="font-bold text-white font-serif">
+                            {b.family || b.family_name}
+                          </h4>
+                          <p className="text-xs text-[#A8A8A8]">
+                            {b.date} · {b.serviceType} · ${b.price}
+                          </p>
+                          <p className="text-[10px] text-[#A8A8A8] font-mono mt-1">
                             #{b.id.slice(0, 8)}
-                          </td>
-                          <td className="p-4 font-bold text-white">
-                            {b.family || "Sarah Johnson"}
-                          </td>
-                          <td className="p-4 font-semibold text-white/80">
-                            {b.date}
-                          </td>
-                          <td className="p-4 text-[#A8A8A8]">
-                            {b.serviceType || "Meal Prep"}
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${
-                                b.status === "confirmed"
-                                  ? "bg-[#2E7D66]/10 text-[#2E7D66] border-[#2E7D66]/25"
-                                  : b.status === "cancelled"
-                                    ? "bg-red-500/10 text-red-400 border-red-500/25"
-                                    : "bg-[#FF7A59]/10 text-[#FF7A59] border-[#FF7A59]/25"
-                              }`}
-                            >
-                              {b.status}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <span className="font-serif font-bold text-white block">
-                              ${b.price || "120.00"}
-                            </span>
-                            {b.status !== "cancelled" && (
-                              <BookingMessaging bookingId={b.id} />
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                          </p>
+                        </div>
+                      </div>
+                      <BookingOperationalPanel booking={b} role="chef" />
+                    </div>
+                  ))}
 
                 {bookings.filter(
                   (b) => bookingFilter === "all" || b.status === bookingFilter,

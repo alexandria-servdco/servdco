@@ -66,11 +66,11 @@ export async function processRefund(
     })
     .eq("id", payment.id);
 
-  if (payment.booking_id) {
+  if (payment.booking_id && status === "refunded") {
     await client
       .from("bookings")
       .update({
-        status: status === "refunded" ? "cancelled" : "confirmed",
+        status: "cancelled",
         updated_at: new Date().toISOString(),
       })
       .eq("id", payment.booking_id);

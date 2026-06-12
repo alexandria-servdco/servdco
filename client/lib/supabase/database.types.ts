@@ -147,6 +147,7 @@ export type Database = {
           service_type: Database["public"]["Enums"]["service_type"]
           booking_date: string
           booking_time: string | null
+          booking_end_time: string | null
           guests_count: number
           price_cents: number
           platform_fee_cents: number
@@ -159,6 +160,15 @@ export type Database = {
           cancelled_by: string | null
           cancellation_reason: string | null
           completed_at: string | null
+          special_instructions: string | null
+          dietary_restrictions: string[]
+          allergies: string | null
+          parking_instructions: string | null
+          gate_code: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          family_confirmed_at: string | null
+          metadata: Json
           created_at: string
           updated_at: string
           created_by: string | null
@@ -173,6 +183,7 @@ export type Database = {
           service_type: Database["public"]["Enums"]["service_type"] | null
           booking_date: string | null
           booking_time?: string | null
+          booking_end_time?: string | null
           guests_count: number | null
           price_cents: number | null
           platform_fee_cents: number | null
@@ -185,6 +196,15 @@ export type Database = {
           cancelled_by?: string | null
           cancellation_reason?: string | null
           completed_at?: string | null
+          special_instructions?: string | null
+          dietary_restrictions?: string[]
+          allergies?: string | null
+          parking_instructions?: string | null
+          gate_code?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          family_confirmed_at?: string | null
+          metadata?: Json
           created_at: string | null
           updated_at: string | null
           created_by?: string | null
@@ -199,6 +219,7 @@ export type Database = {
           service_type?: Database["public"]["Enums"]["service_type"] | null
           booking_date?: string | null
           booking_time?: string | null
+          booking_end_time?: string | null
           guests_count?: number | null
           price_cents?: number | null
           platform_fee_cents?: number | null
@@ -211,12 +232,99 @@ export type Database = {
           cancelled_by?: string | null
           cancellation_reason?: string | null
           completed_at?: string | null
+          special_instructions?: string | null
+          dietary_restrictions?: string[]
+          allergies?: string | null
+          parking_instructions?: string | null
+          gate_code?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          family_confirmed_at?: string | null
+          metadata?: Json
           created_at?: string | null
           updated_at?: string | null
           created_by?: string | null
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+        };
+        Relationships: [];
+      };
+      booking_addresses: {
+        Row: {
+          id: string
+          booking_id: string
+          street_address: string
+          apartment: string | null
+          city: string
+          state: string
+          zip: string
+          country: string
+          latitude: number | null
+          longitude: number | null
+          location_notes: string | null
+          created_at: string
+        };
+        Insert: {
+          id?: string
+          booking_id: string
+          street_address: string
+          apartment?: string | null
+          city: string
+          state: string
+          zip: string
+          country?: string
+          latitude?: number | null
+          longitude?: number | null
+          location_notes?: string | null
+          created_at?: string
+        };
+        Update: {
+          id?: string
+          booking_id?: string
+          street_address?: string
+          apartment?: string | null
+          city?: string
+          state?: string
+          zip?: string
+          country?: string
+          latitude?: number | null
+          longitude?: number | null
+          location_notes?: string | null
+          created_at?: string
+        };
+        Relationships: [];
+      };
+      message_attachments: {
+        Row: {
+          id: string
+          message_id: string
+          storage_bucket: string
+          storage_path: string
+          file_name: string
+          mime_type: string
+          file_size_bytes: number
+          created_at: string
+        };
+        Insert: {
+          id?: string
+          message_id: string
+          storage_bucket?: string
+          storage_path: string
+          file_name: string
+          mime_type: string
+          file_size_bytes: number
+          created_at?: string
+        };
+        Update: {
+          id?: string
+          message_id?: string
+          storage_bucket?: string
+          storage_path?: string
+          file_name?: string
+          mime_type?: string
+          file_size_bytes?: number
+          created_at?: string
         };
         Relationships: [];
       };
@@ -1119,7 +1227,17 @@ export type Database = {
     Enums: {
       account_status: "active" | "suspended" | "pending";
       admin_visibility_override: "none" | "hidden" | "public";
-      booking_status: "pending" | "confirmed" | "completed" | "cancelled";
+      booking_status:
+        | "pending"
+        | "accepted"
+        | "awaiting_payment"
+        | "confirmed"
+        | "en_route"
+        | "arrived"
+        | "cooking"
+        | "awaiting_family_confirmation"
+        | "completed"
+        | "cancelled";
       contact_status: "new" | "read" | "archived";
       document_status: "pending" | "approved" | "rejected";
       document_type: "servsafe_certificate" | "insurance" | "background_check" | "id_verification";

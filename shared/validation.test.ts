@@ -99,6 +99,12 @@ describe("booking validation", () => {
       date: "2026-07-01",
       guests_count: 4,
       price: 120,
+      address: {
+        street_address: "123 Main St",
+        city: "Columbus",
+        state: "Ohio",
+        zip: "43215",
+      },
     });
     expect(result.success).toBe(true);
   });

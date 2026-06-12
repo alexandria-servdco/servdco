@@ -300,16 +300,16 @@ export const AuthService = {
    * @deprecated Prefer useCurrentProfile() in React components.
    */
   async getCurrentProfile(): Promise<AppUser | null> {
-    if (isSupabaseConfigured()) {
+    if (await this.usesSupabaseAuth()) {
       try {
         const row = await ProfilesSupabaseService.getOwnProfile();
         if (row) return mapProfileToAppUser(row);
       } catch (err) {
-        console.warn("[AuthService] getCurrentProfile fallback:", err);
+        console.warn("[AuthService] getCurrentProfile:", err);
       }
+      return null;
     }
-    const legacy = getLegacyUser();
-    return legacy;
+    return getLegacyUser();
   },
 
   async getWaitlistStats(state: string) {

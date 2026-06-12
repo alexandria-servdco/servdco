@@ -26,15 +26,14 @@ import {
 import { motion } from "framer-motion";
 import { calculateCookPayout } from "@/utils/platformFee";
 import { useBrowseChefs } from "@/hooks/useChefs";
-import { mapChefsToCards } from "@/lib/cookMapper";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resolveAvatarUrl } from "@/lib/avatar";
 import { MarketplaceEmptyState } from "@/components/marketplace/MarketplaceEmptyState";
 
 export default function Index() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const { data: marketplaceChefs = [], isLoading: chefsLoading } = useBrowseChefs();
-  const featuredChefs = mapChefsToCards(marketplaceChefs).slice(0, 4);
+  const { data: featuredChefs = [], isLoading: chefsLoading } = useBrowseChefs();
+  const homepageChefs = featuredChefs.slice(0, 4);
 
   // Interactive Calculator State
   const [breakfastSessions, setBreakfastSessions] = useState(2);
@@ -458,10 +457,10 @@ export default function Index() {
           {chefsLoading && (
             <p className="text-[#A8A8A8] text-sm col-span-full">Loading cooks...</p>
           )}
-          {!chefsLoading && featuredChefs.length === 0 && (
+          {!chefsLoading && homepageChefs.length === 0 && (
             <MarketplaceEmptyState className="col-span-full" />
           )}
-          {featuredChefs.map((chef) => (
+          {homepageChefs.map((chef) => (
             <div
               key={chef.id}
               className="bg-[#2A2A2A] rounded-[24px] border border-white/5 overflow-hidden group hover:shadow-[0_16px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"

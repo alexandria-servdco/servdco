@@ -89,7 +89,7 @@ async function handleBookingCheckoutCompleted(session: Stripe.Checkout.Session) 
       updated_at: new Date().toISOString(),
     })
     .eq("id", bookingId)
-    .eq("status", "pending");
+    .in("status", ["awaiting_payment", "accepted"]);
 
   await writePaymentAuditLog({
     action: "payment.checkout_completed",
@@ -111,13 +111,13 @@ async function handleBookingCheckoutCompleted(session: Stripe.Checkout.Session) 
 
   await createUserNotification({
     userId: payment.family_id,
-    title: "Payment Received",
-    message: "Your booking payment was successful. Your cook will confirm the session shortly.",
+    title: "Payment Successful",
+    message: "Your booking is confirmed. Your cook will arrive at the scheduled time.",
     type: "success",
     metadata: {
       booking_id: bookingId,
       payment_id: payment.id,
-      event: "payment_received",
+      event: "payment_successful",
     },
   });
 }
@@ -184,9 +184,12 @@ async function handlePaymentIntentFailed(intent: Stripe.PaymentIntent) {
 
   await client
     .from("bookings")
-    .update({ updated_at: new Date().toISOString() })
+    .update({
+      status: "awaiting_payment",
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", payment.booking_id)
-    .eq("status", "pending");
+    .in("status", ["awaiting_payment", "accepted"]);
 
   await writePaymentAuditLog({
     action: "payment.failed",
@@ -204,7 +207,7 @@ async function handlePaymentIntentFailed(intent: Stripe.PaymentIntent) {
     userId: payment.family_id,
     title: "Payment failed",
     message:
-      "Your card could not be charged. Your booking remains pending — please try again.",
+      "Your card could not be charged. Please try payment again to confirm your booking.",
     type: "error",
     metadata: {
       booking_id: payment.booking_id,

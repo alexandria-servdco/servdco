@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BOOKING_STATUSES } from "./booking";
 
 /** Shared Zod schemas — client forms, API payloads, admin actions. */
 
@@ -64,14 +65,36 @@ export const waitlistEmailSchema = z.object({
   email: emailSchema,
 });
 
+export const bookingAddressSchema = z.object({
+  street_address: z.string().trim().min(3, "Street address is required.").max(200),
+  apartment: z.string().trim().max(80).optional().or(z.literal("")),
+  city: z.string().trim().min(2, "City is required.").max(120),
+  state: z.string().trim().min(2, "State is required.").max(64),
+  zip: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code."),
+  country: z.string().trim().max(64).default("US"),
+  location_notes: z.string().trim().max(1000).optional().or(z.literal("")),
+});
+
 export const bookingCreateSchema = z.object({
   cook_id: z.string().uuid("Invalid cook profile."),
   family_name: z.string().trim().min(2).max(120),
   service_type: z.string().trim().min(2).max(80),
   date: z.string().trim().min(4).max(32),
+  booking_time: z.string().trim().max(16).optional(),
+  booking_end_time: z.string().trim().max(16).optional(),
   guests_count: z.number().int().min(1).max(50),
   price: z.number().positive().max(100_000),
+  special_instructions: z.string().trim().max(2000).optional(),
+  dietary_restrictions: z.array(z.string().trim().max(80)).max(20).optional(),
+  allergies: z.string().trim().max(500).optional(),
+  parking_instructions: z.string().trim().max(500).optional(),
+  gate_code: z.string().trim().max(80).optional(),
+  emergency_contact_name: z.string().trim().max(120).optional(),
+  emergency_contact_phone: z.string().trim().max(20).optional(),
+  address: bookingAddressSchema,
 });
+
+export const bookingStatusSchema = z.enum(BOOKING_STATUSES);
 
 export const messageBodySchema = z
   .string()

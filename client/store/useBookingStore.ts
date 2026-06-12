@@ -7,7 +7,7 @@ export interface Booking {
   service_type: string;
   date: string;
   price: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: import('@shared/booking').BookingStatus;
 }
 
 interface BookingState {

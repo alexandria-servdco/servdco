@@ -38,6 +38,10 @@ export async function createBookingCheckoutSession(
     throw new Error("Booking is already confirmed.");
   }
 
+  if (booking.status !== "awaiting_payment" && booking.status !== "accepted") {
+    throw new Error("Payment is only available after the cook accepts your request.");
+  }
+
   const { data: succeededPayment } = await client
     .from("payments")
     .select("id")

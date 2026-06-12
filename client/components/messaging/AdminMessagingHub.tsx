@@ -1,41 +1,96 @@
-import { useState } from "react";
-import { MessageSquare, Loader2, Shield } from "lucide-react";
+import { useMemo, useState } from "react";
+import { MessageSquare, Loader2, Shield, Search, Download, Trash2 } from "lucide-react";
 import { useAdminConversations } from "@/hooks/useAdminConversations";
-import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
 import { MessagingPanel } from "@/components/messaging/MessagingPanel";
+import { AdminAuditService } from "@/services/supabase/admin-audit.service";
 
 /** Admin moderation view of all platform conversations. */
 export function AdminMessagingHub() {
-  const { data: enabled = false } = useMessagingEnabled();
   const { data: conversations = [], isLoading } = useAdminConversations();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "recent">("all");
 
-  if (!enabled) {
-    return (
-      <div
-        style={{
-          background: "rgba(25,25,25,0.4)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: "12px",
-          padding: "48px",
-          textAlign: "center",
-        }}
-      >
-        <MessageSquare size={32} color="#FF7A59" style={{ opacity: 0.4, margin: "0 auto 12px" }} />
-        <p style={{ color: "#A8A8A8", fontSize: "13px" }}>
-          Enable <code style={{ color: "#FF7A59" }}>enable_messaging</code> to monitor conversations.
-        </p>
-      </div>
-    );
-  }
+  const filtered = useMemo(() => {
+    let list = conversations;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (c) =>
+          c.participant_name.toLowerCase().includes(q) ||
+          (c.last_message_preview ?? "").toLowerCase().includes(q),
+      );
+    }
+    if (filter === "recent") {
+      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      list = list.filter(
+        (c) =>
+          c.last_message_at &&
+          new Date(c.last_message_at).getTime() >= dayAgo,
+      );
+    }
+    return list;
+  }, [conversations, search, filter]);
+
+  const handleExport = async () => {
+    const payload = filtered.map((c) => ({
+      id: c.id,
+      booking_id: c.booking_id,
+      participant: c.participant_name,
+      last_message: c.last_message_preview,
+      last_message_at: c.last_message_at,
+    }));
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `servdco-conversations-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    await AdminAuditService.log({
+      action: "messaging.export",
+      entityType: "conversation",
+      metadata: { count: payload.length },
+    });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <Shield size={16} color="#FF7A59" />
-        <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#FFF", margin: 0 }}>
-          Platform Messaging
-        </h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Shield size={16} color="#FF7A59" />
+          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#FFF", margin: 0 }}>
+            Platform Messaging
+          </h2>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 10px", background: "#111", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <Search size={12} color="#A8A8A8" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              style={{ background: "transparent", border: "none", outline: "none", color: "#FFF", fontSize: "12px", width: "140px" }}
+            />
+          </div>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as "all" | "recent")}
+            style={{ padding: "6px 10px", background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: "#FFF", fontSize: "12px" }}
+          >
+            <option value="all">All</option>
+            <option value="recent">Last 24h</option>
+          </select>
+          <button
+            type="button"
+            onClick={handleExport}
+            style={{ display: "flex", alignItems: "center", gap: "4px", padding: "6px 10px", background: "rgba(255,122,89,0.15)", border: "none", borderRadius: "8px", color: "#FF7A59", fontSize: "12px", cursor: "pointer" }}
+          >
+            <Download size={12} /> Export
+          </button>
+        </div>
       </div>
 
       <div
@@ -61,12 +116,12 @@ export function AdminMessagingHub() {
               <Loader2 className="animate-spin" color="#FF7A59" size={20} />
             </div>
           )}
-          {!isLoading && conversations.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <p style={{ color: "#A8A8A8", fontSize: "12px", textAlign: "center", padding: "24px" }}>
-              No conversations yet.
+              No conversations match your filters.
             </p>
           )}
-          {conversations.map((conv) => (
+          {filtered.map((conv) => (
             <button
               key={conv.id}
               type="button"

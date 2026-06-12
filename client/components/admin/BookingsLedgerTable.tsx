@@ -35,7 +35,7 @@ export function BookingsLedgerTable({
   setBookingPriceSort,
   handleBookingStatusChange,
 }: BookingsLedgerTableProps) {
-  const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
+  const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
 
   return (
     <>
@@ -303,7 +303,7 @@ export function BookingsLedgerTable({
                     <td style={{ padding: "14px 12px" }}>
                       <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                         <button
-                          onClick={() => setDetailBooking(b)}
+                          onClick={() => setDetailBookingId(b.id)}
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
@@ -324,7 +324,7 @@ export function BookingsLedgerTable({
                         {b.status === "pending" && (
                           <button
                             onClick={() =>
-                              handleBookingStatusChange(b.id, "confirmed")
+                              handleBookingStatusChange(b.id, "accepted")
                             }
                             style={{
                               padding: "6px 10px",
@@ -337,10 +337,10 @@ export function BookingsLedgerTable({
                               cursor: "pointer",
                             }}
                           >
-                            Confirm
+                            Accept
                           </button>
                         )}
-                        {b.status === "confirmed" && (
+                        {b.status === "awaiting_family_confirmation" && (
                           <button
                             onClick={() =>
                               handleBookingStatusChange(b.id, "completed")
@@ -390,10 +390,10 @@ export function BookingsLedgerTable({
       </div>
 
       <BookingDetailModal
-        booking={detailBooking}
-        open={detailBooking !== null}
+        bookingId={detailBookingId}
+        open={detailBookingId !== null}
         onOpenChange={(open) => {
-          if (!open) setDetailBooking(null);
+          if (!open) setDetailBookingId(null);
         }}
       />
     </>

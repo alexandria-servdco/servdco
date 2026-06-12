@@ -1,5 +1,9 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { toJson } from "@/lib/supabase/json";
+import type { Database } from "@/lib/supabase/types";
 import { SupabaseQueryError } from "./fallback";
+
+type AuditLogInsert = Database["public"]["Tables"]["audit_logs"]["Insert"];
 
 export type AdminAuditAction =
   | "chef.approved"
@@ -45,10 +49,10 @@ export const AdminAuditService = {
       action: params.action,
       entity_type: params.entityType,
       entity_id: params.entityId ?? null,
-      metadata: params.metadata ?? {},
-      new_values: params.newValues ?? null,
-      old_values: params.oldValues ?? null,
-    });
+      metadata: toJson(params.metadata ?? {}),
+      new_values: params.newValues ? toJson(params.newValues) : null,
+      old_values: params.oldValues ? toJson(params.oldValues) : null,
+    } as AuditLogInsert);
 
     if (error) {
       console.error("Admin audit log failed:", error.message);

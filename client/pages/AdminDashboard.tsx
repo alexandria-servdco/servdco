@@ -65,6 +65,7 @@ import { useAdminStore } from "@/store/useAdminStore";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { AdminOverviewService } from "@/services/supabase/admin-overview.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
@@ -198,6 +199,12 @@ export default function AdminDashboard({
 }) {
   useNotifications();
   const { user } = useAuth();
+  const { profile: adminProfile } = useCurrentProfile();
+  const adminDisplayName =
+    adminProfile?.full_name ??
+    (user?.user_metadata?.full_name as string | undefined) ??
+    user?.email ??
+    "Admin";
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState(initialTab);
 
@@ -406,7 +413,7 @@ export default function AdminDashboard({
   // Bookings Handlers
   const handleBookingStatusChange = async (
     id: string,
-    status: "pending" | "confirmed" | "completed" | "cancelled",
+    status: import("@shared/booking").BookingStatus,
   ) => {
     try {
       const booking = bookings.find((b) => b.id === id);
@@ -505,8 +512,17 @@ export default function AdminDashboard({
   const pendingChefsCount = chefs.filter(
     (c) => c.verification_status === "pending",
   ).length;
-  const activeBookingsCount = bookings.filter(
-    (b) => b.status === "pending" || b.status === "confirmed",
+  const activeBookingsCount = bookings.filter((b) =>
+    [
+      "pending",
+      "accepted",
+      "awaiting_payment",
+      "confirmed",
+      "en_route",
+      "arrived",
+      "cooking",
+      "awaiting_family_confirmation",
+    ].includes(b.status),
   ).length;
   const completedBookingsCount = bookings.filter(
     (b) => b.status === "completed",
@@ -781,7 +797,7 @@ export default function AdminDashboard({
             }
           >
             <UserAvatar
-              name={user?.name ?? "Admin"}
+              name={adminDisplayName}
               imageUrl={null}
               size="sm"
               className="w-[38px] h-[38px] border-2 border-white/10 shrink-0"
@@ -982,7 +998,7 @@ export default function AdminDashboard({
 
             {/* Avatar */}
             <UserAvatar
-              name={user?.name ?? "Admin"}
+              name={adminDisplayName}
               imageUrl={null}
               size="sm"
               className="w-10 h-10 border-2 border-white/8"
@@ -1051,7 +1067,7 @@ export default function AdminDashboard({
                     icon="bookings"
                     label="Active Bookings"
                     value={activeBookingsCount.toString()}
-                    subtext="pending + confirmed"
+                    subtext="in-flight bookings"
                   />
                   <AnalyticsCard
                     icon="bookings"

@@ -5,6 +5,10 @@ import { useSendMessage, useMarkConversationRead } from "@/hooks/useSendMessage"
 import { useRealtimeMessages, useTypingIndicator } from "@/hooks/useRealtimeMessages";
 import { useConversation } from "@/hooks/useConversation";
 import { MessagesSupabaseService } from "@/services/supabase/messages.service";
+import { MessageAttachmentsSupabaseService } from "@/services/supabase/message-attachments.service";
+import { AdminAuditService } from "@/services/supabase/admin-audit.service";
+import { Paperclip, Trash2 } from "lucide-react";
+import { MessageAttachmentList } from "@/components/messaging/MessageAttachmentList";
 
 interface MessagingPanelProps {
   conversationId: string;
@@ -21,8 +25,10 @@ export function MessagingPanel({
   adminView = false,
 }: MessagingPanelProps) {
   const [draft, setDraft] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: conversation } = useConversation(conversationId, {
     admin: adminView,
@@ -58,11 +64,29 @@ export function MessagingPanel({
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft.trim() || sendMessage.isPending) return;
-    const text = draft;
+    if ((!draft.trim() && !pendingFile) || sendMessage.isPending) return;
+    const text = draft.trim() || (pendingFile ? `[Attachment: ${pendingFile.name}]` : "");
+    const file = pendingFile;
     setDraft("");
+    setPendingFile(null);
     await MessagesSupabaseService.broadcastTyping(conversationId, false);
-    sendMessage.mutate(text);
+    sendMessage.mutate(text, {
+      onSuccess: async (msg) => {
+        if (file) {
+          await MessageAttachmentsSupabaseService.uploadForMessage(msg.id, file);
+        }
+      },
+    });
+  };
+
+  const handleModeratorDelete = async (messageId: string) => {
+    if (!adminView || !window.confirm("Remove this message?")) return;
+    await MessageAttachmentsSupabaseService.softDeleteMessage(messageId);
+    await AdminAuditService.log({
+      action: "messaging.delete_message",
+      entityType: "message",
+      entityId: messageId,
+    });
   };
 
   const handleDraftChange = (value: string) => {
@@ -142,14 +166,27 @@ export function MessagingPanel({
               }`}
             >
               <p>{msg.body}</p>
-              <p className="text-[9px] text-[#A8A8A8] mt-1 text-right">
-                {new Date(msg.created_at).toLocaleString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </p>
+              <MessageAttachmentList messageId={msg.id} />
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <p className="text-[9px] text-[#A8A8A8] text-right flex-1">
+                  {new Date(msg.created_at).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </p>
+                {adminView && (
+                  <button
+                    type="button"
+                    onClick={() => handleModeratorDelete(msg.id)}
+                    className="text-red-400 hover:text-red-300"
+                    aria-label="Delete message"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -161,8 +198,28 @@ export function MessagingPanel({
 
       <form
         onSubmit={handleSend}
-        className="px-4 py-3 border-t border-white/5 flex gap-2"
+        className="px-4 py-3 border-t border-white/5 flex gap-2 items-center"
       >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          className="hidden"
+          onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="text-[#A8A8A8] hover:text-[#FF7A59] p-2"
+          aria-label="Attach file"
+        >
+          <Paperclip size={14} />
+        </button>
+        {pendingFile && (
+          <span className="text-[9px] text-[#FF7A59] truncate max-w-[80px]">
+            {pendingFile.name}
+          </span>
+        )}
         <input
           type="text"
           value={draft}
@@ -172,7 +229,7 @@ export function MessagingPanel({
         />
         <button
           type="submit"
-          disabled={!draft.trim() || sendMessage.isPending}
+          disabled={(!draft.trim() && !pendingFile) || sendMessage.isPending}
           className="px-4 py-2 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all"
         >
           Send

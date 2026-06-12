@@ -7,7 +7,9 @@ import {
 } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { NotificationBell } from "@/components/ui/NotificationBell";
-import { useBookings, useUpdateBookingStatus } from "@/hooks/useBookings";
+import { useBookings } from "@/hooks/useBookings";
+import { BookingOperationalPanel } from "@/components/booking/BookingOperationalPanel";
+import { BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
 import { useNotifications } from "@/hooks/useNotifications";
 import { ChefService } from "@/services/chef.service";
 import { FamilyService } from "@/services/family.service";
@@ -21,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { BookingCardSkeleton, DashboardWidgetSkeleton } from "@/components/ui/Skeletons";
-import { BookingMessaging } from "@/components/messaging/BookingMessaging";
 import { MessagingHub } from "@/components/messaging/MessagingHub";
 import { TipPrompt } from "@/components/tips/TipPrompt";
 import { useBookingTipStatus } from "@/hooks/useTips";
@@ -36,7 +37,6 @@ export default function Dashboard() {
   const completedIds = bookings.filter((b) => b.status === "completed").map((b) => b.id);
   const { data: tipMap } = useBookingTipStatus(completedIds);
   const { data: stripeEnabled = false } = useStripeCheckoutEnabled();
-  const updateBookingStatus = useUpdateBookingStatus();
   useNotifications();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [chefs, setChefs] = useState<any[]>([]);
@@ -146,16 +146,6 @@ export default function Dashboard() {
     e.preventDefault();
     setSettingsSuccess(true);
     setTimeout(() => setSettingsSuccess(false), 3000);
-  };
-
-  const handleCancelBooking = async (id: string) => {
-    if (confirm("Are you sure you want to cancel this booking request?")) {
-      try {
-        await updateBookingStatus.mutateAsync({ id, status: "cancelled" });
-      } catch (err) {
-        console.error(err);
-      }
-    }
   };
 
   const toggleDietary = (item: string) => {
@@ -279,7 +269,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-6">
-                      {bookings.filter(b => b.status === "confirmed" || b.status === "pending").slice(0, 2).map((booking) => (
+                      {bookings.filter(b => ["confirmed", "pending", "awaiting_payment", "en_route", "arrived", "cooking", "awaiting_family_confirmation"].includes(b.status)).slice(0, 2).map((booking) => (
                         <div key={booking.id} className="flex flex-col sm:flex-row gap-6 pb-6 border-b border-white/5 last:border-b-0 last:pb-0">
                           <UserAvatar
                             name={booking.chefName || booking.chef_name}
@@ -311,15 +301,8 @@ export default function Dashboard() {
                                   ? "bg-[#2E7D66]/10 text-[#2E7D66] border-[#2E7D66]/20" 
                                   : "bg-[#FF7A59]/10 text-[#FF7A59] border-[#FF7A59]/20"
                               }`}>
-                                {booking.status === "confirmed" ? "Confirmed" : "Pending Approval"}
+                                {BOOKING_STATUS_LABELS[booking.status]}
                               </span>
-
-                              <button 
-                                onClick={() => handleCancelBooking(booking.id)}
-                                className="text-red-400 hover:text-red-300 text-xs font-semibold hover:underline"
-                              >
-                                Cancel request
-                              </button>
                             </div>
                           </div>
                         </div>
@@ -415,7 +398,19 @@ export default function Dashboard() {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-4 border-b border-white/5">
                 <div className="flex gap-2">
-                  {["all", "confirmed", "pending", "completed", "cancelled"].map((filter) => (
+                  {[
+                    "all",
+                    "pending",
+                    "accepted",
+                    "awaiting_payment",
+                    "confirmed",
+                    "en_route",
+                    "arrived",
+                    "cooking",
+                    "awaiting_family_confirmation",
+                    "completed",
+                    "cancelled",
+                  ].map((filter) => (
                     <button
                       key={filter}
                       onClick={() => setStatusFilter(filter)}
@@ -468,23 +463,10 @@ export default function Dashboard() {
                             {booking.status}
                           </span>
 
-                          <div className="flex flex-col items-end gap-2">
-                            {booking.status !== "cancelled" && (
-                              <>
-                                <BookingMessaging bookingId={booking.id} />
-                                {booking.status !== "completed" && (
-                                  <button
-                                    onClick={() => handleCancelBooking(booking.id)}
-                                    className="text-xs text-red-400 hover:text-red-300 font-bold hover:underline"
-                                  >
-                                    Cancel
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          </div>
                         </div>
                       </div>
+
+                      <BookingOperationalPanel booking={booking} role="family" />
 
                       {booking.status === "completed" && stripeEnabled && !tipMap?.get(booking.id) && (
                         <TipPrompt bookingId={booking.id} chefName={booking.chefName} />

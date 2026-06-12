@@ -131,7 +131,7 @@ export const api = {
 
   async updateBookingStatus(
     id: string,
-    status: "pending" | "confirmed" | "completed" | "cancelled",
+    status: import("@shared/booking").BookingStatus,
   ): Promise<{ success: boolean; booking: UiBooking }> {
     return BookingService.updateStatus(id, status);
   },
@@ -159,14 +159,9 @@ export const api = {
     return ChefService.getChefById(id);
   },
 
-  async createBooking(params: {
-    cook_id: string;
-    family_name: string;
-    service_type: string;
-    date: string;
-    guests_count: number;
-    price: number;
-  }): Promise<{ success: boolean; booking: UiBooking; message: string }> {
+  async createBooking(
+    params: Parameters<typeof BookingService.createBooking>[0],
+  ): Promise<{ success: boolean; booking: UiBooking; message: string }> {
     return BookingService.createBooking(params);
   },
 

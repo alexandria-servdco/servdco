@@ -6,6 +6,7 @@ import { useAdminTransfers, usePremiumStats } from "@/hooks/useTransfers";
 import { useAdminTips } from "@/hooks/useTips";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { StripeAdminService } from "@/services/stripe-admin.service";
+import { AdminAuditService } from "@/services/supabase/admin-audit.service";
 import type { PaymentStatus } from "@/lib/paymentTypes";
 
 const STATUS_STYLES: Record<PaymentStatus, { bg: string; color: string; label: string }> = {
@@ -54,6 +55,12 @@ export function PayoutControl() {
     setRefundingId(paymentId);
     try {
       await StripeAdminService.refundPayment({ paymentId, reason: "Admin refund" });
+      await AdminAuditService.log({
+        action: "refund.issued",
+        entityType: "payment",
+        entityId: paymentId,
+        metadata: { reason: "Admin refund" },
+      });
       toast.success("Refund issued");
       await refetchPayments();
     } catch (err) {

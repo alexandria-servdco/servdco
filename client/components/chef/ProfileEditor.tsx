@@ -19,6 +19,7 @@ interface ProfileData {
 
 interface ProfileEditorProps {
   chefProfileId?: string;
+  userId?: string;
   profileData: ProfileData;
   profileProgress: number;
   profileSuccess: boolean;
@@ -28,6 +29,7 @@ interface ProfileEditorProps {
 
 export function ProfileEditor({
   chefProfileId,
+  userId,
   profileData,
   profileProgress,
   profileSuccess,
@@ -154,7 +156,7 @@ export function ProfileEditor({
         </h4>
         <ImageUpload
           variant="avatar"
-          pathPrefix={chefProfileId}
+          pathPrefix={userId ?? chefProfileId}
           bucket="avatars"
           initialUrl={profileData.avatarUrl}
           onUploadSuccess={(res) => onUpdate({ avatarUrl: res.url })}

@@ -148,6 +148,13 @@ export const api = {
     return AdminService.verifyDocument(id, status, reviewNotes);
   },
 
+  async requestDocumentResubmission(
+    id: string,
+    reviewNotes: string,
+  ): Promise<{ success: boolean; document: ChefDocument }> {
+    return AdminService.requestDocumentResubmission(id, reviewNotes);
+  },
+
   async getChefById(id: string): Promise<MarketplaceChef | null> {
     return ChefService.getChefById(id);
   },

@@ -77,6 +77,27 @@ export const NotificationsSupabaseService = {
     return (data ?? []).map(mapNotificationRow);
   },
 
+  async createForUser(params: {
+    userId: string;
+    title: string;
+    message: string;
+    type: UiNotification["type"];
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { error } = await client.from("notifications").insert({
+      user_id: params.userId,
+      title: params.title,
+      message: params.message,
+      type: params.type,
+      metadata: params.metadata ?? {},
+    });
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+  },
+
   async markAllRead(): Promise<void> {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");

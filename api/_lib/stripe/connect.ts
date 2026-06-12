@@ -76,13 +76,23 @@ export async function createOnboardingLink(params: {
   refreshUrl: string;
 }): Promise<string> {
   const stripe = getStripe();
-  const link = await stripe.accountLinks.create({
-    account: params.stripeAccountId,
-    return_url: params.returnUrl,
-    refresh_url: params.refreshUrl,
-    type: "account_onboarding",
-  });
-  return link.url;
+  try {
+    const link = await stripe.accountLinks.create({
+      account: params.stripeAccountId,
+      return_url: params.returnUrl,
+      refresh_url: params.refreshUrl,
+      type: "account_onboarding",
+    });
+    return link.url;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("live mode") || message.includes("test mode")) {
+      throw new Error(
+        `${message} — stripe_accounts.stripe_account_id (${params.stripeAccountId}) was created in a different Stripe mode than STRIPE_SECRET_KEY. Remove the stale row or use matching keys.`,
+      );
+    }
+    throw err;
+  }
 }
 
 export async function createDashboardLink(

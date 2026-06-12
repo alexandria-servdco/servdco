@@ -6,8 +6,8 @@ export const adminQueryKeys = {
   users: () => ["admin", "users"] as const,
 };
 
-const DEFAULT_AVATAR =
-  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop";
+import { resolveAvatarUrl } from "@/lib/avatar";
+import { AdminAuditService } from "./admin-audit.service";
 
 export const AdminModerationSupabaseService = {
   async listUsers(): Promise<AdminUser[]> {
@@ -29,7 +29,7 @@ export const AdminModerationSupabaseService = {
       state: row.state ?? "",
       city: row.city ?? "",
       status: row.status === "suspended" ? "suspended" : "active",
-      avatar: row.avatar_url ?? DEFAULT_AVATAR,
+      avatar: resolveAvatarUrl(row.avatar_url) ?? "",
       created_at: row.created_at,
     }));
   },
@@ -54,6 +54,14 @@ export const AdminModerationSupabaseService = {
       .single();
 
     if (error) throw new SupabaseQueryError(error.message, error);
+
+    await AdminAuditService.log({
+      action: status === "suspended" ? "user.suspended" : "user.reactivated",
+      entityType: "profile",
+      entityId: id,
+      metadata: { status },
+    });
+
     return {
       id: data.id,
       name: data.full_name ?? data.email,
@@ -62,7 +70,7 @@ export const AdminModerationSupabaseService = {
       state: data.state ?? "",
       city: data.city ?? "",
       status: data.status === "suspended" ? "suspended" : "active",
-      avatar: data.avatar_url ?? DEFAULT_AVATAR,
+      avatar: resolveAvatarUrl(data.avatar_url) ?? "",
       created_at: data.created_at,
     };
   },
@@ -98,7 +106,7 @@ export const AdminModerationSupabaseService = {
       state: data.state ?? "",
       city: data.city ?? "",
       status: data.status === "suspended" ? "suspended" : "active",
-      avatar: data.avatar_url ?? DEFAULT_AVATAR,
+      avatar: resolveAvatarUrl(data.avatar_url) ?? "",
       created_at: data.created_at,
     };
   },
@@ -118,6 +126,12 @@ export const AdminModerationSupabaseService = {
       .eq("id", id);
 
     if (error) throw new SupabaseQueryError(error.message, error);
+
+    await AdminAuditService.log({
+      action: "user.deleted",
+      entityType: "profile",
+      entityId: id,
+    });
   },
 
   async updateChefVerification(
@@ -142,5 +156,19 @@ export const AdminModerationSupabaseService = {
       .eq("id", chefProfileId);
 
     if (error) throw new SupabaseQueryError(error.message, error);
+
+    const actionByStatus: Record<string, string> = {
+      approved: "chef.approved",
+      rejected: "chef.rejected",
+      suspended: "chef.suspended",
+      pending: "chef.verification_updated",
+    };
+
+    await AdminAuditService.log({
+      action: actionByStatus[status] ?? "chef.verification_updated",
+      entityType: "chef_profile",
+      entityId: chefProfileId,
+      metadata: { verification_status: status },
+    });
   },
 };

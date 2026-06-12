@@ -47,6 +47,7 @@ import { AuthService } from "@/services/auth.service";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
   BookingCardSkeleton,
   DashboardWidgetSkeleton,
@@ -71,22 +72,17 @@ import { useChefProfileByUser } from "@/hooks/useChefProfileByUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { profileQueryKeys } from "@/services/supabase/profiles.service";
 import { ProfilesSupabaseService } from "@/services/supabase/profiles.service";
-import { getLegacyUser, setLegacyUser } from "@/lib/auth/legacySession";
+import {
+  ChefsSupabaseService,
+  chefQueryKeys,
+} from "@/services/supabase/chefs.service";
+import { availabilityQueryKeys } from "@/services/supabase/availability.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useIsPremiumChef } from "@/hooks/useSubscription";
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { StripeService } from "@/services/stripe.service";
 import { useOwnDocuments, useSubmitChefDocuments } from "@/hooks/useOwnDocuments";
-
-const initialChartData = [
-  { date: "May 1", earnings: 180 },
-  { date: "May 6", earnings: 320 },
-  { date: "May 11", earnings: 280 },
-  { date: "May 16", earnings: 450 },
-  { date: "May 21", earnings: 380 },
-  { date: "May 26", earnings: 520 },
-];
 
 export default function ChefDashboard() {
   useNotifications();
@@ -109,7 +105,7 @@ export default function ChefDashboard() {
   const [premiumLoading, setPremiumLoading] = useState(false);
   const { data: ownDocuments = [] } = useOwnDocuments(ownChefProfile?.id);
   const submitChefDocuments = useSubmitChefDocuments();
-  const profileProgress = profile?.profile_completed ?? 50;
+  const profileProgress = profile?.profile_completed ?? 0;
   const verificationStatus = ownChefProfile?.verification_status ?? "pending";
 
   const docStatus = (type: string) =>
@@ -135,7 +131,7 @@ export default function ChefDashboard() {
     experience: "12 years in private cooking",
     cuisines: ["American", "Italian", "Gluten-Free"],
     newCuisine: "",
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop",
+    avatarUrl: "",
     portfolioImages: [] as UploadResponse[],
   });
   const [profileSuccess, setProfileSuccess] = useState(false);
@@ -168,7 +164,8 @@ export default function ChefDashboard() {
     });
     setProfileData((prev) => ({
       ...prev,
-      name: profile.full_name || "Cook Maria",
+      name: profile.full_name || prev.name,
+      avatarUrl: profile.avatar_url ?? prev.avatarUrl,
     }));
 
     const fetchData = async () => {
@@ -251,6 +248,9 @@ export default function ChefDashboard() {
     }
     setAvailabilitySlots(updated);
     await AvailabilityService.saveAvailability(chefProfileId, updated);
+    await queryClient.invalidateQueries({
+      queryKey: availabilityQueryKeys.byChef(chefProfileId),
+    });
     setAvailabilitySuccess(true);
     setTimeout(() => setAvailabilitySuccess(false), 2500);
   };
@@ -272,20 +272,33 @@ export default function ChefDashboard() {
       .filter((s) => s.timeSlots.length > 0);
     setAvailabilitySlots(updated);
     await AvailabilityService.saveAvailability(chefProfileId, updated);
+    await queryClient.invalidateQueries({
+      queryKey: availabilityQueryKeys.byChef(chefProfileId),
+    });
   };
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      await ProfilesSupabaseService.updateOwnProfile({ profile_completed: 100 });
-    } catch {
-      const legacy = getLegacyUser();
-      if (legacy) {
-        setLegacyUser({ ...legacy, profile_completed: 100 });
-      }
-    }
+    const years = parseInt(profileData.experience, 10);
+    await ChefsSupabaseService.updateOwnChefProfile({
+      display_name: profileData.name,
+      headline: profileData.specialty,
+      bio: profileData.bio,
+      cuisines: profileData.cuisines,
+      years_experience: Number.isFinite(years) ? years : undefined,
+    });
+    await ProfilesSupabaseService.updateOwnProfile({
+      full_name: profileData.name,
+      avatar_url: profileData.avatarUrl || null,
+      profile_completed: 100,
+    });
     await queryClient.invalidateQueries({ queryKey: profileQueryKeys.own() });
+    if (profile?.id) {
+      await queryClient.invalidateQueries({
+        queryKey: chefQueryKeys.byUserId(profile.id),
+      });
+    }
 
     setProfileSuccess(true);
     setTimeout(() => setProfileSuccess(false), 3000);
@@ -597,14 +610,15 @@ export default function ChefDashboard() {
                             key={booking.id}
                             className="flex flex-col sm:flex-row gap-5 pb-6 border-b border-white/5 last:border-b-0 last:pb-0"
                           >
-                            <img
-                              src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop"
-                              alt="Family"
-                              className="w-16 h-16 rounded-2xl object-cover border border-white/10"
+                            <UserAvatar
+                              name={booking.family || booking.family_name}
+                              imageUrl={null}
+                              size="lg"
+                              className="w-16 h-16 rounded-2xl border border-white/10"
                             />
                             <div className="flex-1 space-y-1">
                               <h3 className="font-bold text-white text-base font-serif">
-                                {booking.family || "The Johnson Family"}
+                                {booking.family || booking.family_name || "Family"}
                               </h3>
                               <p className="text-xs text-[#A8A8A8] font-bold">
                                 {booking.serviceType ||
@@ -646,14 +660,15 @@ export default function ChefDashboard() {
                             className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-white/5 last:border-b-0 last:pb-0"
                           >
                             <div className="flex gap-4">
-                              <img
-                                src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop"
-                                alt="Request Family"
-                                className="w-14 h-14 rounded-2xl object-cover border border-white/10"
+                              <UserAvatar
+                                name={request.family || request.family_name}
+                                imageUrl={null}
+                                size="md"
+                                className="w-14 h-14 rounded-2xl border border-white/10"
                               />
                               <div>
                                 <h4 className="font-bold text-white font-serif">
-                                  {request.family || "The Sarah Family"}
+                                  {request.family || request.family_name || "Family"}
                                 </h4>
                                 <p className="text-xs text-[#A8A8A8]">
                                   {request.serviceType ||
@@ -709,38 +724,22 @@ export default function ChefDashboard() {
                     <h3 className="font-bold text-white text-sm font-serif">
                       Revenue overview
                     </h3>
-                    <div className="h-[200px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={initialChartData}>
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="rgba(255,255,255,0.03)"
-                          />
-                          <XAxis
-                            dataKey="date"
-                            stroke="#A8A8A8"
-                            fontSize={10}
-                            opacity={0.6}
-                          />
-                          <YAxis stroke="#A8A8A8" fontSize={10} opacity={0.6} />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: "#161616",
-                              border: "1px solid rgba(255,255,255,0.05)",
-                              borderRadius: "8px",
-                              color: "#fff",
-                            }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="earnings"
-                            stroke="#FF7A59"
-                            strokeWidth={2.5}
-                            dot={{ fill: "#FF7A59", r: 3 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
+                    {bookings.filter((b) => b.status === "completed").length === 0 ? (
+                      <p className="text-sm text-[#A8A8A8] font-medium py-8 text-center">
+                        No completed bookings yet. Earnings will appear here after your first session.
+                      </p>
+                    ) : (
+                      <p className="text-3xl font-bold text-[#FF7A59] font-serif">
+                        $
+                        {bookings
+                          .filter((b) => b.status === "completed")
+                          .reduce((sum, b) => sum + (b.price ?? 0), 0)
+                          .toFixed(2)}
+                        <span className="text-xs text-[#A8A8A8] font-sans ml-2">
+                          from {bookings.filter((b) => b.status === "completed").length} completed
+                        </span>
+                      </p>
+                    )}
                   </div>
 
                   {/* Profile completeness */}
@@ -750,7 +749,7 @@ export default function ChefDashboard() {
                     </h3>
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-full border-4 border-[#FF7A59] border-t-transparent flex items-center justify-center font-bold text-white text-sm font-serif">
-                        85%
+                        {profileProgress}%
                       </div>
                       <div>
                         <p className="text-xs font-bold text-white">
@@ -957,7 +956,12 @@ export default function ChefDashboard() {
                 <div className="flex items-center gap-6">
                   <div className="text-center">
                     <p className="text-5xl font-bold text-white font-serif">
-                      5.0
+                      {reviews.length > 0
+                        ? (
+                            reviews.reduce((s, r) => s + r.rating, 0) /
+                            reviews.length
+                          ).toFixed(1)
+                        : "—"}
                     </p>
                     <div className="flex gap-0.5 text-yellow-400 justify-center mt-1">
                       {Array(5)
@@ -967,7 +971,7 @@ export default function ChefDashboard() {
                         ))}
                     </div>
                     <p className="text-[9px] text-[#A8A8A8] uppercase tracking-wider font-bold mt-1">
-                      4 Reviews
+                      {reviews.length} Review{reviews.length === 1 ? "" : "s"}
                     </p>
                   </div>
 
@@ -975,11 +979,14 @@ export default function ChefDashboard() {
 
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-white">
-                      100% Recommendation rate
+                      {reviews.length > 0
+                        ? `${Math.round((reviews.filter((r) => r.rating >= 4).length / reviews.length) * 100)}% positive ratings`
+                        : "No reviews yet"}
                     </p>
                     <p className="text-[10px] text-[#A8A8A8] font-medium leading-relaxed max-w-sm">
-                      Every family who booked Cook Maria rated their experience
-                      5 stars with particular praise for kitchen cleanliness.
+                      {reviews.length > 0
+                        ? "Ratings from verified families who completed a booking."
+                        : "Complete your first booking to start collecting reviews."}
                     </p>
                   </div>
                 </div>
@@ -1181,6 +1188,7 @@ export default function ChefDashboard() {
             /* Biography Profile Editor */
             <ProfileEditor
               chefProfileId={ownChefProfile?.id}
+              userId={profile?.id}
               profileData={profileData}
               profileProgress={profileProgress}
               profileSuccess={profileSuccess}

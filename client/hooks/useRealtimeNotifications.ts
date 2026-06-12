@@ -41,7 +41,8 @@ export function useRealtimeNotifications() {
           table: "notifications",
           filter: `user_id=eq.${userId}`,
         },
-        () => {
+        async () => {
+          await NotificationService.syncUserNotifications(userId);
           queryClient.invalidateQueries({
             queryKey: notificationQueryKeys.own(),
           });

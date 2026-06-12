@@ -64,6 +64,20 @@ import { DashboardWidgetSkeleton, CardSkeleton } from "@/components/ui/Skeletons
 import { useAdminStore } from "@/store/useAdminStore";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useAuth } from "@/hooks/useAuth";
+import { UserAvatar } from "@/components/ui/UserAvatar";
+import { AdminOverviewService } from "@/services/supabase/admin-overview.service";
+import { AdminAuditService } from "@/services/supabase/admin-audit.service";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 import { ChartCard } from "@/components/admin/ChartCard";
 import { lazy, Suspense } from "react";
@@ -80,6 +94,7 @@ const AdminNotificationMonitor = lazy(() => import("@/components/admin/AdminNoti
 const PlatformSettings = lazy(() => import("@/components/admin/PlatformSettings").then(m => ({ default: m.PlatformSettings })));
 const MarketInterestRequests = lazy(() => import("@/components/admin/MarketInterestRequests").then(m => ({ default: m.MarketInterestRequests })));
 const AdminMessagingHub = lazy(() => import("@/components/messaging/AdminMessagingHub").then(m => ({ default: m.AdminMessagingHub })));
+const AdminAuditLogs = lazy(() => import("@/components/admin/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
 
 // ─── Constants & Aesthetics ───────────────────────────────────────────────────
 
@@ -106,6 +121,7 @@ const NAV_ITEMS = [
   { id: "moderation", label: "Moderation", icon: ShieldAlert },
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "audit_logs", label: "Audit Logs", icon: ShieldAlert },
   { id: "settings", label: "Settings", icon: Sliders },
 ];
 
@@ -181,6 +197,7 @@ export default function AdminDashboard({
   initialTab?: string;
 }) {
   useNotifications();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState(initialTab);
 
@@ -192,7 +209,17 @@ export default function AdminDashboard({
   const [chefs, setChefs] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [overviewMetrics, setOverviewMetrics] = useState({
+    platformRevenue: 0,
+    pendingReviews: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [docReasonModal, setDocReasonModal] = useState<{
+    id: string;
+    action: "rejected" | "resubmit";
+  } | null>(null);
+  const [docReasonText, setDocReasonText] = useState("");
+  const [docActionLoading, setDocActionLoading] = useState(false);
 
   // Selected region for details panel
   const [selectedStateId, setSelectedStateId] = useState("OH");
@@ -251,6 +278,9 @@ export default function AdminDashboard({
 
       const dData = await api.getDocuments();
       setDocuments(dData);
+
+      const metrics = await AdminOverviewService.getSupplementaryMetrics();
+      setOverviewMetrics(metrics);
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
     } finally {
@@ -379,30 +409,74 @@ export default function AdminDashboard({
     status: "pending" | "confirmed" | "completed" | "cancelled",
   ) => {
     try {
+      const booking = bookings.find((b) => b.id === id);
       await api.updateBookingStatus(id, status);
+      await AdminAuditService.log({
+        action: "booking.status_changed",
+        entityType: "booking",
+        entityId: id,
+        metadata: {
+          new_status: status,
+          previous_status: booking?.status ?? null,
+        },
+      });
       await reloadData();
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Documents Handlers
+  const openDocumentReasonModal = (
+    id: string,
+    action: "rejected" | "resubmit",
+  ) => {
+    setDocReasonModal({ id, action });
+    setDocReasonText("");
+  };
+
   const handleDocumentAction = async (
     id: string,
-    status: "approved" | "rejected",
+    status: "approved" | "rejected" | "resubmit",
   ) => {
+    if (status === "rejected" || status === "resubmit") {
+      openDocumentReasonModal(id, status);
+      return;
+    }
+
     try {
-      let reviewNotes: string | undefined;
-      if (status === "rejected") {
-        reviewNotes =
-          window.prompt("Rejection reason (shown to chef):") ?? undefined;
-        if (!reviewNotes?.trim()) return;
-      }
-      await api.updateDocumentStatus(id, status, reviewNotes);
+      await api.updateDocumentStatus(id, status);
       await reloadData();
       setPreviewDoc(null);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const submitDocumentReason = async () => {
+    if (!docReasonModal || !docReasonText.trim()) return;
+
+    setDocActionLoading(true);
+    try {
+      if (docReasonModal.action === "rejected") {
+        await api.updateDocumentStatus(
+          docReasonModal.id,
+          "rejected",
+          docReasonText.trim(),
+        );
+      } else {
+        await api.requestDocumentResubmission(
+          docReasonModal.id,
+          docReasonText.trim(),
+        );
+      }
+      await reloadData();
+      setPreviewDoc(null);
+      setDocReasonModal(null);
+      setDocReasonText("");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDocActionLoading(false);
     }
   };
 
@@ -426,16 +500,29 @@ export default function AdminDashboard({
     document.body.removeChild(link);
   };
 
-  // Top metric stats
-  const totalUsersCount = users.length;
-  const totalChefsCount = chefs.length;
-  const pendingApprovalsCount =
-    chefs.filter((c) => c.verification_status === "pending").length +
-    documents.filter((d) => d.status === "pending").length;
-  const totalBookingsCount = bookings.length;
-  const monthlyRevenueTotal = bookings
-    .filter((b) => b.status === "completed" || b.status === "confirmed")
-    .reduce((sum, b) => sum + b.price, 0);
+  const totalFamiliesCount = users.filter((u) => u.role === "family").length;
+  const totalChefsCount = users.filter((u) => u.role === "chef").length;
+  const pendingChefsCount = chefs.filter(
+    (c) => c.verification_status === "pending",
+  ).length;
+  const activeBookingsCount = bookings.filter(
+    (b) => b.status === "pending" || b.status === "confirmed",
+  ).length;
+  const completedBookingsCount = bookings.filter(
+    (b) => b.status === "completed",
+  ).length;
+  const pendingDocumentsCount = documents.filter(
+    (d) => d.status === "pending",
+  ).length;
+
+  const formatRelativeTime = (iso?: string) => {
+    if (!iso) return "Recently";
+    const diff = Date.now() - new Date(iso).getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days <= 0) return "Today";
+    if (days === 1) return "Yesterday";
+    return `${days} days ago`;
+  };
 
   // Recent Activity Feed calculations
   const recentActivityFeed = [
@@ -443,7 +530,7 @@ export default function AdminDashboard({
       id: `bk_${b.id}`,
       title: `Booking ${b.id} ${b.status}`,
       message: `${b.family_name} booked ${b.chef_name} for a ${b.service_type}`,
-      timestamp: "Today",
+      timestamp: formatRelativeTime(b.created_at),
       iconColor:
         b.status === "confirmed"
           ? "#10B981"
@@ -455,14 +542,14 @@ export default function AdminDashboard({
       id: `ch_${c.id}`,
       title: `Cook Registered`,
       message: `${c.name} applied as a ${c.cuisine} cook in ${c.location}`,
-      timestamp: "Yesterday",
+      timestamp: formatRelativeTime(c.created_at),
       iconColor: "#FF7A59",
     })),
     ...users.slice(0, 3).map((u) => ({
       id: `usr_${u.id}`,
       title: `New signup`,
       message: `${u.name} joined as a ${u.role} in ${u.city}`,
-      timestamp: "2 days ago",
+      timestamp: formatRelativeTime(u.created_at),
       iconColor: "#3B82F6",
     })),
   ].slice(0, 5);
@@ -693,17 +780,11 @@ export default function AdminDashboard({
                 "transparent")
             }
           >
-            <img
-              src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop"
-              alt="Admin"
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "50%",
-                objectFit: "cover",
-                border: "2px solid rgba(255,255,255,0.1)",
-                flexShrink: 0,
-              }}
+            <UserAvatar
+              name={user?.name ?? "Admin"}
+              imageUrl={null}
+              size="sm"
+              className="w-[38px] h-[38px] border-2 border-white/10 shrink-0"
             />
             <div style={{ flex: 1, minWidth: 0 }}>
               <p
@@ -780,6 +861,7 @@ export default function AdminDashboard({
               {activeNav === "moderation" && "Content Moderation"}
               {activeNav === "announcements" && "Global Announcements"}
               {activeNav === "analytics" && "Aggregated Metrics"}
+              {activeNav === "audit_logs" && "Admin Audit Trail"}
               {activeNav === "settings" && "Platform Settings"}
             </h1>
             <p
@@ -814,6 +896,8 @@ export default function AdminDashboard({
                 "Configure dynamic global alerts across the product."}
               {activeNav === "analytics" &&
                 "Analyze user growth, platform revenue trends, and regional conversions."}
+              {activeNav === "audit_logs" &&
+                "Immutable record of every admin action on the platform."}
               {activeNav === "settings" &&
                 "Manage dynamic fee algorithms and platform wide configurations."}
             </p>
@@ -897,16 +981,11 @@ export default function AdminDashboard({
             )}
 
             {/* Avatar */}
-            <img
-              src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop"
-              alt="Admin"
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                objectFit: "cover",
-                border: "2px solid rgba(255,255,255,0.08)",
-              }}
+            <UserAvatar
+              name={user?.name ?? "Admin"}
+              imageUrl={null}
+              size="sm"
+              className="w-10 h-10 border-2 border-white/8"
             />
           </div>
         </div>
@@ -946,57 +1025,57 @@ export default function AdminDashboard({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(6, 1fr)",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
                     gap: "14px",
                   }}
                 >
                   <AnalyticsCard
                     icon="users"
-                    label="Total Users"
-                    value={totalUsersCount.toString()}
-                    change="+12.4%"
-                    positive
-                    subtext="vs last week"
+                    label="Total Families"
+                    value={totalFamiliesCount.toString()}
+                    subtext="registered families"
                   />
                   <AnalyticsCard
                     icon="chefs"
-                    label="Total Cooks"
+                    label="Total Chefs"
                     value={totalChefsCount.toString()}
-                    change="+8.1%"
-                    positive
-                    subtext="vs last week"
+                    subtext="registered cooks"
                   />
                   <AnalyticsCard
                     icon="alert"
-                    label="Active States"
-                    value={activeRegionsCount.toString()}
-                    change="+2.4%"
-                    positive
-                    subtext="vs last month"
+                    label="Pending Chefs"
+                    value={pendingChefsCount.toString()}
+                    subtext="awaiting approval"
+                  />
+                  <AnalyticsCard
+                    icon="bookings"
+                    label="Active Bookings"
+                    value={activeBookingsCount.toString()}
+                    subtext="pending + confirmed"
+                  />
+                  <AnalyticsCard
+                    icon="bookings"
+                    label="Completed Bookings"
+                    value={completedBookingsCount.toString()}
+                    subtext="all time"
+                  />
+                  <AnalyticsCard
+                    icon="bookings"
+                    label="Platform Revenue"
+                    value={`$${overviewMetrics.platformRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    subtext="Stripe platform fees"
                   />
                   <AnalyticsCard
                     icon="alert"
-                    label="Pending Approvals"
-                    value={pendingApprovalsCount.toString()}
-                    change="-12.3%"
-                    positive={false}
-                    subtext="completed"
+                    label="Pending Reviews"
+                    value={overviewMetrics.pendingReviews.toString()}
+                    subtext="completed, no review"
                   />
                   <AnalyticsCard
-                    icon="bookings"
-                    label="Total Bookings"
-                    value={totalBookingsCount.toString()}
-                    change="+18.5%"
-                    positive
-                    subtext="vs last week"
-                  />
-                  <AnalyticsCard
-                    icon="bookings"
-                    label="Monthly Revenue"
-                    value={`$${monthlyRevenueTotal.toLocaleString()}`}
-                    change="+24.8%"
-                    positive
-                    subtext="vs last month"
+                    icon="alert"
+                    label="Pending Documents"
+                    value={pendingDocumentsCount.toString()}
+                    subtext="awaiting review"
                   />
                 </div>
 
@@ -1338,18 +1417,11 @@ export default function AdminDashboard({
                             borderBottom: "1px solid rgba(255,255,255,0.04)",
                           }}
                         >
-                          <img
-                            src={
-                              usr.avatar ||
-                              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop"
-                            }
-                            alt={usr.name}
-                            style={{
-                              width: "36px",
-                              height: "36px",
-                              borderRadius: "50%",
-                              objectFit: "cover",
-                            }}
+                          <UserAvatar
+                            name={usr.name}
+                            imageUrl={usr.avatar}
+                            size="sm"
+                            className="w-9 h-9"
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p
@@ -2567,6 +2639,8 @@ export default function AdminDashboard({
               <AdminAnalytics regions={regions} />
             )}
 
+            {activeNav === "audit_logs" && <AdminAuditLogs />}
+
             {/* ── Tab: PAYOUTS ────────────────────────────────────────────── */}
             {activeNav === "messaging" && <AdminMessagingHub />}
 
@@ -3138,15 +3212,29 @@ export default function AdminDashboard({
                   border: "1px solid rgba(255,255,255,0.05)",
                 }}
               >
-                <img
-                  src={previewDoc.url}
-                  alt={previewDoc.type}
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "100%",
-                    objectFit: "contain",
-                  }}
-                />
+                {previewDoc.url?.toLowerCase().includes(".pdf") ||
+                previewDoc.type?.toLowerCase().includes("pdf") ? (
+                  <iframe
+                    src={previewDoc.url}
+                    title={previewDoc.type}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      minHeight: "420px",
+                      border: "none",
+                    }}
+                  />
+                ) : (
+                  <img
+                    src={previewDoc.url}
+                    alt={previewDoc.type}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                )}
               </div>
 
               {/* Status details */}
@@ -3204,6 +3292,23 @@ export default function AdminDashboard({
                       </button>
                       <button
                         onClick={() =>
+                          handleDocumentAction(previewDoc.id, "resubmit")
+                        }
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "10px",
+                          background: "rgba(245,158,11,0.2)",
+                          color: "#F59E0B",
+                          fontWeight: "600",
+                          fontSize: "12.5px",
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Request Resubmission
+                      </button>
+                      <button
+                        onClick={() =>
                           handleDocumentAction(previewDoc.id, "rejected")
                         }
                         style={{
@@ -3243,6 +3348,52 @@ export default function AdminDashboard({
           </div>
         </div>
       )}
+
+      <Dialog
+        open={docReasonModal !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDocReasonModal(null);
+            setDocReasonText("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md bg-[#161616] border border-white/10 text-white rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl">
+              {docReasonModal?.action === "resubmit"
+                ? "Request resubmission"
+                : "Reject document"}
+            </DialogTitle>
+            <DialogDescription className="text-[#A8A8A8]">
+              This message is stored and shared with the chef.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={docReasonText}
+            onChange={(e) => setDocReasonText(e.target.value)}
+            placeholder="Explain what needs to change..."
+            className="min-h-[120px] bg-[#111111] border-white/10 text-white"
+          />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDocReasonModal(null);
+                setDocReasonText("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!docReasonText.trim() || docActionLoading}
+              onClick={submitDocumentReason}
+            >
+              {docActionLoading ? "Saving..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -3253,8 +3404,8 @@ interface AnalyticsCardProps {
   icon: "users" | "chefs" | "alert" | "bookings";
   label: string;
   value: string;
-  change: string;
-  positive: boolean;
+  change?: string;
+  positive?: boolean;
   subtext: string;
 }
 
@@ -3263,7 +3414,7 @@ function AnalyticsCard({
   label,
   value,
   change,
-  positive,
+  positive = true,
   subtext,
 }: AnalyticsCardProps) {
   const configs = {
@@ -3356,21 +3507,25 @@ function AnalyticsCard({
           marginTop: "12px",
         }}
       >
-        {positive ? (
-          <ArrowUp size={12} style={{ color: "#34D399" }} />
-        ) : (
-          <ArrowDown size={12} style={{ color: "#F87171" }} />
-        )}
-        <span
-          style={{
-            fontSize: "12px",
-            fontWeight: "600",
-            color: positive ? "#34D399" : "#F87171",
-          }}
-        >
-          {change}
-        </span>
-        <span style={{ fontSize: "11px", color: "#A8A8A8", marginLeft: "2px" }}>
+        {change ? (
+          <>
+            {positive ? (
+              <ArrowUp size={12} style={{ color: "#34D399" }} />
+            ) : (
+              <ArrowDown size={12} style={{ color: "#F87171" }} />
+            )}
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: "600",
+                color: positive ? "#34D399" : "#F87171",
+              }}
+            >
+              {change}
+            </span>
+          </>
+        ) : null}
+        <span style={{ fontSize: "11px", color: "#A8A8A8", marginLeft: change ? "2px" : 0 }}>
           {subtext}
         </span>
       </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { Search, Star } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 interface Chef {
   id: string;
@@ -183,19 +184,11 @@ export function ChefNetworkTable({
                   }}
                 >
                   <td style={{ padding: "12px" }}>
-                    <img
-                      src={
-                        c.avatar ||
-                        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop"
-                      }
-                      alt={c.name}
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        border: "1.5px solid rgba(255,255,255,0.1)",
-                      }}
+                    <UserAvatar
+                      name={c.name}
+                      imageUrl={c.avatar}
+                      size="sm"
+                      className="w-9 h-9 border-[1.5px] border-white/10"
                     />
                   </td>
                   <td

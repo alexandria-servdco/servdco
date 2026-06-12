@@ -1,6 +1,9 @@
 import { DocumentsSupabaseService } from "@/services/supabase/documents.service";
 import { InterestSupabaseService } from "@/services/supabase/interest.service";
 import { AdminModerationSupabaseService } from "@/services/supabase/admin-moderation.service";
+import { AdminAuditService } from "@/services/supabase/admin-audit.service";
+import { NotificationsSupabaseService } from "@/services/supabase/notifications.service";
+import { getSupabaseClient } from "@/lib/supabase/client";
 import { assertSupabaseConfigured } from "@/services/supabase/fallback";
 import {
   adminDocumentStatusSchema,
@@ -8,6 +11,33 @@ import {
   interestSchema,
   formatZodError,
 } from "@shared/validation";
+
+async function notifyChefForDocument(
+  chefProfileId: string,
+  title: string,
+  message: string,
+  type: "info" | "success" | "warning" | "error",
+  metadata: Record<string, unknown>,
+) {
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  const { data: chef } = await client
+    .from("chef_profiles")
+    .select("user_id")
+    .eq("id", chefProfileId)
+    .maybeSingle();
+
+  if (!chef?.user_id) return;
+
+  await NotificationsSupabaseService.createForUser({
+    userId: chef.user_id,
+    title,
+    message,
+    type,
+    metadata,
+  }).catch(() => {});
+}
 
 export const AdminService = {
   async getDocuments() {
@@ -30,6 +60,58 @@ export const AdminService = {
       statusParsed.data,
       reviewNotes,
     );
+
+    const actionMap = {
+      approved: "document.approved",
+      rejected: "document.rejected",
+      pending: "document.resubmit_requested",
+    } as const;
+
+    await AdminAuditService.log({
+      action: actionMap[statusParsed.data],
+      entityType: "chef_document",
+      entityId: id,
+      metadata: {
+        chef_profile_id: doc.chef_profile_id,
+        document_type: doc.type,
+        review_notes: reviewNotes ?? null,
+      },
+    });
+
+    return { success: true, document: doc };
+  },
+
+  async requestDocumentResubmission(id: string, reviewNotes: string) {
+    assertSupabaseConfigured();
+    if (!reviewNotes.trim()) {
+      throw new Error("Resubmission instructions are required.");
+    }
+
+    const doc = await DocumentsSupabaseService.updateStatus(
+      id,
+      "pending",
+      reviewNotes.trim(),
+    );
+
+    await notifyChefForDocument(
+      doc.chef_profile_id,
+      "Document Resubmission Requested",
+      `Please resubmit your ${doc.type}. ${reviewNotes.trim()}`,
+      "warning",
+      { document_id: id, event: "document_resubmit_requested" },
+    );
+
+    await AdminAuditService.log({
+      action: "document.resubmit_requested",
+      entityType: "chef_document",
+      entityId: id,
+      metadata: {
+        chef_profile_id: doc.chef_profile_id,
+        document_type: doc.type,
+        review_notes: reviewNotes.trim(),
+      },
+    });
+
     return { success: true, document: doc };
   },
 

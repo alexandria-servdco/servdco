@@ -90,6 +90,12 @@ interface RoleGuardProps {
   allowedRoles: ("family" | "chef" | "admin")[];
 }
 
+function dashboardPathForRole(role: string | null): string {
+  if (role === "chef") return "/chef-dashboard";
+  if (role === "admin") return "/admin-dashboard";
+  return "/dashboard";
+}
+
 /**
  * RoleGuard prevents users from accessing pages meant for other roles.
  */
@@ -105,4 +111,28 @@ export function RoleGuard({ allowedRoles }: RoleGuardProps) {
       )}
     </RoleLoadingGate>
   );
+}
+
+/**
+ * AdminGuard — production owner access. Only profile.role === 'admin' may proceed.
+ * Non-admins redirect to their role dashboard (not /unauthorized).
+ */
+export function AdminGuard() {
+  const { role, isLoading } = useCurrentUserRole();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#111111] flex items-center justify-center">
+        <p className="text-[#A8A8A8] text-xs font-bold uppercase tracking-wider">
+          Verifying admin access...
+        </p>
+      </div>
+    );
+  }
+
+  if (role !== "admin") {
+    return <Navigate to={dashboardPathForRole(role)} replace />;
+  }
+
+  return <Outlet />;
 }

@@ -25,9 +25,15 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { calculateCookPayout } from "@/utils/platformFee";
+import { useBrowseChefs } from "@/hooks/useChefs";
+import { mapChefsToCards } from "@/lib/cookMapper";
+import { UserAvatar } from "@/components/ui/UserAvatar";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 export default function Index() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const { data: marketplaceChefs = [], isLoading: chefsLoading } = useBrowseChefs();
+  const featuredChefs = mapChefsToCards(marketplaceChefs).slice(0, 4);
 
   // Interactive Calculator State
   const [breakfastSessions, setBreakfastSessions] = useState(2);
@@ -446,58 +452,38 @@ export default function Index() {
           </Link>
         </div>
 
-        {/* Chefs Grid */}
+        {/* Chefs Grid — live approved chefs from Supabase only */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[
-            {
-              id: "ch_4",
-              name: "Cook Maria",
-              tags: "Comfort Food • Meal Prep",
-              rating: "4.9",
-              reviews: "128",
-              img: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=400&fit=crop",
-              location: "Atlanta, GA",
-            },
-            {
-              id: "ch_3",
-              name: "Cook James",
-              tags: "Southern • Family Meals",
-              rating: "4.8",
-              reviews: "94",
-              img: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&h=400&fit=crop",
-              location: "Austin, TX",
-            },
-            {
-              id: "ch_2",
-              name: "Cook Priya",
-              tags: "Indian • Vegetarian",
-              rating: "4.9",
-              reviews: "112",
-              img: "https://images.unsplash.com/photo-1607631568010-a87245c0daf8?w=400&h=400&fit=crop",
-              location: "Dallas, TX",
-            },
-            {
-              id: "ch_1",
-              name: "Cook Sarah",
-              tags: "Comfort Food • Family Dinners",
-              rating: "4.9",
-              reviews: "142",
-              img: "https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?w=400&h=400&fit=crop",
-              location: "Atlanta, GA",
-            },
-          ].map((chef, idx) => (
+          {chefsLoading && (
+            <p className="text-[#A8A8A8] text-sm col-span-full">Loading cooks...</p>
+          )}
+          {!chefsLoading && featuredChefs.length === 0 && (
+            <div className="col-span-full velvet-card p-12 text-center space-y-3">
+              <ChefHat size={32} className="mx-auto text-[#FF7A59]/50" />
+              <p className="text-white font-bold font-serif">No approved cooks in your area yet</p>
+              <p className="text-sm text-[#A8A8A8]">Check back soon or join the waitlist.</p>
+              <Link to="/waitlist" className="inline-block text-[#FF7A59] text-xs font-bold hover:underline">
+                Join the waitlist
+              </Link>
+            </div>
+          )}
+          {featuredChefs.map((chef) => (
             <div
-              key={idx}
+              key={chef.id}
               className="bg-[#2A2A2A] rounded-[24px] border border-white/5 overflow-hidden group hover:shadow-[0_16px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 {/* Photo */}
-                <div className="h-[190px] overflow-hidden relative bg-black/10">
-                  <img
-                    src={chef.img}
-                    alt={chef.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
+                <div className="h-[190px] overflow-hidden relative bg-black/10 flex items-center justify-center">
+                  {resolveAvatarUrl(chef.image) ? (
+                    <img
+                      src={chef.image}
+                      alt={chef.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <UserAvatar name={chef.name} size="lg" className="w-24 h-24 text-xl" />
+                  )}
                   <div className="absolute top-3 right-3">
                     <div className="w-8 h-8 rounded-full bg-[#111111]/70 backdrop-blur-sm flex items-center justify-center border border-white/10 hover:text-[#FF7A59] transition-colors cursor-pointer text-white">
                       <Heart size={14} />
@@ -521,7 +507,7 @@ export default function Index() {
                     {chef.name}
                   </h3>
                   <p className="text-[11.5px] text-[#A8A8A8] font-bold mb-3">
-                    {chef.tags}
+                    {chef.specialties.join(" • ")}
                   </p>
 
                   <div className="flex items-center justify-between">

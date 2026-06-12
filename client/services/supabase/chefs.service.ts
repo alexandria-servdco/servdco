@@ -1,9 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { ChefProfileRow } from "@/lib/supabase/types";
-import {
-  DEFAULT_CHEF_AVATAR,
-  type MarketplaceChef,
-} from "@/lib/marketplaceTypes";
+import { resolveAvatarUrl } from "@/lib/avatar";
+import type { MarketplaceChef } from "@/lib/marketplaceTypes";
 import { SupabaseQueryError } from "./fallback";
 
 type PortfolioImage = {
@@ -23,7 +21,11 @@ export const chefQueryKeys = {
 function pickAvatar(
   chefProfileId: string,
   images: PortfolioImage[],
+  profileAvatarUrl?: string | null,
 ): string {
+  const fromProfile = resolveAvatarUrl(profileAvatarUrl);
+  if (fromProfile) return fromProfile;
+
   const match = images
     .filter(
       (img) =>
@@ -33,7 +35,7 @@ function pickAvatar(
     )
     .sort((a, b) => a.sort_order - b.sort_order);
 
-  return match[0]?.public_url ?? DEFAULT_CHEF_AVATAR;
+  return match[0]?.public_url ?? "";
 }
 
 function pickPortfolioUrls(
@@ -54,6 +56,7 @@ function pickPortfolioUrls(
 export function mapChefRowToMarketplace(
   row: ChefProfileRow,
   images: PortfolioImage[] = [],
+  profileAvatarUrl?: string | null,
 ): MarketplaceChef {
   const cuisines = row.cuisines ?? [];
   return {
@@ -70,10 +73,29 @@ export function mapChefRowToMarketplace(
     bookings_count: row.bookings_count,
     rating: Number(row.rating ?? 0),
     reviews_count: row.reviews_count,
-    avatar: pickAvatar(row.id, images),
+    avatar: pickAvatar(row.id, images, profileAvatarUrl),
     portfolioImages: pickPortfolioUrls(row.id, images),
     created_at: row.created_at,
   };
+}
+
+async function fetchProfileAvatars(
+  userIds: string[],
+): Promise<Map<string, string | null>> {
+  const client = getSupabaseClient();
+  const map = new Map<string, string | null>();
+  if (!client || userIds.length === 0) return map;
+
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, avatar_url")
+    .in("id", userIds);
+
+  if (error) throw new SupabaseQueryError(error.message, error);
+  for (const row of data ?? []) {
+    map.set(row.id, row.avatar_url);
+  }
+  return map;
 }
 
 async function fetchPortfolioImages(
@@ -109,7 +131,10 @@ export const ChefsSupabaseService = {
     if (error) throw new SupabaseQueryError(error.message, error);
     const rows = data ?? [];
     const images = await fetchPortfolioImages(rows.map((row) => row.id));
-    return rows.map((row) => mapChefRowToMarketplace(row, images));
+    const avatarMap = await fetchProfileAvatars(rows.map((row) => row.user_id));
+    return rows.map((row) =>
+      mapChefRowToMarketplace(row, images, avatarMap.get(row.user_id)),
+    );
   },
 
   async listPublicChefs(): Promise<MarketplaceChef[]> {
@@ -128,7 +153,10 @@ export const ChefsSupabaseService = {
     if (error) throw new SupabaseQueryError(error.message, error);
     const rows = data ?? [];
     const images = await fetchPortfolioImages(rows.map((row) => row.id));
-    return rows.map((row) => mapChefRowToMarketplace(row, images));
+    const avatarMap = await fetchProfileAvatars(rows.map((row) => row.user_id));
+    return rows.map((row) =>
+      mapChefRowToMarketplace(row, images, avatarMap.get(row.user_id)),
+    );
   },
 
   async getChefById(chefProfileId: string): Promise<MarketplaceChef | null> {
@@ -146,7 +174,39 @@ export const ChefsSupabaseService = {
     if (!data) return null;
 
     const images = await fetchPortfolioImages([data.id]);
-    return mapChefRowToMarketplace(data, images);
+    const avatarMap = await fetchProfileAvatars([data.user_id]);
+    return mapChefRowToMarketplace(data, images, avatarMap.get(data.user_id));
+  },
+
+  async updateOwnChefProfile(
+    updates: Partial<
+      Pick<
+        ChefProfileRow,
+        "display_name" | "headline" | "bio" | "cuisines" | "years_experience"
+      >
+    >,
+  ): Promise<ChefProfileRow | null> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw new SupabaseQueryError(authError.message, authError);
+    const userId = authData.user?.id;
+    if (!userId) return null;
+
+    const { data, error } = await client
+      .from("chef_profiles")
+      .update({
+        ...updates,
+        updated_by: userId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+      .select("*")
+      .single();
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+    return data;
   },
 
   async getChefByUserId(userId: string): Promise<MarketplaceChef | null> {
@@ -164,6 +224,7 @@ export const ChefsSupabaseService = {
     if (!data) return null;
 
     const images = await fetchPortfolioImages([data.id]);
-    return mapChefRowToMarketplace(data, images);
+    const avatarMap = await fetchProfileAvatars([data.user_id]);
+    return mapChefRowToMarketplace(data, images, avatarMap.get(data.user_id));
   },
 };

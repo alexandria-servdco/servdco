@@ -19,6 +19,7 @@ import { mapChefsToCards } from "@/lib/cookMapper";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { BookingCardSkeleton, DashboardWidgetSkeleton } from "@/components/ui/Skeletons";
 import { BookingMessaging } from "@/components/messaging/BookingMessaging";
 import { MessagingHub } from "@/components/messaging/MessagingHub";
@@ -55,7 +56,7 @@ export default function Dashboard() {
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
-  const profileProgress = profile?.profile_completed ?? 50;
+  const profileProgress = profile?.profile_completed ?? 0;
 
   // Settings Form state
   const [settingsData, setSettingsData] = useState({
@@ -184,13 +185,14 @@ export default function Dashboard() {
             <NotificationBell />
             
             <div className="flex items-center gap-3 pl-4 border-l border-white/5">
-              <img
-                src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop"
-                alt="Sarah"
-                className="w-10 h-10 rounded-full object-cover border border-white/10"
+              <UserAvatar
+                name={currentUser?.name}
+                imageUrl={profile?.avatar_url}
+                size="sm"
+                className="w-10 h-10 border border-white/10"
               />
               <div className="hidden sm:block">
-                <p className="font-bold text-white text-sm">{currentUser?.name || "Sarah Johnson"}</p>
+                <p className="font-bold text-white text-sm">{currentUser?.name || "Family"}</p>
                 <p className="text-[10px] text-[#A8A8A8] uppercase tracking-wider font-bold">Family Account</p>
               </div>
             </div>
@@ -279,14 +281,15 @@ export default function Dashboard() {
                     <div className="space-y-6">
                       {bookings.filter(b => b.status === "confirmed" || b.status === "pending").slice(0, 2).map((booking) => (
                         <div key={booking.id} className="flex flex-col sm:flex-row gap-6 pb-6 border-b border-white/5 last:border-b-0 last:pb-0">
-                          <img
-                            src="https://images.unsplash.com/photo-1595273670150-db0d3c67adb8?w=100&h=100&fit=crop"
-                            alt="Cook"
-                            className="w-20 h-20 rounded-2xl object-cover border border-white/10"
+                          <UserAvatar
+                            name={booking.chefName || booking.chef_name}
+                            imageUrl={null}
+                            size="lg"
+                            className="w-20 h-20 rounded-2xl border border-white/10"
                           />
                           <div className="flex-1 space-y-2">
                             <div className="flex justify-between items-baseline">
-                              <h3 className="font-bold text-white text-lg font-serif">{booking.chefName || "Cook Priya Patel"}</h3>
+                              <h3 className="font-bold text-white text-lg font-serif">{booking.chefName || booking.chef_name || "Cook"}</h3>
                               <span className="font-bold text-[#FF7A59] text-base font-serif">${booking.price || "96.00"}</span>
                             </div>
                             <p className="text-xs text-[#A8A8A8] font-bold">{booking.serviceType || "Indian Dinner Prep"}</p>
@@ -347,7 +350,7 @@ export default function Dashboard() {
                       <div key={chef.id} className="velvet-card overflow-hidden flex flex-col justify-between group">
                         <div className="relative aspect-square w-full overflow-hidden bg-black/10">
                           <img
-                            src={chef.image || "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=200&fit=crop"}
+                            src={chef.image || ""}
                             alt={chef.name}
                             className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                           />
@@ -385,21 +388,23 @@ export default function Dashboard() {
                   <div className="velvet-card p-6 space-y-4">
                     <h3 className="font-bold text-white text-base font-serif">Recent Activity Log</h3>
                     <div className="space-y-4">
-                      {[
-                        { title: "Booking request with Cook Priya sent", time: "2 hours ago", bg: "bg-[#FF7A59]/10 text-[#FF7A59]" },
-                        { title: "Review left for Cook James Johnson", time: "1 day ago", bg: "bg-white/5 text-[#A8A8A8]" },
-                        { title: "Welcome to your Servd Co Dashboard!", time: "3 days ago", bg: "bg-[#2E7D66]/10 text-[#2E7D66]" }
-                      ].map((act, i) => (
-                        <div key={i} className="flex gap-3 pb-3 border-b border-white/5 last:border-b-0 last:pb-0">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-bold ${act.bg}`}>
-                            •
+                      {bookings.length === 0 ? (
+                        <p className="text-xs text-[#A8A8A8]">No recent booking activity yet.</p>
+                      ) : (
+                        bookings.slice(0, 5).map((b) => (
+                          <div key={b.id} className="flex gap-3 pb-3 border-b border-white/5 last:border-b-0 last:pb-0">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-bold bg-[#FF7A59]/10 text-[#FF7A59]">
+                              •
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-xs text-white font-medium leading-snug">
+                                {b.status} booking with {b.chefName ?? b.chef_name}
+                              </p>
+                              <p className="text-[9px] text-[#A8A8A8]">{b.date}</p>
+                            </div>
                           </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs text-white font-medium leading-snug">{act.title}</p>
-                            <p className="text-[9px] text-[#A8A8A8]">{act.time}</p>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -506,41 +511,38 @@ export default function Dashboard() {
             /* Tab 3: History */
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-4">
-                {[
-                  { id: "h-1", chefName: "Cook Maria", date: "May 10, 2026", meals: "Comfort pot roast", rating: 5, price: "$85.00" },
-                  { id: "h-2", chefName: "Cook James Wilson", date: "April 28, 2026", meals: "Keto steak dinner", rating: 5, price: "$120.00" }
-                ].map((hist) => (
-                  <div key={hist.id} className="velvet-card p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white/40">
-                        <Clock size={20} />
+                {bookings.filter((b) => b.status === "completed").length === 0 ? (
+                  <EmptyState type="bookings" description="Completed sessions will appear here." />
+                ) : (
+                  bookings
+                    .filter((b) => b.status === "completed")
+                    .map((hist) => (
+                      <div key={hist.id} className="velvet-card p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white/40">
+                            <Clock size={20} />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-white font-serif">{hist.chefName ?? hist.chef_name}</h4>
+                            <p className="text-xs text-[#A8A8A8] mt-0.5">{hist.date} • {hist.serviceType ?? hist.service_type}</p>
+                          </div>
+                        </div>
+                        <span className="font-bold text-white text-sm font-serif">${hist.price.toFixed(2)}</span>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-white font-serif">{hist.chefName}</h4>
-                        <p className="text-xs text-[#A8A8A8] mt-0.5">{hist.date} • {hist.meals}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                      <div className="flex gap-0.5 text-yellow-400">
-                        {Array(hist.rating).fill(0).map((_, i) => (
-                          <Star key={i} size={12} className="fill-yellow-400" />
-                        ))}
-                      </div>
-                      <span className="font-bold text-white text-sm font-serif">{hist.price}</span>
-                    </div>
-                  </div>
-                ))}
+                    ))
+                )}
               </div>
             </div>
           ) : currentTab === "favorites" ? (
             /* Tab 4: Favorites */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {chefs.slice(0, 2).map((chef) => (
+              {chefs.length === 0 ? (
+                <EmptyState type="chefs" description="Save cooks from Browse to see them here." className="col-span-full" />
+              ) : chefs.map((chef) => (
                 <div key={chef.id} className="velvet-card overflow-hidden flex flex-col justify-between group">
                   <div className="relative aspect-square w-full overflow-hidden bg-black/10">
                     <img
-                      src={chef.image || "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=200&fit=crop"}
+                      src={chef.image || ""}
                       alt={chef.name}
                       className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                     />

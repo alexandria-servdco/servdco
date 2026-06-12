@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Search, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 interface UserManagementTableProps {
   users: any[];
@@ -202,19 +203,11 @@ export function UserManagementTable({
                       }}
                     >
                       <td style={{ padding: "12px" }}>
-                        <img
-                          src={
-                            usr.avatar ||
-                            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop"
-                          }
-                          alt={usr.name}
-                          style={{
-                            width: "36px",
-                            height: "36px",
-                            borderRadius: "50%",
-                            objectFit: "cover",
-                            border: "1.5px solid rgba(255,255,255,0.1)",
-                          }}
+                        <UserAvatar
+                          name={usr.name}
+                          imageUrl={usr.avatar}
+                          size="sm"
+                          className="w-9 h-9 border-[1.5px] border-white/10"
                         />
                       </td>
                       <td

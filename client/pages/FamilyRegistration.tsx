@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
+import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationModal";
 import { familyRegisterCoreSchema, safeParse } from "@shared/validation";
 
 function ServdLogo({ className }: { className?: string }) {
@@ -28,6 +29,7 @@ export default function FamilyRegistration() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [emailValid, setEmailValid] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -43,6 +45,7 @@ export default function FamilyRegistration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
 
     const parsed = safeParse(familyRegisterCoreSchema, {
@@ -94,7 +97,7 @@ export default function FamilyRegistration() {
 
       if (result.needsEmailConfirmation) {
         setError("");
-        navigate(`/login?registered=1&email=${encodeURIComponent(formData.email)}`);
+        setShowConfirmModal(true);
         return;
       }
 
@@ -111,7 +114,7 @@ export default function FamilyRegistration() {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-hidden">
+    <div className="min-h-screen w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans">
       {/* Navigation */}
       <header className="flex justify-between items-center px-8 py-3 border-b border-white/5 flex-shrink-0">
         <Link to="/">
@@ -323,6 +326,16 @@ export default function FamilyRegistration() {
           </div>
         </div>
       </div>
+
+      <SignupConfirmationModal
+        open={showConfirmModal}
+        onOpenChange={(open) => {
+          setShowConfirmModal(open);
+          if (!open) navigate("/login");
+        }}
+        email={formData.email}
+        role="family"
+      />
     </div>
   );
 }

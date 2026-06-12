@@ -5,7 +5,7 @@ import { resolveTipFromCheckoutSession, resolveTipFromIntent } from "./tip-resol
 import { transferTipToCook } from "./tips.js";
 
 async function fetchChargeId(paymentIntentId: string): Promise<string | null> {
-  const { getStripe } = await import("./server");
+  const { getStripe } = await import("./server.js");
   try {
     const stripe = getStripe();
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId);

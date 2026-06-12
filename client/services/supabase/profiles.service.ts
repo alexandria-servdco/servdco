@@ -47,6 +47,7 @@ export const ProfilesSupabaseService = {
         | "zip"
         | "phone"
         | "profile_completed"
+        | "avatar_url"
       >
     >,
   ): Promise<ProfileRow | null> {

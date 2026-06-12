@@ -12,6 +12,7 @@ import { resolveRegionId } from "@/lib/auth/stateMapping";
 import { isSupabaseAuthEnabled } from "@/services/featureFlags.service";
 import { ProfilesSupabaseService } from "@/services/supabase/profiles.service";
 import { NotificationService } from "@/services/notification.service";
+import { WaitlistService } from "@/services/waitlist.service";
 
 export type { AppUser };
 
@@ -146,13 +147,6 @@ const legacyAuth = {
     };
 
     setLegacyUser(defaultMock);
-
-    await NotificationService.notify(defaultMock.id, {
-      title: "Welcome to Servd Co",
-      message: `Signed in as ${mockName}. Explore your dashboard to get started.`,
-      type: "success",
-    });
-
     return defaultMock;
   },
 };
@@ -161,6 +155,10 @@ const supabaseAuth = {
   async register(params: RegisterUserParams): Promise<RegisterResult> {
     const client = getSupabaseClient();
     if (!client) throw new Error("Supabase is not configured.");
+
+    if (params.role !== "family" && params.role !== "chef") {
+      throw new Error("Invalid account type. Admin accounts cannot be self-registered.");
+    }
 
     if (!params.password || params.password.length < 8) {
       throw new Error("Password must be at least 8 characters.");
@@ -186,7 +184,24 @@ const supabaseAuth = {
 
     if (error) throw new Error(error.message);
 
+    const userId = data.user?.id;
     const status = await resolveWaitlistStatus(params.state);
+
+    if (userId) {
+      await WaitlistService.register({
+        name: params.name,
+        email: params.email,
+        role: params.role,
+        state: params.state,
+        city: params.city,
+        zip: params.zip,
+        profileId: userId,
+      }).catch(() => {});
+    }
+
+    if (data.session && userId) {
+      await NotificationService.syncUserNotifications(userId).catch(() => {});
+    }
 
     return {
       status,
@@ -301,8 +316,13 @@ export const AuthService = {
     return api.getWaitlistStats(state);
   },
 
-  /** Dev panel — in-memory legacy session (no localStorage). */
-  devLogin(role: "family" | "chef" | "admin"): AppUser {
+  /** Dev panel — legacy in-memory session only when Supabase auth is disabled. */
+  async devLogin(role: "family" | "chef" | "admin"): Promise<AppUser> {
+    if (await this.usesSupabaseAuth()) {
+      throw new Error(
+        "Dev login is disabled when Supabase authentication is enabled. Sign in with a real account.",
+      );
+    }
     const defaultUserMap: Record<string, AppUser> = {
       family: {
         id: "dev-family-123",

@@ -18,9 +18,6 @@ export interface MarketplaceChef {
   created_at: string;
 }
 
-export const DEFAULT_CHEF_AVATAR =
-  "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&h=400&fit=crop";
-
 export const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

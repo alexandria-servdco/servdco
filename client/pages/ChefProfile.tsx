@@ -23,23 +23,22 @@ import { NotificationService } from "@/services/notification.service";
 import { StripeService } from "@/services/stripe.service";
 import { isUuid } from "@/lib/marketplaceTypes";
 import { AnalyticsSupabaseService } from "@/services/supabase/analytics.service";
-
-const DEFAULT_MENUS = [
-  { course: "Main Course", title: "Seasonal Home-Cooked Entrée", desc: "Fresh, customized main dish prepared with your preferred ingredients." },
-  { course: "Main Course", title: "Family Comfort Classic", desc: "A wholesome favorite tailored to your household's tastes and dietary needs." },
-  { course: "Starter", title: "Fresh Garden Salad", desc: "Crisp seasonal greens with a house-made dressing." },
-];
-
-const DEFAULT_REVIEWS = [
-  { author: "Verified Family", date: "Recent", rating: 5, text: "Wonderful experience — professional, punctual, and left the kitchen spotless." },
-];
+import { useReviews } from "@/hooks/useReviews";
+import { calculateBookingPrice } from "@/lib/bookingPricing";
+import { UserAvatar } from "@/components/ui/UserAvatar";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 export default function ChefProfile() {
   const { id } = useParams();
   const { data: chefCard, isLoading: loading } = useChefProfile(id);
-  const chef = chefCard
-    ? { ...chefCard, menus: DEFAULT_MENUS, customerReviews: DEFAULT_REVIEWS }
-    : null;
+  const { data: dbReviews = [] } = useReviews(isUuid(id ?? "") ? id : undefined);
+  const chef = chefCard ?? null;
+  const customerReviews = dbReviews.map((r) => ({
+    author: r.name,
+    date: r.date,
+    rating: r.rating,
+    text: r.text,
+  }));
   const createBooking = useCreateBooking();
   const { data: stripeCheckoutEnabled = false } = useStripeCheckoutEnabled();
   const { profile } = useCurrentProfile();
@@ -59,13 +58,8 @@ export default function ChefProfile() {
     }
   }, [id, profile?.id]);
 
-  // Pricing calculations
-  const baseRate =
-    serviceType === "breakfast" ? 40 : serviceType === "mealprep" ? 70 : 60;
-  // Guest fees: add $10 for every guest above 4
-  const extraGuests = Math.max(0, guestsCount - 4);
-  const guestFee = extraGuests * 10;
-  const totalCost = baseRate + guestFee;
+  const { baseRate, extraGuests, guestFee, totalCost, pricingNote } =
+    calculateBookingPrice(serviceType, guestsCount);
 
   const platformFee = calculatePlatformFee(totalCost);
   const cookPayout = calculateCookPayout(totalCost);
@@ -161,12 +155,16 @@ export default function ChefProfile() {
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#FF7A59]/5 blur-2xl pointer-events-none" />
 
                 {/* Chef Photo */}
-                <div className="w-40 h-40 rounded-[24px] overflow-hidden border border-white/10 flex-shrink-0 bg-black/10">
-                  <img
-                    src={chef.image}
-                    alt={chef.name}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-40 h-40 rounded-[24px] overflow-hidden border border-white/10 flex-shrink-0 bg-black/10 flex items-center justify-center">
+                  {resolveAvatarUrl(chef.image) ? (
+                    <img
+                      src={chef.image}
+                      alt={chef.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserAvatar name={chef.name} size="lg" className="w-full h-full text-2xl rounded-[24px]" />
+                  )}
                 </div>
 
                 {/* Chef details content */}
@@ -249,38 +247,18 @@ export default function ChefProfile() {
                 </p>
               </div>
 
-              {/* Sample Menus */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold font-serif text-white border-b border-white/5 pb-3">
-                  Sample Dining Menu
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {chef.menus.map((menu: any, index: number) => (
-                    <div
-                      key={index}
-                      className="bg-[#161616] p-6 rounded-[24px] border border-white/5 shadow-lg space-y-2"
-                    >
-                      <span className="text-[10px] font-bold text-[#FF7A59] uppercase tracking-wider bg-[#FF7A59]/5 px-2.5 py-1 rounded-full border border-[#FF7A59]/10 inline-block">
-                        {menu.course}
-                      </span>
-                      <h3 className="font-bold text-white text-base pt-1">
-                        {menu.title}
-                      </h3>
-                      <p className="text-xs text-[#A8A8A8] leading-relaxed font-medium">
-                        {menu.desc}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Reviews */}
               <div className="space-y-6">
                 <h2 className="text-xl font-bold font-serif text-white border-b border-white/5 pb-3">
                   Customer Reviews
                 </h2>
                 <div className="space-y-4">
-                  {chef.customerReviews.map((rev: any, index: number) => (
+                  {customerReviews.length === 0 && (
+                    <p className="text-sm text-[#A8A8A8] font-medium">
+                      No reviews yet. Be the first family to book this cook.
+                    </p>
+                  )}
+                  {customerReviews.map((rev, index: number) => (
                     <div
                       key={index}
                       className="bg-[#161616] p-6 rounded-[24px] border border-white/5 shadow-lg space-y-3"
@@ -469,9 +447,12 @@ export default function ChefProfile() {
                           ${totalCost}
                         </span>
                       </div>
+                      <p className="text-[10px] text-[#FF7A59]/80 text-center leading-relaxed font-semibold">
+                        {pricingNote}
+                      </p>
                       <p className="text-[10px] text-[#A8A8A8] text-center leading-relaxed font-medium">
-                        Groceries are bought separately based on ingredients you
-                        choose. Basic cleanup is fully included.
+                        Groceries are bought separately. Platform service fee is
+                        deducted from the cook payout, not added to your total.
                       </p>
                     </div>
 

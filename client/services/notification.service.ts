@@ -10,26 +10,17 @@ export const NotificationService = {
 
   async syncUserNotifications(_userId: string) {
     const rows = await NotificationsSupabaseService.listOwn();
-    const store = useNotificationStore.getState();
-
-    rows.forEach((n) => {
-      const exists = store.notifications.some((s) => s.id === n.id);
-      if (!exists) {
-        useNotificationStore.setState((state) => ({
-          notifications: [
-            {
-              id: n.id,
-              title: n.title,
-              message: n.message,
-              type: n.type,
-              read: n.read,
-              createdAt: n.created_at,
-            },
-            ...state.notifications,
-          ],
-          unreadCount: state.unreadCount + (n.read ? 0 : 1),
-        }));
-      }
+    const notifications = rows.map((n) => ({
+      id: n.id,
+      title: n.title,
+      message: n.message,
+      type: n.type,
+      read: n.read,
+      createdAt: n.created_at,
+    }));
+    useNotificationStore.setState({
+      notifications,
+      unreadCount: notifications.filter((n) => !n.read).length,
     });
   },
 

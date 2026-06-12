@@ -4,6 +4,28 @@ import { createUserNotification } from "./ledger.js";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
+type PeriodBounds = {
+  current_period_start?: number;
+  current_period_end?: number;
+};
+
+/** Stripe API 2026+ exposes billing period on subscription items, not always on the root. */
+export function resolveSubscriptionPeriod(sub: Stripe.Subscription): {
+  current_period_start: string | null;
+  current_period_end: string | null;
+} {
+  const root = sub as Stripe.Subscription & PeriodBounds;
+  const item = sub.items?.data?.[0] as PeriodBounds | undefined;
+  const startSec = root.current_period_start ?? item?.current_period_start ?? null;
+  const endSec = root.current_period_end ?? item?.current_period_end ?? null;
+  return {
+    current_period_start: startSec
+      ? new Date(startSec * 1000).toISOString()
+      : null,
+    current_period_end: endSec ? new Date(endSec * 1000).toISOString() : null,
+  };
+}
+
 export function isPremiumSubscriptionStatus(
   status: string | null | undefined,
 ): boolean {
@@ -43,16 +65,7 @@ export async function syncChefPremiumFromSubscription(
         | "canceled"
         | "unpaid"
         | "incomplete",
-      current_period_start: (() => {
-        const start = (sub as unknown as { current_period_start?: number })
-          .current_period_start;
-        return start ? new Date(start * 1000).toISOString() : null;
-      })(),
-      current_period_end: (() => {
-        const end = (sub as unknown as { current_period_end?: number })
-          .current_period_end;
-        return end ? new Date(end * 1000).toISOString() : null;
-      })(),
+      ...resolveSubscriptionPeriod(sub),
       cancel_at_period_end: sub.cancel_at_period_end ?? false,
       canceled_at: sub.canceled_at
         ? new Date(sub.canceled_at * 1000).toISOString()

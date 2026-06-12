@@ -32,7 +32,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import CookiePolicy from "./pages/CookiePolicy";
 import LegalHub from "./pages/LegalHub";
-import { GuestGuard, AuthGuard, RoleGuard } from "./components/Guards";
+import { GuestGuard, AuthGuard, RoleGuard, AdminGuard } from "./components/Guards";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import { PlatformSettingsHydrator } from "./components/PlatformSettingsHydrator";
 
@@ -317,7 +317,7 @@ const App = () => (
                   />
                 </Route>
 
-                <Route element={<RoleGuard allowedRoles={["admin"]} />}>
+                <Route element={<AdminGuard />}>
                   <Route
                     path="/admin-dashboard/*"
                     element={

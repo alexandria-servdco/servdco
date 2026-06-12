@@ -3,6 +3,11 @@ import { z } from "zod";
 const stripeEnvSchema = z.object({
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  /** Stripe CLI `stripe listen` secret — overrides STRIPE_WEBHOOK_SECRET locally only. */
+  STRIPE_WEBHOOK_SECRET_LOCAL: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
   /** Premium Chef Membership — overrides platform_settings when set. */
   STRIPE_PREMIUM_PRICE_ID: z.string().min(1).optional(),
   STRIPE_PREMIUM_PRODUCT_ID: z.string().min(1).optional(),
@@ -27,6 +32,7 @@ export function getStripeEnv(): StripeEnv {
   cached = stripeEnvSchema.parse({
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_WEBHOOK_SECRET_LOCAL: process.env.STRIPE_WEBHOOK_SECRET_LOCAL,
     STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
     STRIPE_PREMIUM_PRODUCT_ID: process.env.STRIPE_PREMIUM_PRODUCT_ID,
     STRIPE_CONNECT_CLIENT_ID: process.env.STRIPE_CONNECT_CLIENT_ID,
@@ -45,9 +51,24 @@ export function assertStripeConfigured(): void {
   }
 }
 
+/** Effective webhook secret: local CLI override wins over dashboard/production secret. */
+export function getStripeWebhookSecret(): string | undefined {
+  const local = process.env.STRIPE_WEBHOOK_SECRET_LOCAL?.trim();
+  if (local) return local;
+  const env = getStripeEnv();
+  return env.STRIPE_WEBHOOK_SECRET?.trim();
+}
+
+export function getStripeWebhookSecretSource(): "local" | "production" | "none" {
+  if (process.env.STRIPE_WEBHOOK_SECRET_LOCAL?.trim()) return "local";
+  const env = getStripeEnv();
+  if (env.STRIPE_WEBHOOK_SECRET?.trim()) return "production";
+  return "none";
+}
+
 export function assertWebhookConfigured(): void {
   const env = getStripeEnv();
-  if (!env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET) {
+  if (!env.STRIPE_SECRET_KEY || !getStripeWebhookSecret()) {
     throw new Error("Stripe webhook secrets are not configured.");
   }
 }
@@ -66,7 +87,9 @@ export function validateStripeEnvOnStartup(): void {
   const env = getStripeEnv();
   const missing: string[] = [];
   if (!env.STRIPE_SECRET_KEY) missing.push("STRIPE_SECRET_KEY");
-  if (!env.STRIPE_WEBHOOK_SECRET) missing.push("STRIPE_WEBHOOK_SECRET");
+  if (!getStripeWebhookSecret()) {
+    missing.push("STRIPE_WEBHOOK_SECRET or STRIPE_WEBHOOK_SECRET_LOCAL");
+  }
   if (!env.SUPABASE_URL) missing.push("SUPABASE_URL");
   if (!env.SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   if (missing.length > 0) {

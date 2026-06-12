@@ -37,7 +37,7 @@ export function legacyUserToProfileRow(user: AppUser): ProfileRow {
     email_alerts: true,
     sms_alerts: true,
     profile_completed:
-      user.profile_completed ?? (user.role === "admin" ? 100 : 50),
+      user.profile_completed ?? (user.role === "admin" ? 100 : 0),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     created_by: null,

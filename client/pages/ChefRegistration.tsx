@@ -12,6 +12,7 @@ import { validateDocument } from "@/utils/validateFile";
 import { UploadService } from "@/services/upload.service";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { ChefsSupabaseService } from "@/services/supabase/chefs.service";
+import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationModal";
 import { chefRegisterCoreSchema, safeParse } from "@shared/validation";
 
 function ServdLogo({ className }: { className?: string }) {
@@ -42,6 +43,7 @@ export default function ChefRegistration() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState("");
   const [emailValid, setEmailValid] = useState(true);
 
@@ -68,6 +70,8 @@ export default function ChefRegistration() {
   });
 
   const handleNext = async () => {
+    if (loading) return;
+
     if (currentStep === 1) {
       const parsed = safeParse(chefRegisterCoreSchema, {
         name: formData.fullName,
@@ -137,9 +141,16 @@ export default function ChefRegistration() {
         if (!result.needsEmailConfirmation) {
           const client = getSupabaseClient();
           const { data: authData } = await client?.auth.getUser() ?? { data: { user: null } };
-          const chef = authData.user
+          let chef = authData.user
             ? await ChefsSupabaseService.getChefByUserId(authData.user.id)
             : null;
+          if (!chef && authData.user) {
+            for (let attempt = 0; attempt < 5; attempt += 1) {
+              await new Promise((resolve) => setTimeout(resolve, 300));
+              chef = await ChefsSupabaseService.getChefByUserId(authData.user.id);
+              if (chef) break;
+            }
+          }
 
           if (chef && pendingDocs.servSafe && pendingDocs.insurance && pendingDocs.background) {
             const { api } = await import("@/lib/api");
@@ -186,7 +197,7 @@ export default function ChefRegistration() {
         setLoading(false);
 
         if (result.needsEmailConfirmation) {
-          navigate(`/login?registered=1&email=${encodeURIComponent(formData.email)}`);
+          setShowConfirmModal(true);
           return;
         }
 
@@ -211,7 +222,7 @@ export default function ChefRegistration() {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-hidden">
+    <div className="min-h-screen w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans">
       {/* Top Navigation */}
       <header className="flex justify-between items-center px-8 py-3 border-b border-white/5 flex-shrink-0">
         <Link to="/">
@@ -229,10 +240,10 @@ export default function ChefRegistration() {
       </header>
 
       {/* Main Content Split */}
-      <div className="flex-1 flex flex-col lg:flex-row px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row px-4 sm:px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full min-h-0">
         
         {/* Left Side - Form Container */}
-        <div className="flex-1 flex flex-col justify-between max-w-2xl overflow-y-auto lg:overflow-hidden pr-2">
+        <div className="flex-1 flex flex-col max-w-2xl min-h-0 pr-2">
           
           {/* Header Title */}
           <div className="mb-4">
@@ -289,8 +300,8 @@ export default function ChefRegistration() {
           </div>
 
           {/* Form Content Panel */}
-          <div className="flex-1 flex flex-col justify-between overflow-y-auto lg:overflow-hidden min-h-[300px]">
-            <div>
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 overflow-y-auto pb-4">
               <div className="mb-4">
                 <p className="text-[#FF7A59] font-bold text-xs mb-0.5">
                   Step {currentStep} of 4
@@ -542,8 +553,8 @@ export default function ChefRegistration() {
               )}
             </div>
 
-            {/* Bottom Actions */}
-            <div className="py-4 border-t border-white/5 mt-4 flex items-center justify-between flex-shrink-0">
+            {/* Bottom Actions — sticky so Next is always visible */}
+            <div className="sticky bottom-0 z-20 py-4 border-t border-white/5 bg-[#111111]/95 backdrop-blur-sm flex items-center justify-between flex-shrink-0">
               <button 
                 onClick={handleBack}
                 className={cn(
@@ -635,6 +646,16 @@ export default function ChefRegistration() {
         </div>
 
       </div>
+
+      <SignupConfirmationModal
+        open={showConfirmModal}
+        onOpenChange={(open) => {
+          setShowConfirmModal(open);
+          if (!open) navigate("/login");
+        }}
+        email={formData.email}
+        role="chef"
+      />
     </div>
   );
 }

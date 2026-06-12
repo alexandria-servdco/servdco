@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mail, Lock, Heart, Users, ChefHat, ShieldAlert } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationModal";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
+import { useAuth } from "@/hooks/useAuth";
 import {
   loginSchema,
   passwordResetSchema,
@@ -21,13 +23,33 @@ function navigateForRole(
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { supabaseAuthEnabled } = useAuth();
   const [email, setEmail] = useState("");
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
+  const [signupConfirmEmail, setSignupConfirmEmail] = useState("");
+  const [signupConfirmRole, setSignupConfirmRole] = useState<"family" | "chef">("family");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailValid, setEmailValid] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showReset, setShowReset] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("registered") === "1") {
+      const registeredEmail = searchParams.get("email") ?? "";
+      const role = searchParams.get("role");
+      setSignupConfirmEmail(registeredEmail);
+      setSignupConfirmRole(role === "chef" ? "chef" : "family");
+      setShowSignupConfirm(true);
+      if (registeredEmail) setEmail(registeredEmail);
+      searchParams.delete("registered");
+      searchParams.delete("email");
+      searchParams.delete("role");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,13 +97,17 @@ export default function Login() {
     }
   };
 
-  const handleDevLogin = (role: "family" | "chef" | "admin") => {
+  const handleDevLogin = async (role: "family" | "chef" | "admin") => {
     setIsLoading(true);
-    setTimeout(() => {
+    setError("");
+    try {
+      const user = await AuthService.devLogin(role);
+      navigateForRole(navigate, user.role);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Dev login unavailable.");
+    } finally {
       setIsLoading(false);
-      AuthService.devLogin(role);
-      navigateForRole(navigate, role);
-    }, 800);
+    }
   };
 
   return (
@@ -265,7 +291,7 @@ export default function Login() {
             Continue with Google
           </button>
 
-          {import.meta.env.DEV && (
+          {import.meta.env.DEV && !supabaseAuthEnabled && (
           <div className="bg-[#161616] border border-white/5 rounded-2xl p-4 mt-6 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-[#A8A8A8] font-bold uppercase tracking-wider">Dev Access Panel (1-Click Login)</span>
@@ -311,6 +337,13 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      <SignupConfirmationModal
+        open={showSignupConfirm}
+        onOpenChange={setShowSignupConfirm}
+        email={signupConfirmEmail}
+        role={signupConfirmRole}
+      />
     </div>
   );
 }

@@ -14,18 +14,23 @@ export const WaitlistSupabaseService = {
 
     const regionId = resolveRegionId(stateName);
     const { data, error } = await client
-      .from("launch_regions")
-      .select("family_count, chef_count, waitlist_count")
-      .eq("id", regionId)
-      .maybeSingle();
+      .from("waitlist_signups")
+      .select("role")
+      .eq("region_id", regionId);
 
     if (error) throw new SupabaseQueryError(error.message, error);
-    if (!data) return { families: 0, chefs: 0, total: 0 };
+
+    let families = 0;
+    let chefs = 0;
+    for (const row of data ?? []) {
+      if (row.role === "family") families += 1;
+      else if (row.role === "chef") chefs += 1;
+    }
 
     return {
-      families: data.family_count,
-      chefs: data.chef_count,
-      total: data.waitlist_count,
+      families,
+      chefs,
+      total: families + chefs,
     };
   },
 
@@ -61,31 +66,9 @@ export const WaitlistSupabaseService = {
 
     const { data: region } = await client
       .from("launch_regions")
-      .select("is_active, waitlist_count, family_count, chef_count")
+      .select("is_active")
       .eq("id", regionId)
       .maybeSingle();
-
-    if (region) {
-      const waitlistCount = (region.waitlist_count ?? 0) + 1;
-      const familyCount =
-        params.role === "family"
-          ? (region.family_count ?? 0) + 1
-          : region.family_count;
-      const chefCount =
-        params.role === "chef"
-          ? (region.chef_count ?? 0) + 1
-          : region.chef_count;
-
-      await client
-        .from("launch_regions")
-        .update({
-          waitlist_count: waitlistCount,
-          family_count: familyCount,
-          chef_count: chefCount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", regionId);
-    }
 
     const status = region?.is_active ? "active" : "waitlist";
     return {

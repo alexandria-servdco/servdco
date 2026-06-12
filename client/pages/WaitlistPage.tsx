@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { MapPin, Users, ChefHat, Mail, Sparkles, Clock, ArrowRight, ShieldCheck, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { waitlistEmailSchema, safeParse } from "@shared/validation";
 import { logger } from "@/lib/logger";
+import { useWaitlistStats } from "@/hooks/useWaitlist";
 
 // Logo Component
 function ServdLogo({ className }: { className?: string }) {
@@ -34,28 +35,8 @@ export default function WaitlistPage() {
   
   const [email, setEmail] = useState(emailParam);
   const [submitted, setSubmitted] = useState(false);
-  
-  const [stats, setStats] = useState({ families: 145, chefs: 35 });
-  const [loading, setLoading] = useState(true);
-
-  // Fetch local mock stats
-  const fetchStats = async () => {
-    try {
-      const data = await api.getWaitlistStats(state);
-      setStats(data);
-      setLoading(false);
-    } catch (err) {
-      logger.error("Failed to load waitlist stats", {
-        domain: "waitlist",
-        message: err instanceof Error ? err.message : String(err),
-      });
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, [state]);
+  const { data: stats = { families: 0, chefs: 0, total: 0 }, isLoading: loading, refetch } =
+    useWaitlistStats(state);
 
   const handleJoinWaitlist = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,8 +55,7 @@ export default function WaitlistPage() {
       });
 
       setSubmitted(true);
-      // Instantly refresh the stats to show the incremented counts!
-      await fetchStats();
+      await refetch();
     } catch (err) {
       logger.error("Failed to join waitlist", {
         domain: "waitlist",

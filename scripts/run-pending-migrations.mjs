@@ -37,6 +37,7 @@ const dbUrl = loadDbUrl();
 const pending = [
   "20250612120023_23_phase1_remediation.sql",
   "20250612120024_admin_owner_security.sql",
+  "20250612120025_cleanup_dev_chefs_waitlist_counts.sql",
 ];
 
 const client = new pg.Client({
@@ -83,6 +84,17 @@ for (const file of pending) {
 const { rows } = await client.query(
   "SELECT version FROM supabase_migrations.schema_migrations ORDER BY version",
 );
-console.log(`Total migrations: ${rows.length}`);
-console.log(`Latest: ${rows.slice(-3).map((r) => r.version).join(", ")}`);
+const summary = {
+  total: rows.length,
+  latest: rows.slice(-5).map((r) => r.version),
+  appliedThisRun: pending.filter((file) => {
+    const version = file.split("_")[0];
+    return rows.some((r) => r.version === version);
+  }),
+};
+fs.writeFileSync(
+  path.join(__dirname, "migration-run-result.json"),
+  JSON.stringify(summary, null, 2),
+);
+process.stdout.write(`${JSON.stringify(summary)}\n`);
 await client.end();

@@ -21,7 +21,7 @@ INSERT INTO public.launch_regions (
   ),
   (
     'TX', 'Texas', 'Austin, Dallas, Houston', '73301, 75001, 77001',
-    false, true, 30, 150, true, 25, 145, 82,
+    false, true, 30, 150, true, 0, 0, 0,
     '2026-05-05T00:00:00Z', '2026-05-23T00:00:00Z'
   ),
   (

@@ -29,6 +29,7 @@ import { useBrowseChefs } from "@/hooks/useChefs";
 import { mapChefsToCards } from "@/lib/cookMapper";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resolveAvatarUrl } from "@/lib/avatar";
+import { MarketplaceEmptyState } from "@/components/marketplace/MarketplaceEmptyState";
 
 export default function Index() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -458,14 +459,7 @@ export default function Index() {
             <p className="text-[#A8A8A8] text-sm col-span-full">Loading cooks...</p>
           )}
           {!chefsLoading && featuredChefs.length === 0 && (
-            <div className="col-span-full velvet-card p-12 text-center space-y-3">
-              <ChefHat size={32} className="mx-auto text-[#FF7A59]/50" />
-              <p className="text-white font-bold font-serif">No approved cooks in your area yet</p>
-              <p className="text-sm text-[#A8A8A8]">Check back soon or join the waitlist.</p>
-              <Link to="/waitlist" className="inline-block text-[#FF7A59] text-xs font-bold hover:underline">
-                Join the waitlist
-              </Link>
-            </div>
+            <MarketplaceEmptyState className="col-span-full" />
           )}
           {featuredChefs.map((chef) => (
             <div

@@ -10,14 +10,19 @@ export const NotificationService = {
 
   async syncUserNotifications(_userId: string) {
     const rows = await NotificationsSupabaseService.listOwn();
-    const notifications = rows.map((n) => ({
-      id: n.id,
-      title: n.title,
-      message: n.message,
-      type: n.type,
-      read: n.read,
-      createdAt: n.created_at,
-    }));
+    const notifications = rows
+      .map((n) => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        type: n.type,
+        read: n.read,
+        createdAt: n.created_at,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
     useNotificationStore.setState({
       notifications,
       unreadCount: notifications.filter((n) => !n.read).length,

@@ -9,6 +9,10 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, unreadCount, removeNotification } = useNotificationStore();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const sortedNotifications = [...notifications].sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,7 +69,7 @@ export function NotificationBell() {
                 </div>
               ) : (
                 <div className="flex flex-col">
-                  {notifications.map((notif) => (
+                  {sortedNotifications.map((notif) => (
                     <div
                       key={notif.id}
                       onClick={() =>

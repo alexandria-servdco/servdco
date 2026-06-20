@@ -62,7 +62,6 @@ import {
 
 import { DashboardWidgetSkeleton, CardSkeleton } from "@/components/ui/Skeletons";
 
-import { useAdminStore } from "@/store/useAdminStore";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
@@ -71,8 +70,8 @@ import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { AdminOverviewService } from "@/services/supabase/admin-overview.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
-import { DocumentPreviewModal } from "@/components/admin/DocumentPreviewModal";
 import { useDocumentModeration } from "@/hooks/useDocumentModeration";
+import { ChartErrorBoundary } from "@/components/errors/ChartErrorBoundary";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -103,6 +102,34 @@ const OrphanedDocumentsUtility = lazy(() => import("@/components/admin/OrphanedD
 const MarketInterestRequests = lazy(() => import("@/components/admin/MarketInterestRequests").then(m => ({ default: m.MarketInterestRequests })));
 const AdminMessagingHub = lazy(() => import("@/components/messaging/AdminMessagingHub").then(m => ({ default: m.AdminMessagingHub })));
 const AdminAuditLogs = lazy(() => import("@/components/admin/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
+const DocumentPreviewModal = lazy(() =>
+  import("@/components/admin/DocumentPreviewModal").then((m) => ({
+    default: m.DocumentPreviewModal,
+  })),
+);
+
+function formatUsd(amount: number): string {
+  const n = Number(amount);
+  return Number.isFinite(n)
+    ? n.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : "0.00";
+}
+
+function bookingChartDate(booking: {
+  date?: string;
+  booking_date?: string;
+  created_at?: string;
+}): string {
+  const raw = booking.date ?? booking.booking_date ?? booking.created_at;
+  if (!raw) return "—";
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 // ─── Constants & Aesthetics ───────────────────────────────────────────────────
 
@@ -419,8 +446,8 @@ export default function AdminDashboard({
   // Launch control region filters
   const filteredRegions = regions.filter(
     (r) =>
-      r.state.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.city.toLowerCase().includes(searchQuery.toLowerCase()),
+      (r.state ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.city ?? "").toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Users Handlers
@@ -651,11 +678,20 @@ export default function AdminDashboard({
   ].slice(0, 5);
 
   const recentSignupsList = [...users]
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
+    .sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tb - ta;
+    })
     .slice(0, 5);
+
+  const bookingTrendData =
+    bookings.length > 0
+      ? bookings.slice(-7).map((b) => ({
+          date: bookingChartDate(b),
+          price: Number(b.price) || 0,
+        }))
+      : [{ date: "—", price: 0 }];
 
   return (
     <div
@@ -1161,7 +1197,7 @@ export default function AdminDashboard({
                   <AnalyticsCard
                     icon="bookings"
                     label="Platform Revenue"
-                    value={`$${overviewMetrics.platformRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    value={`$${formatUsd(overviewMetrics.platformRevenue)}`}
                     subtext="Stripe platform fees"
                   />
                   <AnalyticsCard
@@ -1191,17 +1227,10 @@ export default function AdminDashboard({
                     title="Platform Booking Trends"
                     hasFilter
                   >
+                    <ChartErrorBoundary title="Booking trends chart">
                     <ResponsiveContainer width="100%" height={260}>
                       <AreaChart
-                        data={bookings
-                          .slice(-7)
-                          .map((b) => ({
-                            date: new Date(b.date).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            }),
-                            price: b.price,
-                          }))}
+                        data={bookingTrendData}
                       >
                         <defs>
                           <linearGradient
@@ -1259,10 +1288,12 @@ export default function AdminDashboard({
                         />
                       </AreaChart>
                     </ResponsiveContainer>
+                    </ChartErrorBoundary>
                   </ChartCard>
 
                   {/* Booking breakdown statuses */}
                   <ChartCard title="Booking Distribution by Status">
+                    <ChartErrorBoundary title="Booking status chart">
                     <ResponsiveContainer width="100%" height={170}>
                       <PieChart>
                         <Pie
@@ -1315,6 +1346,7 @@ export default function AdminDashboard({
                         />
                       </PieChart>
                     </ResponsiveContainer>
+                    </ChartErrorBoundary>
                     <div
                       style={{
                         display: "grid",
@@ -1556,7 +1588,9 @@ export default function AdminDashboard({
                             </p>
                           </div>
                           <span style={{ fontSize: "11px", color: "#A8A8A8" }}>
-                            {new Date(usr.created_at).toLocaleDateString()}
+                            {usr.created_at
+                              ? new Date(usr.created_at).toLocaleDateString()
+                              : "—"}
                           </span>
                         </div>
                       ))}
@@ -3231,19 +3265,23 @@ export default function AdminDashboard({
         </div>
       )}
 
-      <DocumentPreviewModal
-        document={previewDoc}
-        onClose={() => {
-          setPreviewDoc(null);
-          setDocActionSuccess(false);
-        }}
-        onApprove={(id) => handleDocumentAction(id, "approved")}
-        onReject={(id) => handleDocumentAction(id, "rejected")}
-        onResubmit={(id) => handleDocumentAction(id, "resubmit")}
-        pendingAction={pendingDocAction}
-        isPending={moderateDocument.isPending || docActionLoading}
-        actionSuccess={docActionSuccess}
-      />
+      {previewDoc && (
+        <Suspense fallback={null}>
+          <DocumentPreviewModal
+            document={previewDoc}
+            onClose={() => {
+              setPreviewDoc(null);
+              setDocActionSuccess(false);
+            }}
+            onApprove={(id) => handleDocumentAction(id, "approved")}
+            onReject={(id) => handleDocumentAction(id, "rejected")}
+            onResubmit={(id) => handleDocumentAction(id, "resubmit")}
+            pendingAction={pendingDocAction}
+            isPending={moderateDocument.isPending || docActionLoading}
+            actionSuccess={docActionSuccess}
+          />
+        </Suspense>
+      )}
 
       <Dialog
         open={docReasonModal !== null}

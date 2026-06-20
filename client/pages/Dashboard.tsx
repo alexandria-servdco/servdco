@@ -12,7 +12,7 @@ import { BookingOperationalPanel } from "@/components/booking/BookingOperational
 import { BookingStatusFilterBar } from "@/components/booking/BookingStatusFilterBar";
 import { BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useRealtimeDashboard } from "@/hooks/useRealtimeDashboard";
+import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { ChefService } from "@/services/chef.service";
 import { FamilyService } from "@/services/family.service";
@@ -48,7 +48,7 @@ export default function Dashboard() {
   useNotifications();
   useRealtimeDashboard({
     userId,
-    role: profile?.role === "family" ? "family" : null,
+    role: resolveDashboardRole(profile?.role, user?.user_metadata?.role),
   });
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [chefs, setChefs] = useState<any[]>([]);

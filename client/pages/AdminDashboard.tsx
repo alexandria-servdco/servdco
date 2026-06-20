@@ -65,7 +65,7 @@ import { DashboardWidgetSkeleton, CardSkeleton } from "@/components/ui/Skeletons
 import { useAdminStore } from "@/store/useAdminStore";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useRealtimeDashboard } from "@/hooks/useRealtimeDashboard";
+import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -337,7 +337,7 @@ export default function AdminDashboard({
 
   useRealtimeDashboard({
     userId: user?.id ?? adminProfile?.id,
-    role: adminProfile?.role === "admin" ? "admin" : null,
+    role: resolveDashboardRole(adminProfile?.role, user?.user_metadata?.role),
     onAdminRefresh: silentRefresh,
   });
 

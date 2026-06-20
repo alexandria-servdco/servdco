@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "Could not save message." });
   }
 
-  await sendResendEmail({
+  const emailResult = await sendResendEmail({
     to: ADMIN_NOTIFY_EMAIL,
     subject: "New Contact Form Submission",
     replyTo: email,
@@ -81,6 +81,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.status(200).json({
     success: true,
     message: "Thank you for reaching out. Our team will respond within 24 hours.",
+    messageId: row.id,
+    resendId: emailResult.id ?? null,
   });
 }
 

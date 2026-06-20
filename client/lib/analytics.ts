@@ -3,12 +3,7 @@
  * Set VITE_GA_MEASUREMENT_ID in Vercel (e.g. G-XXXXXXXXXX).
  */
 
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-    dataLayer?: unknown[];
-  }
-}
+import { isProductionBuild } from "@/lib/env/runtimeFlags";
 
 const MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID as
   | string
@@ -31,6 +26,10 @@ export function isAnalyticsEnabled(): boolean {
   return Boolean(MEASUREMENT_ID && MEASUREMENT_ID.startsWith("G-"));
 }
 
+export function getMeasurementId(): string | undefined {
+  return isAnalyticsEnabled() ? MEASUREMENT_ID : undefined;
+}
+
 export function initAnalytics(): void {
   if (!isAnalyticsEnabled() || initialized || typeof window === "undefined") {
     return;
@@ -48,6 +47,13 @@ export function initAnalytics(): void {
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
   document.head.appendChild(script);
+
+  if (isProductionBuild()) {
+    window.__SERVDCO_ANALYTICS__ = {
+      enabled: true,
+      measurementId: MEASUREMENT_ID,
+    };
+  }
 }
 
 export function trackPageView(path: string, title?: string): void {

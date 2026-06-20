@@ -8,7 +8,6 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { lazy, Suspense, useEffect } from "react";
-import { motion } from "framer-motion";
 import { GlobalErrorBoundary } from "@/components/errors/GlobalErrorBoundary";
 import { RouteErrorBoundary } from "@/components/errors/RouteErrorBoundary";
 import { validateClientStartup } from "@/lib/env/validateStartup";
@@ -80,17 +79,13 @@ function PageWrapper({
 }) {
   return (
     <RouteErrorBoundary label={routeLabel}>
-      <motion.div
+      <div
         id="main-content"
         tabIndex={-1}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
-        className="w-full min-h-screen flex flex-col outline-none"
+        className="w-full min-h-screen flex flex-col outline-none animate-page-in"
       >
         {children}
-      </motion.div>
+      </div>
     </RouteErrorBoundary>
   );
 }

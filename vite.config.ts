@@ -16,6 +16,22 @@ export default defineConfig(() => ({
   },
   build: {
     outDir: "dist",
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("@supabase")) return "vendor-supabase";
+            if (id.includes("@tanstack/react-query")) return "vendor-query";
+            if (id.includes("@radix-ui")) return "vendor-radix";
+            if (id.includes("framer-motion")) return "vendor-motion";
+            if (id.includes("@sentry")) return "vendor-sentry";
+            if (id.includes("react-dom") || id.includes("react-router"))
+              return "vendor-react";
+            return "vendor";
+          }
+        },
+      },
+    },
   },
   plugins: [react()],
   resolve: {

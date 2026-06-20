@@ -6,6 +6,10 @@ import { setErrorTracker } from "@/lib/logger";
 
 let sentryReady = false;
 
+export function isSentryReady(): boolean {
+  return sentryReady;
+}
+
 export async function initSentry(): Promise<void> {
   const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
   if (!dsn || sentryReady || import.meta.env.DEV) return;
@@ -25,8 +29,15 @@ export async function initSentry(): Promise<void> {
     });
 
     sentryReady = true;
-  } catch {
-    // Package optional until installed in CI/build
+
+    if (typeof window !== "undefined") {
+      window.testSentry = () => {
+        Sentry.captureException(new Error("SERVDCO SENTRY TEST"));
+        return "Sentry test exception sent";
+      };
+    }
+  } catch (err) {
+    console.warn("[Sentry] init failed:", err);
   }
 }
 

@@ -79,7 +79,7 @@ import {
 import { availabilityQueryKeys } from "@/services/supabase/availability.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useRealtimeDashboard } from "@/hooks/useRealtimeDashboard";
+import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsPremiumChef } from "@/hooks/useSubscription";
 import { usePlatformStore } from "@/store/usePlatformStore";
@@ -145,11 +145,11 @@ export default function ChefDashboard() {
   const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
   const { profile } = useCurrentProfile();
   const { data: ownChefProfile } = useChefProfileByUser(profile?.id);
-  const { userId } = useAuth();
+  const { userId, user } = useAuth();
   useRealtimeDashboard({
     userId,
     chefProfileId: ownChefProfile?.id,
-    role: profile?.role === "chef" ? "chef" : null,
+    role: resolveDashboardRole(profile?.role, user?.user_metadata?.role),
   });
   const resolvedChefId = ownChefProfile?.id ?? chefProfileId;
   const { data: reviews = [], isLoading: reviewsLoading } =

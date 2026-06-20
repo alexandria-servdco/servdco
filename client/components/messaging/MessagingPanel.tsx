@@ -8,6 +8,7 @@ import { MessagesSupabaseService } from "@/services/supabase/messages.service";
 import { MessageAttachmentsSupabaseService } from "@/services/supabase/message-attachments.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
 import { Paperclip, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { MessageAttachmentList } from "@/components/messaging/MessageAttachmentList";
 
 interface MessagingPanelProps {
@@ -73,8 +74,17 @@ export function MessagingPanel({
     sendMessage.mutate(text, {
       onSuccess: async (msg) => {
         if (file) {
-          await MessageAttachmentsSupabaseService.uploadForMessage(msg.id, file);
+          try {
+            await MessageAttachmentsSupabaseService.uploadForMessage(msg.id, file);
+          } catch (err) {
+            toast.error(
+              err instanceof Error ? err.message : "Attachment upload failed.",
+            );
+          }
         }
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to send message.");
       },
     });
   };

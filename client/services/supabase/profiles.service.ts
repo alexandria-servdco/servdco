@@ -48,6 +48,7 @@ export const ProfilesSupabaseService = {
         | "phone"
         | "profile_completed"
         | "avatar_url"
+        | "dietary_preferences"
       >
     >,
   ): Promise<ProfileRow | null> {

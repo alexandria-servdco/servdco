@@ -20,12 +20,12 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { ChefService } from "@/services/chef.service";
-import { FamilyService } from "@/services/family.service";
 import { AuthService } from "@/services/auth.service";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
-import { profileQueryKeys } from "@/services/supabase/profiles.service";
+import { profileQueryKeys, ProfilesSupabaseService } from "@/services/supabase/profiles.service";
 import { mapChefsToCards } from "@/lib/cookMapper";
 import { FormInput } from "@/components/ui/FormInput";
+import { StateCitySelect } from "@/components/ui/StateCitySelect";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -78,12 +78,12 @@ export default function Dashboard() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
   const familyCompletionDetail = getFamilyProfileCompletionDetail({
-    avatar_url: profile?.avatar_url,
-    phone: profile?.phone,
-    city: profile?.city,
-    state: profile?.state,
-    zip: profile?.zip,
+    phone: profile?.phone ?? profileData.phone,
+    city: profile?.city ?? profileData.city,
+    state: profile?.state ?? profileData.state,
+    zip: profile?.zip ?? profileData.zip,
     email_verified: Boolean(user?.email_confirmed_at),
+    dietary_preferences: profile?.dietary_preferences ?? profileData.dietary,
   });
   const profileProgress = familyCompletionDetail.percent;
   const profileProgressLabel = profileCompletionLabel(profileProgress);
@@ -157,11 +157,14 @@ export default function Dashboard() {
     setProfileSuccess(false);
     try {
       if (currentUser?.id) {
-        await FamilyService.updateProfile(currentUser.id, {
-          name: profileData.name,
+        await ProfilesSupabaseService.updateOwnProfile({
+          full_name: profileData.name,
           email: profileData.email,
+          phone: profileData.phone,
           city: profileData.city,
           state: profileData.state,
+          zip: profileData.zip,
+          dietary_preferences: profileData.dietary,
         });
         await queryClient.invalidateQueries({ queryKey: profileQueryKeys.own() });
       }
@@ -234,7 +237,11 @@ export default function Dashboard() {
                 <p className="text-xs text-[#A8A8A8]">
                   {familyCompletionDetail.completed} of {familyCompletionDetail.total} completed
                 </p>
-                <p className="text-xs text-[#A8A8A8] mt-0.5">Please add your contact details and dining preferences to reach 100%.</p>
+                <p className="text-xs text-[#A8A8A8] mt-0.5">
+                  {familyCompletionDetail.missing.length > 0
+                    ? `Still needed: ${familyCompletionDetail.missing.join(", ")}`
+                    : "You're all set!"}
+                </p>
               </div>
             </div>
             <button
@@ -550,6 +557,11 @@ export default function Dashboard() {
                     style={{ width: `${profileProgress}%` }}
                   />
                 </div>
+                {familyCompletionDetail.missing.length > 0 && (
+                  <p className="text-[10px] text-[#A8A8A8]">
+                    Missing: {familyCompletionDetail.missing.join(" · ")}
+                  </p>
+                )}
               </div>
               
               {profileSuccess && (
@@ -592,6 +604,13 @@ export default function Dashboard() {
                   required
                 />
               </div>
+
+              <StateCitySelect
+                state={profileData.state}
+                city={profileData.city}
+                onStateChange={(state) => setProfileData({ ...profileData, state, city: "" })}
+                onCityChange={(city) => setProfileData({ ...profileData, city })}
+              />
 
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Dietary Preferences</h4>

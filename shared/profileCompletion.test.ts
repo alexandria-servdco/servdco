@@ -12,39 +12,44 @@ describe("family profile completion", () => {
     expect(calculateFamilyProfileCompletion({})).toBe(0);
   });
 
-  it("returns 100 when all 7 fields filled", () => {
+  it("returns 100 when all form fields are filled", () => {
     expect(
       calculateFamilyProfileCompletion({
-        avatar_url: "https://cdn.example/avatar.jpg",
         phone: "555-1234",
         city: "Columbus",
         state: "Ohio",
         zip: "43215",
         email_verified: true,
-        address_line: "123 Main St",
+        dietary_preferences: ["Vegan"],
       }),
     ).toBe(100);
   });
 
   it("returns partial percent for some fields", () => {
     const detail = getFamilyProfileCompletionDetail({
-      avatar_url: "https://cdn.example/a.jpg",
       phone: "555-1234",
-      city: "Columbus",
-      state: "Ohio",
-    });
-    expect(detail.completed).toBe(4);
-    expect(detail.total).toBe(7);
-    expect(detail.percent).toBe(57);
-  });
-
-  it("counts address when city state zip complete without street", () => {
-    const detail = getFamilyProfileCompletionDetail({
       city: "Columbus",
       state: "Ohio",
       zip: "43215",
     });
     expect(detail.completed).toBe(4);
+    expect(detail.total).toBe(6);
+    expect(detail.percent).toBe(67);
+    expect(detail.missing).toContain("Dietary preferences");
+    expect(detail.missing).toContain("Email verification");
+  });
+
+  it("lists dietary preferences as missing when empty", () => {
+    const detail = getFamilyProfileCompletionDetail({
+      phone: "555-1234",
+      city: "Columbus",
+      state: "Ohio",
+      zip: "43215",
+      email_verified: true,
+      dietary_preferences: [],
+    });
+    expect(detail.percent).toBe(83);
+    expect(detail.missing).toEqual(["Dietary preferences"]);
   });
 });
 
@@ -114,6 +119,6 @@ describe("profileCompletionLabel", () => {
   });
 
   it('returns "Complete your profile" below 100', () => {
-    expect(profileCompletionLabel(57)).toBe("Complete your profile");
+    expect(profileCompletionLabel(67)).toBe("Complete your profile");
   });
 });

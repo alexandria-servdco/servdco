@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { MessageSquare, Loader2, Inbox } from "lucide-react";
+import { MessageSquare, Loader2, Inbox, AlertCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
-import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
-import { useAuth } from "@/hooks/useAuth";
 import { MessagingPanel } from "@/components/messaging/MessagingPanel";
+import { conversationQueryKeys } from "@/services/supabase/conversations.service";
+import { Button } from "@/components/ui/button";
 
 interface MessagingHubProps {
   title?: string;
@@ -13,16 +14,21 @@ interface MessagingHubProps {
 
 /**
  * Full messaging workspace — conversation list + active thread.
- * Uses existing ServdCo brand tokens (velvet-card, #FF7A59, font-serif).
+ * Realtime inbox updates are handled by the parent dashboard via useRealtimeConversations.
  */
 export function MessagingHub({
   title = "Messages",
   subtitle = "Chat with families and cooks connected through your bookings.",
 }: MessagingHubProps) {
+  const queryClient = useQueryClient();
   const { data: enabled = false, isLoading: flagLoading } = useMessagingEnabled();
-  const { userId } = useAuth();
-  useRealtimeConversations(userId);
-  const { data: conversations = [], isLoading } = useConversations();
+  const {
+    data: rawConversations,
+    isLoading,
+    isError,
+    error,
+  } = useConversations();
+  const conversations = Array.isArray(rawConversations) ? rawConversations : [];
   const [activeId, setActiveId] = useState<string | null>(null);
 
   if (flagLoading) {
@@ -46,6 +52,27 @@ export function MessagingHub({
     );
   }
 
+  if (isError) {
+    const message =
+      error instanceof Error ? error.message : "Could not load conversations.";
+    return (
+      <div className="velvet-card p-10 text-center space-y-4">
+        <AlertCircle size={32} className="mx-auto text-red-400" />
+        <h3 className="text-lg font-bold text-white font-serif">Messages unavailable</h3>
+        <p className="text-sm text-[#A8A8A8] max-w-md mx-auto">{message}</p>
+        <Button
+          type="button"
+          className="text-xs font-bold"
+          onClick={() =>
+            void queryClient.invalidateQueries({ queryKey: conversationQueryKeys.all })
+          }
+        >
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -54,7 +81,6 @@ export function MessagingHub({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[480px]">
-        {/* Conversation list */}
         <div className="velvet-card p-4 lg:col-span-1 flex flex-col">
           <h3 className="text-sm font-bold text-white font-serif mb-3 flex items-center gap-2">
             <Inbox size={14} className="text-[#FF7A59]" />
@@ -91,9 +117,9 @@ export function MessagingHub({
               >
                 <div className="flex justify-between items-start gap-2">
                   <span className="font-bold text-white text-xs truncate">
-                    {conv.participant_name}
+                    {conv.participant_name ?? "Conversation"}
                   </span>
-                  {conv.unread_count > 0 && (
+                  {(conv.unread_count ?? 0) > 0 && (
                     <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF7A59] text-white text-[9px] font-bold flex items-center justify-center">
                       {conv.unread_count}
                     </span>
@@ -117,7 +143,6 @@ export function MessagingHub({
           </div>
         </div>
 
-        {/* Active thread */}
         <div className="lg:col-span-2">
           {activeId ? (
             <MessagingPanel

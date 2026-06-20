@@ -10,8 +10,9 @@ interface MessageAttachmentListProps {
 }
 
 function AttachmentItem({ attachment }: { attachment: MessageAttachment }) {
-  const isImage = attachment.mime_type.startsWith("image/");
-  const isPdf = attachment.mime_type === "application/pdf";
+  const mime = attachment.mime_type ?? "";
+  const isImage = mime.startsWith("image/");
+  const isPdf = mime === "application/pdf";
 
   if (!attachment.public_url) {
     return (

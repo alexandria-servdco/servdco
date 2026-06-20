@@ -150,6 +150,8 @@ export default function ChefDashboard() {
   const { profile } = useCurrentProfile();
   const { data: ownChefProfile } = useChefProfileByUser(profile?.id);
   const { userId, user } = useAuth();
+  const { data: messagingEnabled = false } = useMessagingEnabled();
+  const { data: unreadTotal = 0 } = useUnreadMessageCount();
   useRealtimeConversations(userId);
   useRealtimeDashboard({
     userId,
@@ -390,8 +392,6 @@ export default function ChefDashboard() {
   }, [profile]);
 
   const isLoading = loading || bookingsLoading || reviewsLoading;
-  const { data: messagingEnabled = false } = useMessagingEnabled();
-  const { data: unreadTotal = 0 } = useUnreadMessageCount();
 
   const getSubTab = () => {
     const path = location.pathname;

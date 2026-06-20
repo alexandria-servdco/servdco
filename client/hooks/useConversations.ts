@@ -11,6 +11,8 @@ export function useConversations() {
     queryFn: () => MessagingService.listConversations(),
     enabled,
     refetchInterval: enabled ? 60_000 : false,
+    retry: 1,
+    select: (data) => (Array.isArray(data) ? data : []),
   });
 }
 

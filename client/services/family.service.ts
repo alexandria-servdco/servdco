@@ -13,6 +13,9 @@ export const FamilyService = {
     id: string,
     data: Partial<
       Pick<AdminUser, "name" | "email" | "city" | "state"> & {
+        phone?: string;
+        zip?: string;
+        dietary_preferences?: string[];
         profile_completed?: number;
       }
     >,
@@ -27,6 +30,9 @@ export const FamilyService = {
       email: data.email,
       city: data.city,
       state: data.state,
+      phone: data.phone,
+      zip: data.zip,
+      dietary_preferences: data.dietary_preferences,
       profile_completed: data.profile_completed,
     });
     if (row) {

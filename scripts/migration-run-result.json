@@ -1,13 +1,8 @@
 {
-  "timestamp": "2026-06-20T18:19:18.774Z",
+  "timestamp": "2026-06-20T18:37:43.435Z",
   "totalAppliedInDb": 33,
-  "appliedThisRun": [
-    {
-      "version": "20250620180000",
-      "file": "20250620180000_messaging_send_hardening.sql"
-    }
-  ],
-  "skippedCount": 32,
+  "appliedThisRun": [],
+  "skippedCount": 33,
   "failed": [],
   "latestVersions": [
     "20250612120026",

@@ -54,6 +54,8 @@ export interface ChefDocument {
   type: string;
   status: "pending" | "approved" | "rejected";
   url: string;
+  storage_path?: string;
+  mime_hint?: string;
   submitted_at: string;
   review_notes?: string;
 }

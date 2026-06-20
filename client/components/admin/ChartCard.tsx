@@ -11,20 +11,8 @@ export function ChartCard({ title, children, hasFilter = false }: ChartCardProps
   const [range, setRange] = useState("week");
 
   return (
-    <div
-      className="velvet-card"
-      style={{
-        padding: "24px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "20px",
-        }}
-      >
+    <div className="velvet-card p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <h2
           style={{
             fontSize: "15px",
@@ -49,7 +37,9 @@ export function ChartCard({ title, children, hasFilter = false }: ChartCardProps
           />
         )}
       </div>
-      {children}
+      <div className="w-full min-h-[200px] overflow-x-auto servd-scrollbar">
+        {children}
+      </div>
     </div>
   );
 }

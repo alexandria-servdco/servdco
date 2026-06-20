@@ -11,18 +11,18 @@ export interface DocumentViewerProps {
   mimeHint?: string;
 }
 
-function isPdf(url: string, mimeHint?: string): boolean {
-  const lower = url.toLowerCase();
-  return (
-    mimeHint === "application/pdf" ||
-    lower.includes(".pdf") ||
-    lower.includes("application%2Fpdf")
-  );
+const PDF_RENDER_TIMEOUT_MS = 12_000;
+
+function isPdf(url: string, mimeHint?: string, fileName?: string): boolean {
+  if (mimeHint === "application/pdf") return true;
+  const probe = `${fileName ?? ""} ${url}`.toLowerCase();
+  return probe.includes(".pdf") || probe.includes("application%2fpdf");
 }
 
-function isImage(url: string, mimeHint?: string): boolean {
+function isImage(url: string, mimeHint?: string, fileName?: string): boolean {
   if (mimeHint?.startsWith("image/")) return true;
-  return /\.(jpe?g|png|webp|gif)(\?|$)/i.test(url);
+  const probe = `${fileName ?? ""} ${url}`.toLowerCase();
+  return /\.(jpe?g|png|webp|gif)(\?|$)/i.test(probe);
 }
 
 function inferMimeHint(url: string, fileName?: string): string | undefined {
@@ -34,12 +34,63 @@ function inferMimeHint(url: string, fileName?: string): string | undefined {
   return undefined;
 }
 
-async function fetchDocumentBytes(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url, { mode: "cors", credentials: "omit" });
-  if (!res.ok) {
-    throw new Error(`Document fetch failed (${res.status})`);
-  }
-  return res.arrayBuffer();
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms);
+    promise
+      .then((value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+function PdfIframeViewer({
+  url,
+  retryKey,
+  onFallback,
+}: {
+  url: string;
+  retryKey: number;
+  onFallback: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const fallbackTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    fallbackTimer.current = window.setTimeout(() => {
+      onFallback();
+    }, PDF_RENDER_TIMEOUT_MS);
+
+    return () => {
+      if (fallbackTimer.current) window.clearTimeout(fallbackTimer.current);
+    };
+  }, [url, retryKey, onFallback]);
+
+  return (
+    <>
+      {loading && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#1A1A1A] z-10">
+          <Loader2 className="animate-spin text-[#FF7A59]" size={24} />
+          <p className="text-[10px] text-[#A8A8A8]">Loading PDF preview…</p>
+        </div>
+      )}
+      <iframe
+        key={retryKey}
+        src={url}
+        title="PDF document preview"
+        className="w-full h-full min-h-[360px] rounded-lg border-0 bg-white"
+        onLoad={() => {
+          if (fallbackTimer.current) window.clearTimeout(fallbackTimer.current);
+          setLoading(false);
+        }}
+      />
+    </>
+  );
 }
 
 function PdfCanvasViewer({
@@ -60,9 +111,17 @@ function PdfCanvasViewer({
       setLoading(true);
       setError(null);
       try {
-        const bytes = await fetchDocumentBytes(url);
-        const task = pdfjs.getDocument({ data: bytes });
-        const pdf = await task.promise;
+        const task = pdfjs.getDocument({
+          url,
+          withCredentials: false,
+          disableRange: true,
+          disableStream: true,
+        });
+        const pdf = await withTimeout(
+          task.promise,
+          PDF_RENDER_TIMEOUT_MS,
+          "PDF preview timed out",
+        );
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1.2 });
         const canvas = canvasRef.current;
@@ -73,6 +132,8 @@ function PdfCanvasViewer({
 
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         await page.render({ canvasContext: ctx, viewport, canvas }).promise;
       } catch (e) {
         if (!cancelled) {
@@ -93,7 +154,7 @@ function PdfCanvasViewer({
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2">
         <Loader2 className="animate-spin text-[#FF7A59]" size={24} />
-        <p className="text-[10px] text-[#A8A8A8]">Loading PDF preview…</p>
+        <p className="text-[10px] text-[#A8A8A8]">Rendering PDF…</p>
       </div>
     );
   }
@@ -104,7 +165,7 @@ function PdfCanvasViewer({
         <FileText className="mx-auto text-[#A8A8A8]" size={28} />
         <p className="text-xs text-red-400">{error}</p>
         <p className="text-[10px] text-[#A8A8A8]">
-          Use download below or retry preview.
+          Use download below or open in a new tab.
         </p>
       </div>
     );
@@ -113,7 +174,7 @@ function PdfCanvasViewer({
   return (
     <canvas
       ref={canvasRef}
-      className="max-w-full max-h-full object-contain"
+      className="max-w-full max-h-full object-contain bg-white rounded-lg"
     />
   );
 }
@@ -156,6 +217,7 @@ function ImageViewer({
 export function DocumentViewer({ url, fileName, mimeHint }: DocumentViewerProps) {
   const [retryKey, setRetryKey] = useState(0);
   const [imageError, setImageError] = useState(false);
+  const [pdfMode, setPdfMode] = useState<"iframe" | "canvas">("iframe");
 
   if (!url) {
     return (
@@ -167,12 +229,13 @@ export function DocumentViewer({ url, fileName, mimeHint }: DocumentViewerProps)
   }
 
   const resolvedMime = mimeHint ?? inferMimeHint(url, fileName);
-  const pdf = isPdf(url, resolvedMime);
-  const image = !pdf && isImage(url, resolvedMime);
+  const pdf = isPdf(url, resolvedMime, fileName);
+  const image = !pdf && isImage(url, resolvedMime, fileName);
   const showPreviewError = image && imageError;
 
   const handleRetry = () => {
     setImageError(false);
+    setPdfMode("iframe");
     setRetryKey((k) => k + 1);
   };
 
@@ -180,7 +243,15 @@ export function DocumentViewer({ url, fileName, mimeHint }: DocumentViewerProps)
     <div className="flex flex-col h-full gap-3">
       <div className="relative flex-1 min-h-[280px] flex items-center justify-center overflow-auto rounded-2xl border border-white/5 bg-[#1A1A1A] p-2 servd-scrollbar">
         {pdf ? (
-          <PdfCanvasViewer url={url} retryKey={retryKey} />
+          pdfMode === "iframe" ? (
+            <PdfIframeViewer
+              url={url}
+              retryKey={retryKey}
+              onFallback={() => setPdfMode("canvas")}
+            />
+          ) : (
+            <PdfCanvasViewer url={url} retryKey={retryKey} />
+          )
         ) : image && !showPreviewError ? (
           <ImageViewer
             url={url}

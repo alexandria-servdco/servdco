@@ -80,8 +80,12 @@ export function MessagingHub({
         <p className="text-xs text-[#A8A8A8] mt-1">{subtitle}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[480px]">
-        <div className="velvet-card p-4 lg:col-span-1 flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[min(480px,70dvh)]">
+        <div
+          className={`velvet-card p-4 lg:col-span-1 flex flex-col ${
+            activeId ? "hidden lg:flex" : ""
+          }`}
+        >
           <h3 className="text-sm font-bold text-white font-serif mb-3 flex items-center gap-2">
             <Inbox size={14} className="text-[#FF7A59]" />
             Conversations
@@ -143,7 +147,7 @@ export function MessagingHub({
           </div>
         </div>
 
-        <div className="lg:col-span-2">
+        <div className={`lg:col-span-2 ${!activeId ? "hidden lg:block" : ""}`}>
           {activeId ? (
             <MessagingPanel
               conversationId={activeId}
@@ -151,7 +155,7 @@ export function MessagingHub({
               fullHeight
             />
           ) : (
-            <div className="velvet-card h-full min-h-[420px] flex flex-col items-center justify-center text-center p-8">
+            <div className="velvet-card h-full min-h-[320px] lg:min-h-[420px] flex flex-col items-center justify-center text-center p-8">
               <MessageSquare size={40} className="text-[#FF7A59]/30 mb-4" />
               <p className="text-sm text-[#A8A8A8] font-medium">
                 Select a conversation to view messages

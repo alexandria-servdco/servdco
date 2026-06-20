@@ -81,6 +81,7 @@ import {
 import { availabilityQueryKeys } from "@/services/supabase/availability.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { DashboardMobileNav } from "@/components/ui/DashboardMobileNav";
+import { DashboardMobileMenu } from "@/components/ui/DashboardMobileMenu";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
 import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
@@ -343,6 +344,7 @@ export default function ChefDashboard() {
     confirmPassword: "",
   });
   const [settingsSuccess, setSettingsSuccess] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Income Calculator state
   const [sessionsPerWeek, setSessionsPerWeek] = useState(4);
@@ -654,11 +656,33 @@ export default function ChefDashboard() {
       </aside>
 
       {/* Main Content Pane */}
-      <main className="flex-1 overflow-auto bg-[#0E0E0E] pb-20 md:pb-0">
+      <main className="flex-1 overflow-auto bg-[#0E0E0E] dashboard-mobile-pad md:pb-0">
         {/* Top Navbar */}
-        <div className="sticky top-0 bg-[#0E0E0E]/90 backdrop-blur-md border-b border-white/5 px-8 py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-20">
-          <div>
-            <h1 className="text-3xl font-bold text-white font-serif flex items-center gap-3">
+        <div className="dashboard-page-header sticky top-0 bg-[#0E0E0E]/90 backdrop-blur-md border-b border-white/5 px-4 sm:px-8 py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-20 safe-area-pt">
+          <div className="flex items-start gap-3 w-full sm:w-auto min-w-0">
+            <DashboardMobileMenu
+              title="Cook Dashboard"
+              open={mobileMenuOpen}
+              onOpenChange={setMobileMenuOpen}
+              links={[
+                { label: "Dashboard", path: "/chef-dashboard", icon: LayoutDashboard },
+                { label: "Bookings", path: "/chef-dashboard/bookings", icon: Users },
+                ...(messagingEnabled
+                  ? [{ label: "Messages", path: "/chef-dashboard/messages", icon: MessageSquare, badge: unreadTotal }]
+                  : []),
+                { label: "Calendar", path: "/chef-dashboard/calendar", icon: Calendar },
+                { label: "Reviews", path: "/chef-dashboard/reviews", icon: Star },
+                { label: "Verification", path: "/chef-dashboard/verification", icon: Shield },
+                { label: "Availability", path: "/chef-dashboard/availability", icon: Clock },
+                { label: "Earnings", path: "/chef-dashboard/earnings", icon: TrendingUp },
+                { label: "Analytics", path: "/chef-dashboard/analytics", icon: BarChart2 },
+                { label: "Profile", path: "/chef-dashboard/profile", icon: User },
+                { label: "Settings", path: "/chef-dashboard/settings", icon: Settings },
+                { label: "Premium", path: "/chef-dashboard/premium", icon: Crown },
+              ]}
+            />
+            <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-bold text-white font-serif flex flex-wrap items-center gap-2 sm:gap-3">
               {currentTab === "dashboard"
                 ? `Good morning, ${profileData.name}!`
                 : `Cook ${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}`}
@@ -680,18 +704,19 @@ export default function ChefDashboard() {
                 </span>
               )}
             </h1>
-            <p className="text-[#A8A8A8] text-xs mt-1 font-medium">
+            <p className="text-[#A8A8A8] text-xs mt-1 font-medium hidden sm:block">
               Manage bookings, scheduling rules, and your premium portfolio.
             </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start shrink-0">
             <NotificationBell />
             <Link
               to="/chef-dashboard/availability"
-              className="px-5 py-3 bg-[#FF7A59] hover:bg-[#e96a49] text-white rounded-full text-xs font-bold transition-all hover:scale-[1.02] shadow-md shadow-[#FF7A59]/10"
+              className="px-4 sm:px-5 py-2.5 sm:py-3 bg-[#FF7A59] hover:bg-[#e96a49] text-white rounded-full text-xs font-bold transition-all shadow-md shadow-[#FF7A59]/10 touch-target whitespace-nowrap"
             >
-              + Update Calendar Slots
+              + Update Calendar
             </Link>
           </div>
         </div>

@@ -296,7 +296,7 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className="fixed top-0 right-0 bottom-0 z-[99] w-[82%] max-w-[340px] bg-[#111113]/98 border-l border-white/[0.06] backdrop-blur-2xl rounded-l-[28px] flex flex-col shadow-2xl lg:hidden"
+              className="fixed top-0 right-0 bottom-0 z-[99] w-[82%] max-w-[340px] bg-[#111113]/98 border-l border-white/[0.06] backdrop-blur-2xl rounded-l-[28px] flex flex-col shadow-2xl lg:hidden safe-area-pt safe-area-pb"
             >
               {/* Drawer header */}
               <div className="flex justify-between items-center px-7 py-5 border-b border-white/[0.06]">
@@ -394,6 +394,12 @@ export default function Navbar() {
 
               {/* Bottom actions */}
               <div className="px-5 pb-8 pt-5 border-t border-white/[0.06] flex flex-col gap-3">
+                {isAuthenticated && (
+                  <div className="flex items-center justify-between px-1 pb-1">
+                    <span className="text-xs font-semibold text-white/60">Notifications</span>
+                    <NotificationBell />
+                  </div>
+                )}
                 {isAuthenticated ? (
                   <>
                     <motion.div

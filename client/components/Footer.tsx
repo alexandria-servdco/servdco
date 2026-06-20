@@ -276,6 +276,18 @@ export default function Footer() {
             <p className="text-[10px] font-bold text-[#A5A5A5] uppercase tracking-widest pt-2">
               Built with community in mind.
             </p>
+
+            <p className="text-xs text-[#A5A5A5] pt-1">
+              Founder of Servd Co:{" "}
+              <a
+                href="https://www.linkedin.com/in/alexandria-porter-56b5b2418?trk=contact-info"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/80 hover:text-[#FF7A59] transition-colors font-medium underline-offset-2 hover:underline"
+              >
+                Alexandria Porter
+              </a>
+            </p>
           </div>
 
           {/* Families Column */}
@@ -397,6 +409,17 @@ export default function Footer() {
             </div>
             <p className="text-[11px] text-white/30 font-semibold uppercase tracking-wider">
               &copy; {new Date().getFullYear()} Servd Co. All rights reserved.
+            </p>
+            <p className="text-[10px] text-white/25 font-medium">
+              Platform developed by{" "}
+              <a
+                href="https://www.linkedin.com/in/kartik-singh-879b6b288/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/40 hover:text-[#FF7A59] transition-colors underline-offset-2 hover:underline"
+              >
+                Kartik Singh
+              </a>
             </p>
           </div>
 

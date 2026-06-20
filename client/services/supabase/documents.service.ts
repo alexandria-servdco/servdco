@@ -56,6 +56,15 @@ async function resolveStorageUrl(
   return data.publicUrl;
 }
 
+function mimeFromPath(path: string): string | undefined {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (/\.(jpe?g)$/.test(lower)) return "image/jpeg";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".webp")) return "image/webp";
+  return undefined;
+}
+
 async function mapRow(
   row: {
     id: string;
@@ -77,6 +86,8 @@ async function mapRow(
     type: DOC_TYPE_LABELS[row.document_type] ?? row.document_type,
     status: row.status as ChefDocument["status"],
     url,
+    storage_path: row.storage_path,
+    mime_hint: mimeFromPath(row.storage_path),
     submitted_at: row.submitted_at,
     review_notes: row.review_notes ?? undefined,
   };

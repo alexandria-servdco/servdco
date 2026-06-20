@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { DashboardMobileNav } from "@/components/ui/DashboardMobileNav";
+import { DashboardMobileMenu } from "@/components/ui/DashboardMobileMenu";
 import { ReferralInviteCard } from "@/components/referral/ReferralInviteCard";
 import { formatBookingDisplayDate } from "@/lib/formatDate";
 import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
@@ -100,6 +101,7 @@ export default function Dashboard() {
     confirmPassword: ""
   });
   const [settingsSuccess, setSettingsSuccess] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -196,16 +198,35 @@ export default function Dashboard() {
     <div className="flex min-h-screen bg-[#0E0E0E] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <DashboardSidebar />
 
-      <main className="flex-1 overflow-auto bg-[#0E0E0E] pb-20 md:pb-0">
+      <main className="flex-1 overflow-auto bg-[#0E0E0E] dashboard-mobile-pad md:pb-0">
         {/* Header */}
-        <div className="sticky top-0 bg-[#0E0E0E]/90 backdrop-blur-md border-b border-white/5 px-8 py-6 flex justify-between items-center z-20">
-          <div>
-            <h1 className="text-3xl font-bold text-white font-serif">
+        <div className="dashboard-page-header sticky top-0 bg-[#0E0E0E]/90 backdrop-blur-md border-b border-white/5 px-4 sm:px-8 py-4 sm:py-6 flex justify-between items-center gap-3 z-20 safe-area-pt">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <DashboardMobileMenu
+              title="Family Dashboard"
+              open={mobileMenuOpen}
+              onOpenChange={setMobileMenuOpen}
+              links={[
+                { label: "Dashboard", path: "/family-dashboard", icon: LayoutDashboard },
+                { label: "Browse Cooks", path: "/browse-chefs", icon: Search },
+                { label: "Bookings", path: "/family-dashboard/bookings", icon: Calendar },
+                ...(messagingEnabled
+                  ? [{ label: "Messages", path: "/family-dashboard/messages", icon: MessageSquare, badge: unreadMessages }]
+                  : []),
+                { label: "History", path: "/family-dashboard/history", icon: Clock },
+                { label: "Favorites", path: "/family-dashboard/favorites", icon: Heart },
+                { label: "Profile", path: "/family-dashboard/profile", icon: User },
+                { label: "Settings", path: "/family-dashboard/settings", icon: Settings },
+              ]}
+            />
+            <div className="min-w-0">
+            <h1 className="text-xl sm:text-3xl font-bold text-white font-serif truncate">
               {currentTab === "dashboard" ? `Welcome back, ${currentUser?.name || "there"}!` : `Family ${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}`}
             </h1>
-            <p className="text-[#A8A8A8] text-xs mt-1 font-medium">
+            <p className="text-[#A8A8A8] text-xs mt-1 font-medium hidden sm:block">
               Good food brings families closer. Let's find your next amazing home meal.
             </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <NotificationBell />

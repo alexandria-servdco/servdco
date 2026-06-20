@@ -70,6 +70,18 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
     // Determine current type (toggle text/password)
     const isPassword = type === "password";
     const currentType = isPassword ? (showPassword ? "text" : "password") : type;
+    const resolvedInputMode =
+      props.inputMode ??
+      (type === "tel" ? "tel" : type === "email" ? "email" : type === "number" ? "decimal" : undefined);
+    const resolvedAutoComplete =
+      props.autoComplete ??
+      (type === "email"
+        ? "email"
+        : type === "tel"
+          ? "tel"
+          : type === "password"
+            ? "current-password"
+            : undefined);
 
     // Derived error status
     const hasError = !!error || (type === "email" && emailValid === false);
@@ -92,6 +104,8 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
             ref={ref}
             type={currentType}
             id={id}
+            inputMode={resolvedInputMode}
+            autoComplete={resolvedAutoComplete}
             aria-invalid={hasError || undefined}
             aria-describedby={hasError && errorId ? errorId : undefined}
             placeholder=" "

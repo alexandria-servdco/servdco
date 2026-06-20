@@ -467,3 +467,66 @@ html {
   animation: drawStepperLine 0.5s ease-out forwards;
 }
 
+/* ── Phase 6: Mobile-first utilities ─────────────────────────────────────── */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.dashboard-mobile-pad {
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.servd-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 122, 89, 0.45) transparent;
+}
+
+.servd-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.servd-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 122, 89, 0.45);
+  border-radius: 999px;
+}
+
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 767px) {
+  .admin-card-shell {
+    padding: 1rem !important;
+    border-radius: 1rem !important;
+  }
+
+  .dashboard-page-header {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .dashboard-page-body {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+
+@media (hover: none) {
+  .group:hover .opacity-0.group-hover\:opacity-100,
+  .group .opacity-0.group-hover\:opacity-100 {
+    opacity: 1;
+  }
+}

@@ -88,6 +88,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 import { ChartCard } from "@/components/admin/ChartCard";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import { lazy, Suspense } from "react";
 
 const AdminAnalytics = lazy(() => import("@/components/admin/AdminAnalytics").then(m => ({ default: m.AdminAnalytics })));
@@ -245,6 +246,7 @@ export default function AdminDashboard({
     "Admin";
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState(initialTab);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // States
   const [regions, setRegions] = useState<any[]>([]);
@@ -1033,22 +1035,27 @@ export default function AdminDashboard({
       >
         {/* Header */}
         <div
+          className="sticky top-0 z-[100] flex items-center justify-between gap-3 px-4 py-4 sm:px-6 md:px-8 border-b border-white/5 safe-area-pt"
           style={{
-            position: "sticky",
-            top: 0,
             background: "rgba(17,17,17,0.85)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-            padding: "18px 32px",
-            zIndex: 100,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
           }}
         >
-          <div>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <AdminMobileNav
+              items={NAV_ITEMS}
+              activeId={activeNav}
+              onNavigate={handleNavClick}
+              onSignOut={() => {
+                AuthService.logout();
+                navigate("/");
+              }}
+              adminName={adminDisplayName}
+              open={mobileNavOpen}
+              onOpenChange={setMobileNavOpen}
+            />
+            <div className="min-w-0">
             <h1
               style={{
                 fontSize: "22px",
@@ -1057,6 +1064,7 @@ export default function AdminDashboard({
                 margin: 0,
                 letterSpacing: "-0.03em",
               }}
+              className="text-lg sm:text-xl md:text-[22px] truncate"
             >
               {activeNav === "dashboard" && "SaaS Overview"}
               {activeNav === "launch_control" && "Launch Regions Control"}
@@ -1081,6 +1089,7 @@ export default function AdminDashboard({
                 margin: "3px 0 0",
                 fontWeight: "400",
               }}
+              className="text-xs sm:text-[13.5px] line-clamp-2 sm:line-clamp-none"
             >
               {activeNav === "dashboard" &&
                 "Here's what's happening with Servd Co. today."}
@@ -1113,9 +1122,10 @@ export default function AdminDashboard({
               {activeNav === "settings" &&
                 "Manage dynamic fee algorithms and platform wide configurations."}
             </p>
+            </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <NotificationBell />
             {/* Direct Export for tables */}
             {["interest_requests", "users", "chefs", "bookings"].includes(
@@ -1222,14 +1232,7 @@ export default function AdminDashboard({
               <DashboardWidgetSkeleton />
             </div>
           }>
-            <div
-              style={{
-                padding: "28px 32px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "28px",
-              }}
-            >
+            <div className="flex flex-col gap-6 md:gap-7 px-4 py-5 sm:px-6 md:px-8 md:py-7 pb-8">
             {/* ── Tab: DASHBOARD HOME ───────────────────────────────────────── */}
             {activeNav === "dashboard" && (
               <>

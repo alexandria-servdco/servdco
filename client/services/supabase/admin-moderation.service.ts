@@ -4,10 +4,21 @@ import { SupabaseQueryError } from "./fallback";
 
 export const adminQueryKeys = {
   users: () => ["admin", "users"] as const,
+  portfolio: () => ["admin", "portfolio"] as const,
 };
 
 import { resolveAvatarUrl } from "@/lib/avatar";
 import { AdminAuditService } from "./admin-audit.service";
+
+export interface PortfolioImageModerationItem {
+  id: string;
+  chef_profile_id: string;
+  chef_name: string;
+  image_url: string;
+  alt_text: string | null;
+  is_public: boolean;
+  created_at: string;
+}
 
 export const AdminModerationSupabaseService = {
   async listUsers(): Promise<AdminUser[]> {
@@ -169,6 +180,63 @@ export const AdminModerationSupabaseService = {
       entityType: "chef_profile",
       entityId: chefProfileId,
       metadata: { verification_status: status },
+    });
+  },
+
+  async listPortfolioImages(): Promise<PortfolioImageModerationItem[]> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data, error } = await client
+      .from("chef_portfolio_images")
+      .select(
+        "id, chef_profile_id, public_url, storage_path, storage_bucket, alt_text, is_public, created_at, chef_profiles(display_name)",
+      )
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(48);
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+
+    return (data ?? []).map((row) => {
+      const chef = row.chef_profiles as { display_name?: string } | null;
+      const fallbackUrl =
+        row.public_url ??
+        client.storage.from(row.storage_bucket).getPublicUrl(row.storage_path).data
+          .publicUrl;
+      return {
+        id: row.id,
+        chef_profile_id: row.chef_profile_id,
+        chef_name: chef?.display_name ?? "Cook",
+        image_url: fallbackUrl,
+        alt_text: row.alt_text,
+        is_public: row.is_public,
+        created_at: row.created_at,
+      };
+    });
+  },
+
+  async hidePortfolioImage(id: string): Promise<void> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data: authData } = await client.auth.getUser();
+    const { error } = await client
+      .from("chef_portfolio_images")
+      .update({
+        deleted_at: new Date().toISOString(),
+        is_public: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+
+    await AdminAuditService.log({
+      action: "portfolio.hidden",
+      entityType: "chef_portfolio_image",
+      entityId: id,
+      metadata: { hidden_by: authData.user?.id ?? null },
     });
   },
 };

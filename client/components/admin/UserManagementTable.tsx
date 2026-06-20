@@ -5,6 +5,13 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { BrandSelect } from "@/components/ui/BrandSelect";
 import { PaginationBar } from "@/components/ui/PaginationBar";
 import { formatIsoDate } from "@/lib/formatDate";
+import {
+  AdminTableShell,
+  DesktopTableView,
+  MobileCardStack,
+  MobileDataCard,
+  MobileFieldRow,
+} from "@/components/ui/ResponsiveDataTable";
 
 const PAGE_SIZE = 15;
 
@@ -46,23 +53,8 @@ export function UserManagementTable({
   );
 
   return (
-    <div
-      style={{
-        background: "#1A1A1A",
-        borderRadius: "24px",
-        padding: "28px",
-        border: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
+    <AdminTableShell>
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-5">
         <h3
           style={{
             fontSize: "16px",
@@ -137,7 +129,7 @@ export function UserManagementTable({
         </div>
       </div>
 
-      <div style={{ overflowX: "auto" }}>
+      <DesktopTableView>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -313,7 +305,72 @@ export function UserManagementTable({
             )}
           </tbody>
         </table>
-      </div>
+      </DesktopTableView>
+
+      <MobileCardStack>
+        {paginated.length === 0 ? (
+          <EmptyState message="No users match your criteria." />
+        ) : (
+          paginated.map((usr) => (
+            <MobileDataCard
+              key={usr.id}
+              actions={
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleSuspendUser(usr.id, usr.status)}
+                    className="flex-1 min-w-[120px] py-2.5 px-3 rounded-lg text-xs font-semibold touch-target"
+                    style={{
+                      background:
+                        usr.status === "suspended"
+                          ? "rgba(46,125,102,0.15)"
+                          : "rgba(245,158,11,0.15)",
+                      color: usr.status === "suspended" ? "#34D399" : "#F59E0B",
+                    }}
+                  >
+                    {usr.status === "suspended" ? "Unsuspend" : "Suspend"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteUser(usr.id)}
+                    className="py-2.5 px-3 rounded-lg bg-red-500/15 text-red-400 touch-target"
+                    aria-label="Delete user"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </>
+              }
+            >
+              <div className="flex items-center gap-3 pb-2">
+                <UserAvatar
+                  name={usr.name}
+                  imageUrl={usr.avatar}
+                  size="sm"
+                  className="w-9 h-9 border-[1.5px] border-white/10"
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white m-0 truncate">{usr.name}</p>
+                  <p className="text-xs text-[#A8A8A8] m-0 truncate">{usr.email}</p>
+                </div>
+              </div>
+              <MobileFieldRow label="Role">
+                <span className={usr.role === "chef" ? "text-[#FF7A59]" : "text-[#2E7D66]"}>
+                  {usr.role === "chef" ? "Cook" : usr.role}
+                </span>
+              </MobileFieldRow>
+              <MobileFieldRow label="Location">
+                {usr.city}, {usr.state}
+              </MobileFieldRow>
+              <MobileFieldRow label="Status">
+                <span className={usr.status === "active" ? "text-emerald-400" : "text-red-400"}>
+                  {usr.status}
+                </span>
+              </MobileFieldRow>
+              <MobileFieldRow label="Joined">{formatIsoDate(usr.created_at)}</MobileFieldRow>
+            </MobileDataCard>
+          ))
+        )}
+      </MobileCardStack>
 
       <PaginationBar
         page={userPage}
@@ -324,6 +381,6 @@ export function UserManagementTable({
         itemLabel="users"
         className="mt-4 border-t-0 pt-2"
       />
-    </div>
+    </AdminTableShell>
   );
 }

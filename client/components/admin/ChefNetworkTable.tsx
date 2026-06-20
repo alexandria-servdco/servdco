@@ -4,6 +4,12 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { BrandSelect } from "@/components/ui/BrandSelect";
 import { PaginationBar } from "@/components/ui/PaginationBar";
+import {
+  DesktopTableView,
+  MobileCardStack,
+  MobileDataCard,
+  MobileFieldRow,
+} from "@/components/ui/ResponsiveDataTable";
 
 const PAGE_SIZE = 10;
 
@@ -131,7 +137,7 @@ export function ChefNetworkTable({
         </div>
       </div>
 
-      <div style={{ overflowX: "auto" }}>
+      <DesktopTableView>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -328,7 +334,60 @@ export function ChefNetworkTable({
             )}
           </tbody>
         </table>
-      </div>
+      </DesktopTableView>
+
+      <MobileCardStack>
+        {paginated.map((c) => (
+          <MobileDataCard
+            key={c.id}
+            actions={
+              <div className="flex flex-wrap gap-2 w-full">
+                {c.verification_status === "pending" && (
+                  <button
+                    type="button"
+                    onClick={() => handleChefVerification(c.id, "approved")}
+                    className="flex-1 py-2.5 rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-semibold touch-target"
+                  >
+                    Approve
+                  </button>
+                )}
+                {c.verification_status === "approved" && (
+                  <button
+                    type="button"
+                    onClick={() => handleChefVerification(c.id, "suspended")}
+                    className="flex-1 py-2.5 rounded-lg bg-amber-500/15 text-amber-400 text-xs font-semibold touch-target"
+                  >
+                    Suspend
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleChefVerification(c.id, "rejected")}
+                  className="flex-1 py-2.5 rounded-lg bg-red-500/15 text-red-400 text-xs font-semibold touch-target"
+                >
+                  Reject
+                </button>
+              </div>
+            }
+          >
+            <div className="flex items-center gap-3 pb-2">
+              <UserAvatar name={c.name} imageUrl={c.avatar} size="sm" className="w-9 h-9" />
+              <p className="text-sm font-semibold text-white m-0">{c.name}</p>
+            </div>
+            <MobileFieldRow label="Cuisine">{c.cuisine}</MobileFieldRow>
+            <MobileFieldRow label="Location">{c.location}</MobileFieldRow>
+            <MobileFieldRow label="Rating">
+              <span className="inline-flex items-center gap-1">
+                <Star size={12} className="text-amber-400" /> {c.rating ?? "—"}
+              </span>
+            </MobileFieldRow>
+            <MobileFieldRow label="Bookings">{c.bookings_count ?? 0}</MobileFieldRow>
+            <MobileFieldRow label="Status">
+              <span className="capitalize">{c.verification_status}</span>
+            </MobileFieldRow>
+          </MobileDataCard>
+        ))}
+      </MobileCardStack>
 
       <PaginationBar
         page={page}

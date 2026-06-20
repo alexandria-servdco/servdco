@@ -4,6 +4,12 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { BookingDetailModal } from "@/components/admin/BookingDetailModal";
 import { BrandSelect } from "@/components/ui/BrandSelect";
 import { PaginationBar } from "@/components/ui/PaginationBar";
+import {
+  DesktopTableView,
+  MobileCardStack,
+  MobileDataCard,
+  MobileFieldRow,
+} from "@/components/ui/ResponsiveDataTable";
 
 const PAGE_SIZE = 15;
 
@@ -159,7 +165,7 @@ export function BookingsLedgerTable({
           </div>
         </div>
 
-        <div style={{ overflowX: "auto" }}>
+        <DesktopTableView>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -385,7 +391,36 @@ export function BookingsLedgerTable({
               )}
             </tbody>
           </table>
-        </div>
+        </DesktopTableView>
+
+        <MobileCardStack>
+          {paginated.map((b) => (
+            <MobileDataCard
+              key={b.id}
+              actions={
+                <button
+                  type="button"
+                  onClick={() => setDetailBookingId(b.id)}
+                  className="w-full py-2.5 rounded-lg bg-white/5 text-white text-xs font-semibold touch-target inline-flex items-center justify-center gap-1"
+                >
+                  <Eye size={12} /> View Details
+                </button>
+              }
+            >
+              <MobileFieldRow label="Booking ID">
+                <span className="text-[#FF7A59] font-semibold">{b.id.slice(0, 8)}…</span>
+              </MobileFieldRow>
+              <MobileFieldRow label="Family">{b.family_name}</MobileFieldRow>
+              <MobileFieldRow label="Cook">{b.chef_name}</MobileFieldRow>
+              <MobileFieldRow label="Service">{b.service_type}</MobileFieldRow>
+              <MobileFieldRow label="Date">{new Date(b.date).toLocaleString()}</MobileFieldRow>
+              <MobileFieldRow label="Price">${b.price}</MobileFieldRow>
+              <MobileFieldRow label="Status">
+                <span className="capitalize">{b.status}</span>
+              </MobileFieldRow>
+            </MobileDataCard>
+          ))}
+        </MobileCardStack>
 
         <PaginationBar
           page={page}

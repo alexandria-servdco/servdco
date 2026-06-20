@@ -76,7 +76,7 @@ export function DocumentPreviewModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="w-full max-w-2xl bg-[#1A1A1A] rounded-3xl border border-white/10 shadow-2xl overflow-hidden"
+            className="w-full max-w-2xl max-h-[min(92dvh,720px)] bg-[#1A1A1A] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
@@ -118,20 +118,23 @@ export function DocumentPreviewModal({
               )}
             </AnimatePresence>
 
-            <div className="p-6 h-[420px]">
+            <div className="p-4 sm:p-6 flex-1 min-h-0 overflow-hidden">
               {urlLoading ? (
-                <div className="flex h-full items-center justify-center">
+                <div className="flex h-full min-h-[240px] items-center justify-center">
                   <Loader2 className="animate-spin text-[#FF7A59]" size={24} />
                 </div>
               ) : (
+                <div className="h-full min-h-[240px] max-h-[min(420px,50dvh)]">
                 <DocumentViewer
                   url={previewUrl || document.url}
-                  fileName={document.type}
+                  fileName={document.storage_path ?? document.type}
+                  mimeHint={document.mime_hint}
                 />
+                </div>
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#161616]">
+            <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#161616] shrink-0 safe-area-pb sticky bottom-0">
               <div>
                 <p className="text-[10px] uppercase font-bold text-[#A8A8A8] tracking-wider">
                   Validation Status

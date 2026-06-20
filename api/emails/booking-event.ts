@@ -2,6 +2,12 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
 import { sendResendEmail } from "../_lib/email/resend.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
+import {
+  authorizeEmailEventRequest,
+  canSendBookingEmail,
+  canSendDocumentEmail,
+} from "../_lib/emailAuth.js";
 
 const bookingEvents = [
   "booking_requested",
@@ -54,6 +60,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  if (!enforceRateLimit(req, res, "emails/booking-event", { maxRequests: 20 })) {
+    return;
+  }
+
+  const auth = await authorizeEmailEventRequest(req);
+  if (!auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   const parsed = requestSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid request" });
@@ -65,6 +80,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if ("documentId" in parsed.data) {
     const { documentId } = parsed.data;
+
+    const allowed = await canSendDocumentEmail(auth.userId, documentId);
+    if (!allowed) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     const { data: doc } = await client
       .from("chef_documents")
@@ -119,6 +139,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { bookingId } = parsed.data;
+
+  const allowed = await canSendBookingEmail(auth.userId, bookingId);
+  if (!allowed) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
 
   const { data: booking } = await client
     .from("bookings")

@@ -87,7 +87,7 @@ async function fetchProfileAvatars(
   if (!client || userIds.length === 0) return map;
 
   const { data, error } = await client
-    .from("profiles")
+    .from("profiles_marketplace_public")
     .select("id, avatar_url")
     .in("id", userIds);
 

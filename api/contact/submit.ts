@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
 import { sendResendEmail, ADMIN_NOTIFY_EMAIL } from "../_lib/email/resend.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
 
 const contactSubmitSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -13,6 +14,10 @@ const contactSubmitSchema = z.object({
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  if (!enforceRateLimit(req, res, "contact/submit", { maxRequests: 10 })) {
+    return;
   }
 
   const parsed = contactSubmitSchema.safeParse(req.body);

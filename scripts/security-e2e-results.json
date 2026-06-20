@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-06-20T19:10:11.962Z",
+  "baseUrl": "https://servdco-one.vercel.app",
+  "passed": 15,
+  "failed": 1,
+  "warned": 0,
+  "results": [
+    {
+      "name": "Migration: profile role escalation guard",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Migration: booking status state machine",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Migration: immutable booking pricing",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Migration: message content integrity",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Migration: limited public profile view",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Email API requires authentication",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Email API rate limited",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Contact form rate limited",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "CSP header configured",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "HSTS enabled",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Platform fee sourced from server settings only",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Booking status transitions validated client-side",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Email API rejects unauthenticated requests",
+      "status": "FAIL",
+      "detail": "expected 401|403, got 404"
+    },
+    {
+      "name": "Contact API validates input",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "Stripe checkout rejects unauthenticated",
+      "status": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "Health endpoint reachable",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    }
+  ]
+}

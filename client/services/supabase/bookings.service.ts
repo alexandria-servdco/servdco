@@ -6,7 +6,7 @@ import {
   type UiBooking,
   type BookingAddress,
 } from "@/lib/bookingTypes";
-import type { BookingStatus } from "@shared/booking";
+import { canTransition, type BookingStatus } from "@shared/booking";
 import { calculatePlatformFee, calculateCookPayout } from "@/utils/platformFee";
 import { calculateSessionPrice, familyFeeToCents } from "@shared/bookingPricing";
 import { PlatformSettingsSupabaseService } from "./platform-settings.service";
@@ -251,12 +251,8 @@ export const BookingsSupabaseService = {
       );
     }
 
-    let familyFeeDollars = params.family_platform_fee_dollars;
-    if (familyFeeDollars === undefined) {
-      const settings = await PlatformSettingsSupabaseService.getPublicSettings();
-      familyFeeDollars = settings.familyPlatformFeeDollars;
-    }
-    const familyPlatformFeeCents = familyFeeToCents(familyFeeDollars);
+    const settings = await PlatformSettingsSupabaseService.getPublicSettings();
+    const familyPlatformFeeCents = familyFeeToCents(settings.familyPlatformFeeDollars);
 
     const serviceType = normalizeServiceType(p.service_type);
     const priceCents = Math.round(p.price * 100);
@@ -348,6 +344,22 @@ export const BookingsSupabaseService = {
 
     const { data: authData } = await client.auth.getUser();
     const userId = authData.user?.id ?? null;
+
+    const { data: existing, error: fetchError } = await client
+      .from("bookings")
+      .select("status")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) throw new SupabaseQueryError(fetchError.message, fetchError);
+    if (!existing) throw new SupabaseQueryError("Booking not found");
+
+    const fromStatus = existing.status as BookingStatus;
+    if (!canTransition(fromStatus, status)) {
+      throw new SupabaseQueryError(
+        `Invalid status transition from ${fromStatus} to ${status}`,
+      );
+    }
 
     const updatePayload: Database["public"]["Tables"]["bookings"]["Update"] = {
       status,

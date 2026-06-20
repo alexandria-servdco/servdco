@@ -16,6 +16,18 @@ export type DocumentEmailEvent =
   | "document_resubmission_requested";
 
 /** Fire-and-forget transactional emails via Vercel API routes. */
+async function authHeaders(): Promise<Record<string, string>> {
+  const { getSupabaseClient } = await import("@/lib/supabase/client");
+  const client = getSupabaseClient();
+  if (!client) return { "Content-Type": "application/json" };
+  const { data } = await client.auth.getSession();
+  const token = data.session?.access_token;
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 export const EmailService = {
   async sendBookingEvent(
     bookingId: string,
@@ -24,7 +36,7 @@ export const EmailService = {
     try {
       await fetch("/api/emails/booking-event", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify({ bookingId, event }),
       });
     } catch {
@@ -39,7 +51,7 @@ export const EmailService = {
     try {
       await fetch("/api/emails/booking-event", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders(),
         body: JSON.stringify({ documentId, event }),
       });
     } catch {

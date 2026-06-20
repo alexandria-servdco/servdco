@@ -74,9 +74,10 @@ export async function requireAdmin(userId: string): Promise<boolean> {
 
   const { data } = await client
     .from("profiles")
-    .select("role")
+    .select("role, status")
     .eq("id", userId)
+    .is("deleted_at", null)
     .maybeSingle();
 
-  return data?.role === "admin";
+  return data?.role === "admin" && data?.status === "active";
 }

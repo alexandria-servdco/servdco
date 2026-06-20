@@ -12,8 +12,8 @@
 | Metric | Result |
 |--------|--------|
 | **FAIL** | **0** |
-| **Critical WARN** | **1** (see Emails — requires `RESEND_API_KEY` in Vercel) |
-| **Non-critical WARN** | 2 (production deploy pending latest commit; manual E2E smoke) |
+| **Critical WARN** | **1** — `RESEND_API_KEY` not in Vercel Production (emails no-op until added) |
+| **Non-critical WARN** | 1 (manual browser E2E smoke — Alexandria UAT) |
 | `pnpm typecheck` | **PASS** |
 | `pnpm test` | **106/106 PASS** |
 
@@ -209,18 +209,18 @@ Redeploy after adding. Then re-run contact form + booking email smoke tests.
 
 ---
 
-### Production Health — **PASS** (current deploy); **WARN** (commit lag)
+### Production Health — **PASS**
 
 ```json
 GET https://servdco-one.vercel.app/api/health
 {
   "ok": true,
   "route": "/api/health",
-  "commit": "a423cd245fdf3b58543ab2629aa26e1af624e473"
+  "commit": "1db10cfa3bb6f0d1f1a0b8438bbbaf5f6abcda84"
 }
 ```
 
-Production is healthy but running **Phase 1 commit** until this merge is deployed.
+Production deploy confirmed on commit `1db10cf` (Phase 2 + signup simplification).
 
 ---
 
@@ -267,7 +267,6 @@ After deploy + Resend key, Alexandria should verify:
 
 | Item | Resolution |
 |------|------------|
-| Production commit behind latest code | Push to `main` + verify Vercel build |
 | Manual E2E not run in this session | Alexandria/UAT checklist above |
 
 ---
@@ -275,7 +274,5 @@ After deploy + Resend key, Alexandria should verify:
 ## Phase 3 Readiness
 
 **Code and database:** Ready.  
-**Production deploy:** Pending push to `main`.  
-**Email delivery:** Blocked on `RESEND_API_KEY` in Vercel only.
-
-Once Resend is configured and Vercel deploys the latest commit, Phase 3 may begin.
+**Production deploy:** Live at `1db10cf`.  
+**Email delivery:** Blocked on `RESEND_API_KEY` in Vercel only — add key, redeploy, then run email smoke tests.

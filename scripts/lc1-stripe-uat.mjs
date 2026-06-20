@@ -19,13 +19,13 @@ const ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
 
-async function getJwt(email) {
+async function getJwt(email, password) {
   const anon = createClient(SUPABASE_URL, ANON_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const { data, error } = await anon.auth.signInWithPassword({
     email,
-    password: PASSWORD,
+    password,
   });
   if (error) return { error: error.message };
   return { token: data.session.access_token, userId: data.user.id };
@@ -43,16 +43,37 @@ async function main() {
   });
   const stripe = new Stripe(STRIPE_KEY);
 
-  const familyEmail = `lc1.stripe.family.${ts}@mailinator.com`;
-  const { data: familyAuth, error: familyErr } =
-    await admin.auth.admin.createUser({
-      email: familyEmail,
-      password: PASSWORD,
-      email_confirm: true,
-      user_metadata: { role: "family", full_name: "LC1 Stripe Family" },
-    });
-  if (familyErr) throw familyErr;
-  const familyId = familyAuth.user.id;
+  let familyId;
+  let familyEmail;
+  let password = PASSWORD;
+
+  const { data: existingFamily } = await admin
+    .from("profiles")
+    .select("id, email")
+    .eq("role", "family")
+    .not("email", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingFamily?.email) {
+    familyId = existingFamily.id;
+    familyEmail = existingFamily.email;
+    password = process.env.LC1_TEST_FAMILY_PASSWORD ?? "P3Retest!2026";
+    await admin.auth.admin.updateUserById(familyId, { password }).catch(() => {});
+  } else {
+    familyEmail = `lc1.stripe.family.${ts}@mailinator.com`;
+    const { data: familyAuth, error: familyErr } =
+      await admin.auth.admin.createUser({
+        email: familyEmail,
+        password: PASSWORD,
+        email_confirm: true,
+        user_metadata: { role: "family", full_name: "LC1 Stripe Family" },
+      });
+    if (familyErr) throw familyErr;
+    familyId = familyAuth.user.id;
+    password = PASSWORD;
+  }
 
   const { data: chefProfile } = await admin
     .from("chef_profiles")
@@ -92,7 +113,7 @@ async function main() {
 
   if (bookingErr) throw bookingErr;
 
-  const familyJwt = await getJwt(familyEmail);
+  const familyJwt = await getJwt(familyEmail, password);
   if (!familyJwt.token) throw new Error(familyJwt.error);
 
   const checkoutRes = await fetch(

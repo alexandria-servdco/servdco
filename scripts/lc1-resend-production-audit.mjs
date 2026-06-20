@@ -148,7 +148,7 @@ async function main() {
   }
 
   const { rows: docs } = await pgClient.query(`
-    SELECT d.id, d.type, p.email
+    SELECT d.id, d.document_type, p.email
     FROM public.chef_documents d
     JOIN public.chef_profiles cp ON cp.id = d.chef_profile_id
     JOIN public.profiles p ON p.id = cp.user_id

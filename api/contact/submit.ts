@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { getServiceRoleClient } from "../_lib/supabase/serviceRole";
-import { sendResendEmail, ADMIN_NOTIFY_EMAIL } from "../_lib/email/resend";
+import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
+import { sendResendEmail, ADMIN_NOTIFY_EMAIL } from "../_lib/email/resend.js";
 
 const contactSubmitSchema = z.object({
   name: z.string().trim().min(2).max(120),

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { getServiceRoleClient } from "../_lib/supabase/serviceRole";
-import { sendResendEmail } from "../_lib/email/resend";
+import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
+import { sendResendEmail } from "../_lib/email/resend.js";
 
 const bookingEvents = [
   "booking_requested",
@@ -68,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data: doc } = await client
       .from("chef_documents")
-      .select("id, type, chef_profile_id, review_notes")
+      .select("id, document_type, chef_profile_id, review_notes")
       .eq("id", documentId)
       .maybeSingle();
 
@@ -105,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subject: `Servd Co — ${subject}`,
       html: `
         <p>Hi ${escapeHtml(profile.full_name ?? "Chef")},</p>
-        <p>${escapeHtml(subject)} for your ${escapeHtml(doc.type ?? "document")}.</p>
+        <p>${escapeHtml(subject)} for your ${escapeHtml(doc.document_type ?? "document")}.</p>
         ${notesLine}
         <p><a href="https://servdco-one.vercel.app/chef-dashboard/verification">Open your Cook Dashboard</a></p>
       `,

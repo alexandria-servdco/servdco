@@ -29,14 +29,19 @@ const todos = [
   ...rg("TODO|FIXME", "*.tsx", "client"),
   ...rg("TODO|FIXME", "*.ts", "api"),
 ];
-const mockFiles = execSync('dir /s /b client\\*mock* 2>nul', {
-  encoding: "utf8",
-  cwd: root,
-  shell: true,
-})
-  .trim()
-  .split("\n")
-  .filter(Boolean);
+let mockFiles = [];
+try {
+  mockFiles = execSync('dir /s /b client\\*mock* 2>nul', {
+    encoding: "utf8",
+    cwd: root,
+    shell: true,
+  })
+    .trim()
+    .split("\n")
+    .filter(Boolean);
+} catch {
+  mockFiles = [];
+}
 
 const deadRouteCandidates = [];
 const appRoutes = fs

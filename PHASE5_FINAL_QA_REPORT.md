@@ -1,9 +1,9 @@
 # Phase 5 — Final QA Report (Pre-Push)
 
 **Date:** 2026-06-12  
-**Status:** CODE COMPLETE — manual browser verification required before push  
-**Branch:** local uncommitted changes  
-**Production smoke target:** https://servdco-one.vercel.app (pre-Phase-5 deploy)
+**Status:** DEPLOYED — commit `b99e39c` live on production  
+**Production:** https://servdco-one.vercel.app  
+**Post-deploy smoke:** 11/11 PASS (2026-06-12)
 
 ---
 
@@ -170,11 +170,10 @@ SELECT key, enabled FROM feature_flags WHERE key IN ('enable_messaging', 'enable
 
 ## Commit / Deploy
 
-**Not performed** per instruction to complete QA before push.
+**Pushed:** `b99e39c` — Phase 5 platform polish (admin UX, notifications, reviews, messaging, audit docs)  
+**Vercel production:** verified via `/api/health` commit hash + smoke test 11/11
 
-When ready, suggested commit scope:
-- Phase 5 UX fixes (modals, scrollbars, selects, notifications, signup, reviews, messaging realtime)
-- Architecture docs (PLATFORM_AUDIT_REPORT, UX_FIXES_REPORT, etc.)
+Manual browser checklist (auth flows, document preview formats, two-account messaging, GA4 Realtime) remains recommended for full UAT but is not blocking automated gates.
 
 ---
 

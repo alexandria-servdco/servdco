@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-06-20T13:59:50.004Z",
+  "productionUrl": "https://servdco-one.vercel.app",
+  "checks": {
+    "csp": {
+      "hasGtm": true,
+      "hasGa": true,
+      "hasSentry": true,
+      "pass": true
+    },
+    "productionBundle": {
+      "scriptUrl": "https://servdco-one.vercel.app/assets/index-BeKQzf4e.js",
+      "bytes": 239515,
+      "hasGaPattern": true,
+      "hasSentryPattern": true
+    },
+    "health": {
+      "ok": true,
+      "route": "/api/health",
+      "commit": "1dcca178d0db10cc595734452c041d22ad160bfa"
+    },
+    "contactTraceability": {
+      "status": 200,
+      "body": {
+        "success": true,
+        "message": "Thank you for reaching out. Our team will respond within 24 hours.",
+        "messageId": "506b7d74-fc4a-4ad2-a34c-09dd7e32ba6f",
+        "resendId": "52641061-eff9-4a4e-aa00-f015810bee17"
+      },
+      "pass": true
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-06-20T14:00:31.629Z",
+  "familyId": "528ee82c-ab3c-4bd4-adce-3b6a015fe3a6",
+  "bookingId": "898bfb7d-42c3-4f3d-ac18-150a059cb92d",
+  "tests": [
+    {
+      "label": "family_booking_update",
+      "table": "bookings",
+      "filter": "family_id=eq.528ee82c-ab3c-4bd4-adce-3b6a015fe3a6",
+      "subscribeStatus": "CLOSED",
+      "eventReceived": true,
+      "pass": true
+    },
+    {
+      "label": "cook_booking_update",
+      "table": "bookings",
+      "filter": "chef_profile_id=eq.3c1a7df2-8d4a-4ef0-89a2-f5a13e45494b",
+      "subscribeStatus": "CLOSED",
+      "eventReceived": false,
+      "pass": false
+    }
+  ],
+  "allPass": false
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -32,7 +32,21 @@ import { MarketplaceEmptyState } from "@/components/marketplace/MarketplaceEmpty
 
 export default function Index() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const { data: featuredChefs = [], isLoading: chefsLoading } = useBrowseChefs();
+  const [loadMarketplace, setLoadMarketplace] = useState(false);
+
+  useEffect(() => {
+    const enable = () => setLoadMarketplace(true);
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(enable, { timeout: 2000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(enable, 1200);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const { data: featuredChefs = [], isLoading: chefsLoading } = useBrowseChefs({
+    enabled: loadMarketplace,
+  });
   const homepageChefs = featuredChefs.slice(0, 4);
 
   // Interactive Calculator State

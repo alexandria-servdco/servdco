@@ -28,3 +28,16 @@ export function useCreateReview() {
     },
   });
 }
+
+export function useReviewByBooking(bookingId: string | undefined) {
+  return useQuery({
+    queryKey: reviewQueryKeys.byBooking(bookingId ?? ""),
+    enabled: Boolean(bookingId),
+    queryFn: async () => {
+      const { ReviewsSupabaseService } = await import(
+        "@/services/supabase/reviews.service"
+      );
+      return ReviewsSupabaseService.getByBookingId(bookingId!);
+    },
+  });
+}

@@ -83,6 +83,22 @@ async function mapRow(
 }
 
 export const DocumentsSupabaseService = {
+  async refreshSignedUrl(documentId: string): Promise<string | null> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data, error } = await client
+      .from("chef_documents")
+      .select("storage_bucket, storage_path")
+      .eq("id", documentId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+    if (!data?.storage_path) return null;
+    return resolveStorageUrl(data.storage_bucket, data.storage_path);
+  },
+
   async listForChef(chefProfileId: string): Promise<ChefDocument[]> {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");

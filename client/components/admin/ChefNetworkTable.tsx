@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Search, Star } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { BrandSelect } from "@/components/ui/BrandSelect";
+import { PaginationBar } from "@/components/ui/PaginationBar";
+
+const PAGE_SIZE = 10;
 
 interface Chef {
   id: string;
@@ -31,6 +35,26 @@ export function ChefNetworkTable({
   setChefStatusFilter,
   handleChefVerification,
 }: ChefNetworkTableProps) {
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(
+    () =>
+      chefs.filter((c) => {
+        const matchSearch =
+          c.name.toLowerCase().includes(chefSearch.toLowerCase()) ||
+          c.cuisine.toLowerCase().includes(chefSearch.toLowerCase()) ||
+          c.location.toLowerCase().includes(chefSearch.toLowerCase());
+        const matchStatus =
+          chefStatusFilter === "all" ||
+          c.verification_status === chefStatusFilter;
+        return matchSearch && matchStatus;
+      }),
+    [chefs, chefSearch, chefStatusFilter],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <div
       style={{
@@ -90,24 +114,20 @@ export function ChefNetworkTable({
             />
           </div>
 
-          <select
+          <BrandSelect
             value={chefStatusFilter}
-            onChange={(e) => setChefStatusFilter(e.target.value)}
-            style={{
-              padding: "6px 10px",
-              background: "#111111",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "10px",
-              fontSize: "12px",
-              color: "#F5F5F5",
-              outline: "none",
+            onValueChange={(v) => {
+              setChefStatusFilter(v);
+              setPage(1);
             }}
-          >
-            <option value="all">All Verifications</option>
-            <option value="approved">Approved</option>
-            <option value="pending">Pending</option>
-            <option value="rejected">Rejected</option>
-          </select>
+            options={[
+              { value: "all", label: "All Verifications" },
+              { value: "approved", label: "Approved" },
+              { value: "pending", label: "Pending" },
+              { value: "rejected", label: "Rejected" },
+            ]}
+            className="w-[150px]"
+          />
         </div>
       </div>
 
@@ -144,39 +164,18 @@ export function ChefNetworkTable({
             </tr>
           </thead>
           <tbody>
-            {(() => {
-              const filtered = chefs.filter((c) => {
-                const matchSearch =
-                  c.name.toLowerCase().includes(chefSearch.toLowerCase()) ||
-                  c.cuisine.toLowerCase().includes(chefSearch.toLowerCase()) ||
-                  c.location.toLowerCase().includes(chefSearch.toLowerCase());
-                const matchStatus =
-                  chefStatusFilter === "all" ||
-                  c.verification_status === chefStatusFilter;
-                return matchSearch && matchStatus;
-              });
-
-              if (filtered.length === 0) {
-                return (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      style={{
-                        padding: "24px 12px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <EmptyState 
-                        type="chefs" 
-                        title="No cooks found"
-                        description="No cooks matching the specified search criteria or status filter."
-                      />
-                    </td>
-                  </tr>
-                );
-              }
-
-              return filtered.map((c) => (
+            {paginated.length === 0 ? (
+              <tr>
+                <td colSpan={8} style={{ padding: "24px 12px", textAlign: "center" }}>
+                  <EmptyState
+                    type="chefs"
+                    title="No cooks found"
+                    description="No cooks matching the specified search criteria or status filter."
+                  />
+                </td>
+              </tr>
+            ) : (
+              paginated.map((c) => (
                 <tr
                   key={c.id}
                   style={{
@@ -325,11 +324,21 @@ export function ChefNetworkTable({
                     </div>
                   </td>
                 </tr>
-              ));
-            })()}
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      <PaginationBar
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        itemLabel="cooks"
+        className="mt-4 border-t-0 pt-2"
+      />
     </div>
   );
 }

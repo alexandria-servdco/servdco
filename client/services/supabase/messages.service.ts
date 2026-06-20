@@ -143,10 +143,16 @@ export const MessagesSupabaseService = {
     if (!userId) return;
 
     const channel = client.channel(`typing:${conversationId}`);
+    await new Promise<void>((resolve) => {
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") resolve();
+      });
+    });
     await channel.send({
       type: "broadcast",
       event: "typing",
       payload: { user_id: userId, is_typing: isTyping },
     });
+    client.removeChannel(channel);
   },
 };

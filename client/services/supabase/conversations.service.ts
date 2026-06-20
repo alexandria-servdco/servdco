@@ -275,7 +275,7 @@ export const ConversationsSupabaseService = {
       .single();
 
     if (error) {
-      if (error.message.includes("duplicate")) {
+      if (error.code === "23505" || error.message.includes("duplicate")) {
         const retry = await this.getByBookingId(bookingId);
         if (retry) return retry;
       }

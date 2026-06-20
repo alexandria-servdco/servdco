@@ -8,6 +8,7 @@ type PaginationBarProps = {
   pageSize: number;
   onPageChange: (page: number) => void;
   className?: string;
+  itemLabel?: string;
 };
 
 export function PaginationBar({
@@ -17,6 +18,7 @@ export function PaginationBar({
   pageSize,
   onPageChange,
   className,
+  itemLabel = "items",
 }: PaginationBarProps) {
   if (totalPages <= 1) return null;
 
@@ -35,7 +37,7 @@ export function PaginationBar({
       )}
     >
       <p className="text-xs text-[#A8A8A8]">
-        Showing {start}–{end} of {totalItems} cooks
+        Showing {start}–{end} of {totalItems} {itemLabel}
       </p>
       <div className="flex items-center gap-2">
         <button

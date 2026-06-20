@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Search, Eye } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BookingDetailModal } from "@/components/admin/BookingDetailModal";
+import { BrandSelect } from "@/components/ui/BrandSelect";
+import { PaginationBar } from "@/components/ui/PaginationBar";
+
+const PAGE_SIZE = 15;
 
 interface Booking {
   id: string;
@@ -36,6 +40,36 @@ export function BookingsLedgerTable({
   handleBookingStatusChange,
 }: BookingsLedgerTableProps) {
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+
+  const filteredBookings = useMemo(() => {
+    let filtered = bookings.filter((b) => {
+      const matchSearch =
+        b.family_name
+          .toLowerCase()
+          .includes(bookingSearch.toLowerCase()) ||
+        b.chef_name
+          .toLowerCase()
+          .includes(bookingSearch.toLowerCase()) ||
+        b.id.toLowerCase().includes(bookingSearch.toLowerCase());
+      const matchStatus =
+        bookingFilter === "all" || b.status === bookingFilter;
+      return matchSearch && matchStatus;
+    });
+
+    if (bookingPriceSort === "asc") {
+      filtered = [...filtered].sort((a, b) => a.price - b.price);
+    } else if (bookingPriceSort === "desc") {
+      filtered = [...filtered].sort((a, b) => b.price - a.price);
+    }
+    return filtered;
+  }, [bookings, bookingSearch, bookingFilter, bookingPriceSort]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / PAGE_SIZE));
+  const paginated = filteredBookings.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
 
   return (
     <>
@@ -96,43 +130,32 @@ export function BookingsLedgerTable({
               />
             </div>
 
-            <select
+            <BrandSelect
               value={bookingFilter}
-              onChange={(e) => setBookingFilter(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                background: "#111111",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "10px",
-                fontSize: "12px",
-                color: "#F5F5F5",
-                outline: "none",
+              onValueChange={(v) => {
+                setBookingFilter(v);
+                setPage(1);
               }}
-            >
-              <option value="all">All Bookings</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+              options={[
+                { value: "all", label: "All Bookings" },
+                { value: "pending", label: "Pending" },
+                { value: "confirmed", label: "Confirmed" },
+                { value: "completed", label: "Completed" },
+                { value: "cancelled", label: "Cancelled" },
+              ]}
+              className="w-[140px]"
+            />
 
-            <select
+            <BrandSelect
               value={bookingPriceSort}
-              onChange={(e) => setBookingPriceSort(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                background: "#111111",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "10px",
-                fontSize: "12px",
-                color: "#F5F5F5",
-                outline: "none",
-              }}
-            >
-              <option value="none">Sort Price</option>
-              <option value="asc">Low to High</option>
-              <option value="desc">High to Low</option>
-            </select>
+              onValueChange={setBookingPriceSort}
+              options={[
+                { value: "none", label: "Sort Price" },
+                { value: "asc", label: "Low to High" },
+                { value: "desc", label: "High to Low" },
+              ]}
+              className="w-[130px]"
+            />
           </div>
         </div>
 
@@ -169,44 +192,20 @@ export function BookingsLedgerTable({
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                let filtered = bookings.filter((b) => {
-                  const matchSearch =
-                    b.family_name
-                      .toLowerCase()
-                      .includes(bookingSearch.toLowerCase()) ||
-                    b.chef_name
-                      .toLowerCase()
-                      .includes(bookingSearch.toLowerCase()) ||
-                    b.id.toLowerCase().includes(bookingSearch.toLowerCase());
-                  const matchStatus =
-                    bookingFilter === "all" || b.status === bookingFilter;
-                  return matchSearch && matchStatus;
-                });
-
-                if (bookingPriceSort === "asc") {
-                  filtered = [...filtered].sort((a, b) => a.price - b.price);
-                } else if (bookingPriceSort === "desc") {
-                  filtered = [...filtered].sort((a, b) => b.price - a.price);
-                }
-
-                if (filtered.length === 0) {
-                  return (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        style={{
-                          padding: "24px 12px",
-                          textAlign: "center",
-                        }}
-                      >
-                        <EmptyState message="No booking records match parameters." />
-                      </td>
-                    </tr>
-                  );
-                }
-
-                return filtered.map((b) => (
+              {paginated.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    style={{
+                      padding: "24px 12px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <EmptyState message="No booking records match parameters." />
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((b) => (
                   <tr
                     key={b.id}
                     style={{
@@ -382,11 +381,21 @@ export function BookingsLedgerTable({
                       </div>
                     </td>
                   </tr>
-                ));
-              })()}
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          totalItems={filteredBookings.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          itemLabel="bookings"
+          className="mt-6 border-t-0 pt-4"
+        />
       </div>
 
       <BookingDetailModal

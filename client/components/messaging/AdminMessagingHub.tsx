@@ -3,6 +3,10 @@ import { MessageSquare, Loader2, Shield, Search, Download, Trash2 } from "lucide
 import { useAdminConversations } from "@/hooks/useAdminConversations";
 import { MessagingPanel } from "@/components/messaging/MessagingPanel";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
+import { BrandSelect } from "@/components/ui/BrandSelect";
+import { PaginationBar } from "@/components/ui/PaginationBar";
+
+const CONVO_PAGE_SIZE = 12;
 
 /** Admin moderation view of all platform conversations. */
 export function AdminMessagingHub() {
@@ -10,6 +14,7 @@ export function AdminMessagingHub() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "recent">("all");
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     let list = conversations;
@@ -31,6 +36,12 @@ export function AdminMessagingHub() {
     }
     return list;
   }, [conversations, search, filter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / CONVO_PAGE_SIZE));
+  const paginated = filtered.slice(
+    (page - 1) * CONVO_PAGE_SIZE,
+    page * CONVO_PAGE_SIZE,
+  );
 
   const handleExport = async () => {
     const payload = filtered.map((c) => ({
@@ -75,14 +86,18 @@ export function AdminMessagingHub() {
               style={{ background: "transparent", border: "none", outline: "none", color: "#FFF", fontSize: "12px", width: "140px" }}
             />
           </div>
-          <select
+          <BrandSelect
             value={filter}
-            onChange={(e) => setFilter(e.target.value as "all" | "recent")}
-            style={{ padding: "6px 10px", background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: "#FFF", fontSize: "12px" }}
-          >
-            <option value="all">All</option>
-            <option value="recent">Last 24h</option>
-          </select>
+            onValueChange={(v) => {
+              setFilter(v as "all" | "recent");
+              setPage(1);
+            }}
+            options={[
+              { value: "all", label: "All" },
+              { value: "recent", label: "Last 24h" },
+            ]}
+            className="w-[110px]"
+          />
           <button
             type="button"
             onClick={handleExport}
@@ -121,7 +136,7 @@ export function AdminMessagingHub() {
               No conversations match your filters.
             </p>
           )}
-          {filtered.map((conv) => (
+          {paginated.map((conv) => (
             <button
               key={conv.id}
               type="button"
@@ -147,6 +162,17 @@ export function AdminMessagingHub() {
               )}
             </button>
           ))}
+          {totalPages > 1 && (
+            <PaginationBar
+              page={page}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={CONVO_PAGE_SIZE}
+              onPageChange={setPage}
+              itemLabel="conversations"
+              className="mt-2 border-t-0 pt-2"
+            />
+          )}
         </div>
 
         <div>

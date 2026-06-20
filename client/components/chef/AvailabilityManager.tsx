@@ -2,6 +2,19 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AvailabilitySlot } from "@/services/AvailabilityService";
+import { BrandSelect } from "@/components/ui/BrandSelect";
+
+const DAYS = [
+  "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+];
+
+const TIME_SLOTS = [
+  "06:00 AM - 09:00 AM",
+  "09:00 AM - 12:00 PM",
+  "12:00 PM - 03:00 PM",
+  "03:00 PM - 06:00 PM",
+  "06:00 PM - 09:00 PM",
+];
 
 interface AvailabilityManagerProps {
   availabilitySlots: AvailabilitySlot[];
@@ -76,46 +89,26 @@ export function AvailabilityManager({
             <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2">
               Day of Week
             </label>
-            <select
+            <BrandSelect
               value={newDay}
-              onChange={(e) => setNewDay(e.target.value)}
-              className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] cursor-pointer"
-            >
-              {[
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday",
-              ].map((day) => (
-                <option key={day} value={day}>
-                  {day}
-                </option>
-              ))}
-            </select>
+              onValueChange={setNewDay}
+              options={DAYS.map((d) => ({ value: d, label: d }))}
+            />
           </div>
 
           <div>
             <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2">
               Time Slot Range
             </label>
-            <select
+            <BrandSelect
               value={newTime}
-              onChange={(e) => setNewTime(e.target.value)}
-              className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] cursor-pointer"
-            >
-              <option value="09:00 AM - 12:00 PM">
-                09:00 AM - 12:00 PM (Morning)
-              </option>
-              <option value="01:00 PM - 04:00 PM">
-                01:00 PM - 04:00 PM (Afternoon)
-              </option>
-              <option value="05:00 PM - 08:00 PM">
-                05:00 PM - 08:00 PM (Dinner)
-              </option>
-            </select>
+              onValueChange={setNewTime}
+              options={[
+                { value: "09:00 AM - 12:00 PM", label: "09:00 AM - 12:00 PM (Morning)" },
+                { value: "01:00 PM - 04:00 PM", label: "01:00 PM - 04:00 PM (Afternoon)" },
+                { value: "05:00 PM - 08:00 PM", label: "05:00 PM - 08:00 PM (Dinner)" },
+              ]}
+            />
           </div>
 
           <Button

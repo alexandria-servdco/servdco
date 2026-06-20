@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Loader2, CheckCircle2 } from "lucide-react";
 import type { ChefDocument } from "@/lib/launchOpsTypes";
 import { DocumentViewer } from "@/components/admin/DocumentViewer";
+import { DocumentsSupabaseService } from "@/services/supabase/documents.service";
 
 interface DocumentPreviewModalProps {
   document: ChefDocument | null;
@@ -30,6 +32,33 @@ export function DocumentPreviewModal({
   isPending,
   actionSuccess = false,
 }: DocumentPreviewModalProps) {
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [urlLoading, setUrlLoading] = useState(false);
+
+  useEffect(() => {
+    if (!document?.id) {
+      setPreviewUrl("");
+      return;
+    }
+    let cancelled = false;
+    setUrlLoading(true);
+    void (async () => {
+      try {
+        const fresh =
+          (await DocumentsSupabaseService.refreshSignedUrl(document.id)) ??
+          document.url;
+        if (!cancelled) setPreviewUrl(fresh);
+      } catch {
+        if (!cancelled) setPreviewUrl(document.url);
+      } finally {
+        if (!cancelled) setUrlLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [document?.id, document?.url]);
+
   return (
     <AnimatePresence>
       {document && (
@@ -90,7 +119,16 @@ export function DocumentPreviewModal({
             </AnimatePresence>
 
             <div className="p-6 h-[420px]">
-              <DocumentViewer url={document.url} fileName={document.type} />
+              {urlLoading ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="animate-spin text-[#FF7A59]" size={24} />
+                </div>
+              ) : (
+                <DocumentViewer
+                  url={previewUrl || document.url}
+                  fileName={document.type}
+                />
+              )}
             </div>
 
             <div className="px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#161616]">

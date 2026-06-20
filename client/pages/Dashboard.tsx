@@ -3,9 +3,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { 
   Heart, ChevronRight, Calendar, Users, 
-  Gift, ArrowRight, Shield, Clock, User, Settings, Star, AlertCircle
+  Gift, ArrowRight, Shield, Clock, User, Settings, Star, AlertCircle, LayoutDashboard, Search, MessageSquare
 } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import { DashboardMobileNav } from "@/components/ui/DashboardMobileNav";
+import { ReferralInviteCard } from "@/components/referral/ReferralInviteCard";
+import { formatBookingDisplayDate } from "@/lib/formatDate";
+import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
+import { useUnreadMessageCount } from "@/hooks/useConversations";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useBookings } from "@/hooks/useBookings";
 import { BookingOperationalPanel } from "@/components/booking/BookingOperationalPanel";
@@ -19,7 +24,6 @@ import { FamilyService } from "@/services/family.service";
 import { AuthService } from "@/services/auth.service";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { profileQueryKeys } from "@/services/supabase/profiles.service";
-import { NotificationService } from "@/services/notification.service";
 import { mapChefsToCards } from "@/lib/cookMapper";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
@@ -34,6 +38,8 @@ import {
   profileCompletionLabel,
 } from "@shared/profileCompletion";
 import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
+import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
+import { CompletedBookingHistoryRow } from "@/components/reviews/CompletedBookingHistoryRow";
 
 export default function Dashboard() {
   const location = useLocation();
@@ -45,7 +51,10 @@ export default function Dashboard() {
   const completedIds = bookings.filter((b) => b.status === "completed").map((b) => b.id);
   const { data: tipMap } = useBookingTipStatus(completedIds);
   const { data: stripeEnabled = false } = useStripeCheckoutEnabled();
+  const { data: messagingEnabled = false } = useMessagingEnabled();
+  const { data: unreadMessages = 0 } = useUnreadMessageCount();
   useNotifications();
+  useRealtimeConversations(userId);
   useRealtimeDashboard({
     userId,
     role: resolveDashboardRole(profile?.role, user?.user_metadata?.role),
@@ -83,6 +92,10 @@ export default function Dashboard() {
   const [settingsData, setSettingsData] = useState({
     emailAlerts: true,
     smsAlerts: false,
+    platformNotifications: true,
+    bookingUpdates: true,
+    verificationUpdates: true,
+    marketingEmails: false,
     newPassword: "",
     confirmPassword: ""
   });
@@ -180,7 +193,7 @@ export default function Dashboard() {
     <div className="flex min-h-screen bg-[#0E0E0E] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <DashboardSidebar />
 
-      <main className="flex-1 overflow-auto bg-[#0E0E0E]">
+      <main className="flex-1 overflow-auto bg-[#0E0E0E] pb-20 md:pb-0">
         {/* Header */}
         <div className="sticky top-0 bg-[#0E0E0E]/90 backdrop-blur-md border-b border-white/5 px-8 py-6 flex justify-between items-center z-20">
           <div>
@@ -248,40 +261,7 @@ export default function Dashboard() {
             <>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Referral Promo */}
-                <div className="velvet-card p-8 relative overflow-hidden flex flex-col justify-between">
-                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-[#FF7A59]/5 blur-2xl" />
-                  
-                  <div className="space-y-4">
-                    <div className="velvet-icon-container">
-                      <Gift size={22} className="text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-white font-serif leading-tight">Give $20, Get $20</h3>
-                    <p className="text-[#A8A8A8] text-xs leading-relaxed font-medium">Invite a friend to Servd Co and you'll both get $20 credit when they book their first cooking session.</p>
-                  </div>
-
-                  <div className="pt-6 space-y-6">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        NotificationService.notify(currentUser?.id, {
-                          title: "Referral Link Ready",
-                          message: "Share your unique referral link with friends to earn $20 credit each.",
-                          type: "info",
-                        })
-                      }
-                      className="w-full py-3.5 velvet-tactile text-white font-bold text-xs"
-                    >
-                      Invite Friends
-                    </button>
-                    <div className="rounded-2xl overflow-hidden aspect-[16/9] border border-white/5">
-                      <img
-                        src="https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=200&h=200&fit=crop"
-                        alt="Referral family cooking"
-                        className="w-full h-full object-cover opacity-80"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <ReferralInviteCard userId={userId} />
 
                 {/* Upcoming Bookings Block */}
                 <div className="lg:col-span-2 velvet-card p-8 flex flex-col justify-between">
@@ -354,11 +334,12 @@ export default function Dashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {chefs.slice(0, 3).map((chef) => (
                       <div key={chef.id} className="velvet-card overflow-hidden flex flex-col justify-between group">
-                        <div className="relative aspect-square w-full overflow-hidden bg-black/10">
-                          <img
-                            src={chef.image || ""}
-                            alt={chef.name}
-                            className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                        <div className="relative aspect-square w-full overflow-hidden bg-black/10 flex items-center justify-center">
+                          <UserAvatar
+                            name={chef.name}
+                            imageUrl={chef.image}
+                            size="lg"
+                            className="w-full h-full rounded-none border-0 text-2xl"
                           />
                           <div className="absolute top-3 right-3">
                             <button className="w-8 h-8 rounded-full bg-[#111111]/70 backdrop-blur-sm border border-white/10 flex items-center justify-center text-[#FF7A59]">
@@ -372,8 +353,8 @@ export default function Dashboard() {
                             <h3 className="font-bold text-white text-sm font-serif group-hover:text-[#FF7A59] transition-colors">{chef.name}</h3>
                             <p className="text-[9px] text-[#A8A8A8] uppercase tracking-wider font-bold mt-0.5">{chef.specialty}</p>
                             <div className="flex items-center gap-1 mt-1 text-[11px] font-bold text-white">
-                              <span>{chef.rating != null && chef.rating > 0 ? chef.rating.toFixed(1) : "New"}</span>
-                              {chef.rating != null && chef.rating > 0 && (
+                              <span>{chef.rating !== "New" ? chef.rating : "New"}</span>
+                              {chef.rating !== "New" && (
                                 <span className="text-yellow-400">★</span>
                               )}
                             </div>
@@ -408,7 +389,9 @@ export default function Dashboard() {
                               <p className="text-xs text-white font-medium leading-snug">
                                 {BOOKING_STATUS_LABELS[b.status as keyof typeof BOOKING_STATUS_LABELS] ?? b.status} booking with {b.chefName ?? b.chef_name}
                               </p>
-                              <p className="text-[9px] text-[#A8A8A8]">{b.date}</p>
+                              <p className="text-[9px] text-[#A8A8A8]">
+                                {formatBookingDisplayDate(b.date, b.created_at)}
+                              </p>
                             </div>
                           </div>
                         ))
@@ -501,18 +484,15 @@ export default function Dashboard() {
                   bookings
                     .filter((b) => b.status === "completed")
                     .map((hist) => (
-                      <div key={hist.id} className="velvet-card p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white/40">
-                            <Clock size={20} />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-white font-serif">{hist.chefName ?? hist.chef_name}</h4>
-                            <p className="text-xs text-[#A8A8A8] mt-0.5">{hist.date} • {hist.serviceType ?? hist.service_type}</p>
-                          </div>
-                        </div>
-                        <span className="font-bold text-white text-sm font-serif">${hist.price.toFixed(2)}</span>
-                      </div>
+                      <CompletedBookingHistoryRow
+                        key={hist.id}
+                        bookingId={hist.id}
+                        chefProfileId={hist.chef_profile_id ?? ""}
+                        chefName={hist.chefName ?? hist.chef_name ?? "Cook"}
+                        date={hist.date}
+                        serviceType={hist.serviceType ?? hist.service_type ?? "Session"}
+                        price={hist.price}
+                      />
                     ))
                 )}
               </div>
@@ -524,11 +504,12 @@ export default function Dashboard() {
                 <EmptyState type="chefs" description="Save cooks from Browse to see them here." className="col-span-full" />
               ) : chefs.map((chef) => (
                 <div key={chef.id} className="velvet-card overflow-hidden flex flex-col justify-between group">
-                  <div className="relative aspect-square w-full overflow-hidden bg-black/10">
-                    <img
-                      src={chef.image || ""}
-                      alt={chef.name}
-                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                  <div className="relative aspect-square w-full overflow-hidden bg-black/10 flex items-center justify-center">
+                    <UserAvatar
+                      name={chef.name}
+                      imageUrl={chef.image}
+                      size="lg"
+                      className="w-full h-full rounded-none border-0 text-2xl"
                     />
                     <div className="absolute top-3 right-3">
                       <button className="w-8 h-8 rounded-full bg-[#FF7A59] flex items-center justify-center text-white shadow-lg">
@@ -655,24 +636,28 @@ export default function Dashboard() {
               <div className="space-y-4">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Notifications</h4>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settingsData.emailAlerts}
-                      onChange={(e) => setSettingsData({ ...settingsData, emailAlerts: e.target.checked })}
-                      className="w-4 h-4 bg-[#161616] border border-white/10 rounded accent-[#FF7A59]"
-                    />
-                    <span className="text-xs text-[#A8A8A8] font-bold">Email alerts when bookings are approved</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settingsData.smsAlerts}
-                      onChange={(e) => setSettingsData({ ...settingsData, smsAlerts: e.target.checked })}
-                      className="w-4 h-4 bg-[#161616] border border-white/10 rounded accent-[#FF7A59]"
-                    />
-                    <span className="text-xs text-[#A8A8A8] font-bold">SMS text messaging updates</span>
-                  </label>
+                  {[
+                    { key: "platformNotifications" as const, label: "In-app platform notifications", mandatory: true },
+                    { key: "bookingUpdates" as const, label: "Booking status updates", mandatory: true },
+                    { key: "verificationUpdates" as const, label: "Verification & document updates", mandatory: false },
+                    { key: "emailAlerts" as const, label: "Email notifications", mandatory: false },
+                    { key: "smsAlerts" as const, label: "SMS text messaging (coming soon)", mandatory: false, disabled: true },
+                    { key: "marketingEmails" as const, label: "Marketing & promotional emails", mandatory: false },
+                  ].map(({ key, label, mandatory, disabled }) => (
+                    <label key={key} className={`flex items-center gap-3 ${disabled ? "opacity-50" : "cursor-pointer"}`}>
+                      <input
+                        type="checkbox"
+                        checked={settingsData[key]}
+                        disabled={mandatory || disabled}
+                        onChange={(e) => setSettingsData({ ...settingsData, [key]: e.target.checked })}
+                        className="w-4 h-4 bg-[#161616] border border-white/10 rounded accent-[#FF7A59]"
+                      />
+                      <span className="text-xs text-[#A8A8A8] font-bold">
+                        {label}
+                        {mandatory && <span className="text-[#FF7A59] ml-1">(required)</span>}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
@@ -718,6 +703,18 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      <DashboardMobileNav
+        links={[
+          { label: "Dashboard", path: "/family-dashboard", icon: LayoutDashboard },
+          { label: "Browse", path: "/browse-chefs", icon: Search },
+          { label: "Bookings", path: "/family-dashboard/bookings", icon: Calendar },
+          ...(messagingEnabled
+            ? [{ label: "Messages", path: "/family-dashboard/messages", icon: MessageSquare, badge: unreadMessages }]
+            : []),
+          { label: "History", path: "/family-dashboard/history", icon: Clock },
+        ]}
+      />
     </div>
   );
 }

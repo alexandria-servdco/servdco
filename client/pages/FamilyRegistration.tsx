@@ -8,6 +8,12 @@ import { AuthService } from "@/services/auth.service";
 import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationModal";
 import { familyRegisterCoreSchema, safeParse } from "@shared/validation";
 import { trackEvent } from "@/lib/analytics";
+import { StateCitySelect, validateStateCityZip } from "@/components/ui/StateCitySelect";
+import {
+  PasswordStrengthMeter,
+  evaluatePassword,
+  isPasswordStrongEnough,
+} from "@/components/ui/PasswordStrengthMeter";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -69,14 +75,25 @@ export default function FamilyRegistration() {
 
     const usesSupabase = await AuthService.usesSupabaseAuth();
     if (usesSupabase) {
-      if (!formData.password || formData.password.length < 8) {
-        setError("Password must be at least 8 characters.");
+      const { checks } = evaluatePassword(formData.password);
+      if (!isPasswordStrongEnough(checks)) {
+        setError("Password must meet all strength requirements.");
         return;
       }
       if (formData.password !== formData.confirmPassword) {
         setError("Passwords do not match.");
         return;
       }
+    }
+
+    const locationError = validateStateCityZip(
+      formData.state,
+      formData.city,
+      formData.zip,
+    );
+    if (locationError) {
+      setError(locationError);
+      return;
     }
 
     setLoading(true);
@@ -197,6 +214,7 @@ export default function FamilyRegistration() {
                   type="password"
                   label="Password"
                   id="password"
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   icon={<Lock size={16} />}
@@ -207,10 +225,17 @@ export default function FamilyRegistration() {
                   type="password"
                   label="Confirm Password"
                   id="confirmPassword"
+                  autoComplete="new-password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   icon={<Lock size={16} />}
                   required
+                  error={
+                    formData.confirmPassword &&
+                    formData.password !== formData.confirmPassword
+                      ? "Passwords do not match."
+                      : undefined
+                  }
                 />
 
                 {/* ZIP Code */}
@@ -218,41 +243,28 @@ export default function FamilyRegistration() {
                   type="text"
                   label="ZIP Code"
                   id="zip"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
                   value={formData.zip}
-                  onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, zip: e.target.value.replace(/\D/g, "").slice(0, 5) })}
                   icon={<MapPin size={16} />}
                   required
+                  error={
+                    formData.zip && !/^\d{5}$/.test(formData.zip)
+                      ? "Enter a valid 5-digit ZIP."
+                      : undefined
+                  }
                 />
-
-                {/* City */}
-                <FormInput
-                  type="text"
-                  label="City"
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  icon={<MapPin size={16} />}
-                  required
-                />
-
-                {/* State selector */}
-                <div className="relative">
-                  <select
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full h-[52px] px-4 py-1.5 bg-[#161616] border border-white/5 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-[#FF7A59] focus:ring-1 focus:ring-[#FF7A59] transition-all"
-                  >
-                    <option value="Ohio">Ohio</option>
-                    <option value="Texas">Texas</option>
-                    <option value="California">California</option>
-                    <option value="Florida">Florida</option>
-                    <option value="New York">New York</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Washington">Washington</option>
-                  </select>
-                  <label className="absolute left-4 top-1.5 text-[9px] text-[#FF7A59] font-bold uppercase tracking-wider">State</label>
-                </div>
               </div>
+
+              <PasswordStrengthMeter password={formData.password} className="px-1" />
+
+              <StateCitySelect
+                state={formData.state}
+                city={formData.city}
+                onStateChange={(state) => setFormData({ ...formData, state })}
+                onCityChange={(city) => setFormData({ ...formData, city })}
+              />
 
               {/* Safety Shield */}
               <div className="p-4 bg-[#2E7D66]/5 border border-[#2E7D66]/10 rounded-2xl flex gap-3.5 mt-2">

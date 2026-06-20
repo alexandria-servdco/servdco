@@ -55,8 +55,8 @@ export function mapMarketplaceChefToCard(chef: MarketplaceChef): CookCardData {
     rating: chef.rating > 0 ? chef.rating.toFixed(1) : "New",
     reviews:
       chef.reviews_count > 0
-        ? `${chef.reviews_count} reviews`
-        : `${chef.bookings_count} reviews`,
+        ? String(chef.reviews_count)
+        : "0",
     location: chef.location,
     specialties: specialties.length ? specialties : [chef.cuisine],
     specialty: specialties[0] || chef.cuisine,

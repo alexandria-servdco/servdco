@@ -106,6 +106,27 @@ export const ReviewsSupabaseService = {
     if (error) throw new SupabaseQueryError(error.message, error);
   },
 
+  async getByBookingId(bookingId: string): Promise<UiReview | null> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data, error } = await client
+      .from("reviews")
+      .select("*")
+      .eq("booking_id", bookingId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+    if (!data) return null;
+
+    const familyNames = await resolveFamilyNames([data.family_id]);
+    return mapReviewRow(
+      data,
+      familyNames.get(data.family_id) ?? "Verified Family",
+    );
+  },
+
   async listByChefProfile(chefProfileId: string): Promise<UiReview[]> {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");

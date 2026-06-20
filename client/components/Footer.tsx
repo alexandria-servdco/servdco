@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
+import { BrandSelect } from "@/components/ui/BrandSelect";
 import {
   Heart,
   Instagram,
@@ -511,27 +512,21 @@ export default function Footer() {
                     />
                   </div>
 
-                  {/* Role Interest Select Option */}
-                  <div className="relative">
-                    <select
-                      value={cityForm.role}
-                      onChange={(e) =>
-                        setCityForm({
-                          ...cityForm,
-                          role: e.target.value as any,
-                        })
-                      }
-                      className="w-full h-[52px] px-4 py-1.5 bg-[#161616] border border-white/5 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-[#FF7A59] focus:ring-1 focus:ring-[#FF7A59] transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="family">
-                        Family (Interested in hiring)
-                      </option>
-                      <option value="chef">Cook (Interested in cooking)</option>
-                      <option value="both">Both</option>
-                    </select>
-                    <label className="absolute left-4 top-1.5 text-[9px] text-[#FF7A59] font-bold uppercase tracking-wider">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-[#FF7A59] uppercase tracking-wider">
                       I am interested as
                     </label>
+                    <BrandSelect
+                      value={cityForm.role}
+                      onValueChange={(v) =>
+                        setCityForm({ ...cityForm, role: v as typeof cityForm.role })
+                      }
+                      options={[
+                        { value: "family", label: "Family (Interested in hiring)" },
+                        { value: "chef", label: "Cook (Interested in cooking)" },
+                        { value: "both", label: "Both" },
+                      ]}
+                    />
                   </div>
                 </div>
 

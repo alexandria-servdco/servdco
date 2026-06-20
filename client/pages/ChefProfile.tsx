@@ -31,6 +31,7 @@ import { EmailService } from "@/services/email.service";
 import { trackEvent } from "@/lib/analytics";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { normalizeAvatarUrl } from "@/lib/avatar";
+import { BrandSelect } from "@/components/ui/BrandSelect";
 
 export default function ChefProfile() {
   const navigate = useNavigate();
@@ -300,7 +301,11 @@ export default function ChefProfile() {
                         <span className="font-bold text-white">
                           {chef.rating}
                         </span>
-                        <span>({chef.reviews} reviews)</span>
+                        <span>
+                          {Number(chef.reviews) > 0
+                            ? `(${chef.reviews} reviews)`
+                            : "(No reviews yet)"}
+                        </span>
                       </div>
                       <span>•</span>
                       <div className="flex items-center gap-1">
@@ -460,19 +465,15 @@ export default function ChefProfile() {
                         <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
                           Service Type
                         </label>
-                        <select
+                        <BrandSelect
                           value={serviceType}
-                          onChange={(e) => setServiceType(e.target.value)}
-                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] transition-colors cursor-pointer"
-                        >
-                          <option value="breakfast">
-                            Breakfast Cooking ($40)
-                          </option>
-                          <option value="dinner">Dinner Dining ($60)</option>
-                          <option value="mealprep">
-                            Weekly Meal Prep ($70)
-                          </option>
-                        </select>
+                          onValueChange={setServiceType}
+                          options={[
+                            { value: "breakfast", label: "Breakfast Cooking ($40)" },
+                            { value: "dinner", label: "Dinner Dining ($60)" },
+                            { value: "mealprep", label: "Weekly Meal Prep ($70)" },
+                          ]}
+                        />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">

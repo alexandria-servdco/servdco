@@ -131,6 +131,47 @@
     scrollbar-width: none;
   }
 
+  /* Branded scrollbars — platform-wide (Chromium + Firefox) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 122, 89, 0.45) rgba(255, 255, 255, 0.06);
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgba(255, 122, 89, 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 122, 89, 0.65);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  /* Reduce native select blue highlight where native selects remain */
+  select option {
+    background-color: #161616;
+    color: #f5f5f5;
+  }
+
+  select option:checked,
+  select option:hover {
+    background: linear-gradient(0deg, rgba(255, 122, 89, 0.25), rgba(255, 122, 89, 0.25));
+    color: #fff;
+  }
+
   .glass-panel {
     @apply backdrop-blur-md bg-[#161616]/75 border border-white/5;
   }

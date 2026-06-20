@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { useBrowseChefs } from "@/hooks/useChefs";
 import { MarketplaceEmptyState } from "@/components/marketplace/MarketplaceEmptyState";
 import { PaginationBar } from "@/components/ui/PaginationBar";
+import { BrandSelect } from "@/components/ui/BrandSelect";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resolveAvatarUrl } from "@/lib/avatar";
 import {
@@ -149,57 +150,28 @@ export default function BrowseChefs() {
               </div>
 
               <div className="flex flex-wrap sm:flex-nowrap gap-3">
-                <div className="relative flex-1 sm:flex-initial">
-                  <select
-                    value={selectedSpecialty}
-                    onChange={(e) => setSelectedSpecialty(e.target.value)}
-                    className="w-full sm:w-auto px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs font-semibold text-white focus:outline-none focus:border-[#FF7A59] appearance-none cursor-pointer pr-10"
-                  >
-                    {specialtyOptions.map((spec) => (
-                      <option key={spec} value={spec}>
-                        {spec}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="absolute right-3.5 top-3.5 text-white/40 pointer-events-none"
-                    size={14}
-                  />
-                </div>
-
-                <div className="relative flex-1 sm:flex-initial">
-                  <select
-                    value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full sm:w-auto px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs font-semibold text-white focus:outline-none focus:border-[#FF7A59] appearance-none cursor-pointer pr-10"
-                  >
-                    {cityOptions.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="absolute right-3.5 top-3.5 text-white/40 pointer-events-none"
-                    size={14}
-                  />
-                </div>
-
-                <div className="relative flex-1 sm:flex-initial">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full sm:w-auto px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs font-semibold text-white focus:outline-none focus:border-[#FF7A59] appearance-none cursor-pointer pr-10"
-                  >
-                    <option value="Recommended">Recommended</option>
-                    <option value="Rating: High to Low">Rating: High to Low</option>
-                    <option value="Most Reviewed">Most Reviewed</option>
-                  </select>
-                  <ChevronDown
-                    className="absolute right-3.5 top-3.5 text-white/40 pointer-events-none"
-                    size={14}
-                  />
-                </div>
+                <BrandSelect
+                  value={selectedSpecialty}
+                  onValueChange={setSelectedSpecialty}
+                  options={specialtyOptions.map((s) => ({ value: s, label: s }))}
+                  className="min-w-[160px]"
+                />
+                <BrandSelect
+                  value={selectedCity}
+                  onValueChange={setSelectedCity}
+                  options={cityOptions.map((c) => ({ value: c, label: c }))}
+                  className="min-w-[140px]"
+                />
+                <BrandSelect
+                  value={sortBy}
+                  onValueChange={setSortBy}
+                  options={[
+                    { value: "Recommended", label: "Recommended" },
+                    { value: "Rating: High to Low", label: "Rating: High to Low" },
+                    { value: "Most Reviewed", label: "Most Reviewed" },
+                  ]}
+                  className="min-w-[160px]"
+                />
               </div>
             </div>
           )}
@@ -318,7 +290,11 @@ export default function BrowseChefs() {
                             <MapPin size={13} className="text-[#FF7A59]" />
                             <span>{chef.location}</span>
                             <span className="text-white/10">•</span>
-                            <span>{chef.reviews}</span>
+                            <span>
+                              {Number(chef.reviews) > 0
+                                ? `${chef.reviews} reviews`
+                                : "No reviews yet"}
+                            </span>
                           </div>
 
                           <p className="text-xs text-[#A8A8A8] leading-relaxed mb-6 font-medium line-clamp-3">

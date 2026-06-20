@@ -26,6 +26,7 @@ import {
   BarChart2,
   Crown,
   Activity,
+  LayoutDashboard,
 } from "lucide-react";
 import {
   LineChart,
@@ -58,6 +59,7 @@ import { MultiImageUploader } from "@/components/upload/MultiImageUploader";
 import { UploadGallery } from "@/components/upload/UploadGallery";
 import { UploadResponse } from "@/types/upload.types";
 import { StatItem } from "@/components/ui/StatItem";
+import { CircularProgress } from "@/components/ui/CircularProgress";
 import { ChefAnalytics } from "@/components/chef/ChefAnalytics";
 import { AvailabilityManager } from "@/components/chef/AvailabilityManager";
 import { ProfileEditor } from "@/components/chef/ProfileEditor";
@@ -78,7 +80,9 @@ import {
 } from "@/services/supabase/chefs.service";
 import { availabilityQueryKeys } from "@/services/supabase/availability.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { DashboardMobileNav } from "@/components/ui/DashboardMobileNav";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
 import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsPremiumChef } from "@/hooks/useSubscription";
@@ -146,6 +150,7 @@ export default function ChefDashboard() {
   const { profile } = useCurrentProfile();
   const { data: ownChefProfile } = useChefProfileByUser(profile?.id);
   const { userId, user } = useAuth();
+  useRealtimeConversations(userId);
   useRealtimeDashboard({
     userId,
     chefProfileId: ownChefProfile?.id,
@@ -649,7 +654,7 @@ export default function ChefDashboard() {
       </aside>
 
       {/* Main Content Pane */}
-      <main className="flex-1 overflow-auto bg-[#0E0E0E]">
+      <main className="flex-1 overflow-auto bg-[#0E0E0E] pb-20 md:pb-0">
         {/* Top Navbar */}
         <div className="sticky top-0 bg-[#0E0E0E]/90 backdrop-blur-md border-b border-white/5 px-8 py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-20">
           <div>
@@ -1336,10 +1341,8 @@ export default function ChefDashboard() {
                 <h4 className="font-bold text-white font-serif">
                   Approval Progress
                 </h4>
-                <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
-                  <div className="w-full h-full rounded-full border-4 border-[#2E7D66] border-r-transparent flex items-center justify-center font-bold text-white text-sm font-serif">
-                    {verificationDocPercent}%
-                  </div>
+                <div className="flex justify-center">
+                  <CircularProgress value={verificationDocPercent} size={112} />
                 </div>
                 <div className="space-y-3 pt-2">
                   {["ServSafe Certificate", "Insurance", "Background Check"].map((type) => {
@@ -1613,6 +1616,18 @@ export default function ChefDashboard() {
           )}
         </div>
       </main>
+
+      <DashboardMobileNav
+        links={[
+          { label: "Dashboard", path: "/chef-dashboard", icon: LayoutDashboard },
+          { label: "Bookings", path: "/chef-dashboard/bookings", icon: Users },
+          ...(messagingEnabled
+            ? [{ label: "Messages", path: "/chef-dashboard/messages", icon: MessageSquare, badge: unreadTotal }]
+            : []),
+          { label: "Calendar", path: "/chef-dashboard/calendar", icon: Calendar },
+          { label: "Reviews", path: "/chef-dashboard/reviews", icon: Star },
+        ]}
+      />
     </div>
   );
 }

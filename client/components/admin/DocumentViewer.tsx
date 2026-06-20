@@ -34,6 +34,14 @@ function inferMimeHint(url: string, fileName?: string): string | undefined {
   return undefined;
 }
 
+async function fetchDocumentBytes(url: string): Promise<ArrayBuffer> {
+  const res = await fetch(url, { mode: "cors", credentials: "omit" });
+  if (!res.ok) {
+    throw new Error(`Document fetch failed (${res.status})`);
+  }
+  return res.arrayBuffer();
+}
+
 function PdfCanvasViewer({
   url,
   retryKey,
@@ -52,7 +60,8 @@ function PdfCanvasViewer({
       setLoading(true);
       setError(null);
       try {
-        const task = pdfjs.getDocument({ url, withCredentials: false });
+        const bytes = await fetchDocumentBytes(url);
+        const task = pdfjs.getDocument({ data: bytes });
         const pdf = await task.promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1.2 });
@@ -92,6 +101,7 @@ function PdfCanvasViewer({
   if (error) {
     return (
       <div className="text-center space-y-2 px-4">
+        <FileText className="mx-auto text-[#A8A8A8]" size={28} />
         <p className="text-xs text-red-400">{error}</p>
         <p className="text-[10px] text-[#A8A8A8]">
           Use download below or retry preview.
@@ -149,9 +159,10 @@ export function DocumentViewer({ url, fileName, mimeHint }: DocumentViewerProps)
 
   if (!url) {
     return (
-      <p className="text-xs text-[#A8A8A8] text-center">
-        Document URL unavailable.
-      </p>
+      <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
+        <FileText className="text-[#A8A8A8]" size={32} />
+        <p className="text-xs text-[#A8A8A8]">Document URL unavailable.</p>
+      </div>
     );
   }
 
@@ -167,7 +178,7 @@ export function DocumentViewer({ url, fileName, mimeHint }: DocumentViewerProps)
 
   return (
     <div className="flex flex-col h-full gap-3">
-      <div className="relative flex-1 min-h-[280px] flex items-center justify-center overflow-auto rounded-2xl border border-white/5 bg-[#111111] p-2">
+      <div className="relative flex-1 min-h-[280px] flex items-center justify-center overflow-auto rounded-2xl border border-white/5 bg-[#1A1A1A] p-2 servd-scrollbar">
         {pdf ? (
           <PdfCanvasViewer url={url} retryKey={retryKey} />
         ) : image && !showPreviewError ? (
@@ -184,6 +195,9 @@ export function DocumentViewer({ url, fileName, mimeHint }: DocumentViewerProps)
               {showPreviewError
                 ? "Image preview failed to load."
                 : "Preview not available for this file type."}
+            </p>
+            <p className="text-[10px] text-white/40">
+              Download the file to review offline.
             </p>
           </div>
         )}

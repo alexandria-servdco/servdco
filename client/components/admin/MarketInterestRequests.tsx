@@ -1,16 +1,16 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { BrandSelect } from "@/components/ui/BrandSelect";
+import { PaginationBar } from "@/components/ui/PaginationBar";
+import { formatIsoDate } from "@/lib/formatDate";
+import {
+  RegionReviewModal,
+  type InterestRequestRow,
+} from "@/components/admin/RegionReviewModal";
+import type { LaunchRegion } from "@/lib/launchOpsTypes";
 
-interface InterestRequest {
-  id: string;
-  name: string;
-  email: string;
-  city: string;
-  state: string;
-  role: string;
-  created_at: string;
-}
+interface InterestRequest extends InterestRequestRow {}
 
 interface MarketInterestRequestsProps {
   interestRequests: InterestRequest[];
@@ -18,6 +18,12 @@ interface MarketInterestRequestsProps {
   setInterestSearch: (val: string) => void;
   interestRoleFilter: string;
   setInterestRoleFilter: (val: string) => void;
+  regions: LaunchRegion[];
+  onRegionAction: (
+    action: "approve" | "queue" | "reject",
+    request: InterestRequestRow,
+  ) => Promise<void>;
+  regionActionPending?: boolean;
 }
 
 export function MarketInterestRequests({
@@ -26,8 +32,35 @@ export function MarketInterestRequests({
   setInterestSearch,
   interestRoleFilter,
   setInterestRoleFilter,
+  regions,
+  onRegionAction,
+  regionActionPending = false,
 }: MarketInterestRequestsProps) {
+  const [reviewRequest, setReviewRequest] = useState<InterestRequestRow | null>(
+    null,
+  );
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  const filtered = useMemo(
+    () =>
+      interestRequests.filter((req) => {
+        const matchSearch =
+          req.name.toLowerCase().includes(interestSearch.toLowerCase()) ||
+          req.email.toLowerCase().includes(interestSearch.toLowerCase()) ||
+          req.city.toLowerCase().includes(interestSearch.toLowerCase());
+        const matchRole =
+          interestRoleFilter === "all" || req.role === interestRoleFilter;
+        return matchSearch && matchRole;
+      }),
+    [interestRequests, interestSearch, interestRoleFilter],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
+    <>
     <div
       style={{
         display: "grid",
@@ -194,24 +227,20 @@ export function MarketInterestRequests({
               />
             </div>
 
-            <select
+            <BrandSelect
               value={interestRoleFilter}
-              onChange={(e) => setInterestRoleFilter(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                background: "#111111",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "10px",
-                fontSize: "12px",
-                color: "#F5F5F5",
-                outline: "none",
+              onValueChange={(v) => {
+                setInterestRoleFilter(v);
+                setPage(1);
               }}
-            >
-              <option value="all">All Roles</option>
-              <option value="family">Family</option>
-              <option value="chef">Cook</option>
-              <option value="both">Both</option>
-            </select>
+              options={[
+                { value: "all", label: "All Roles" },
+                { value: "family", label: "Family" },
+                { value: "chef", label: "Cook" },
+                { value: "both", label: "Both" },
+              ]}
+              className="w-[140px]"
+            />
           </div>
         </div>
 
@@ -247,41 +276,14 @@ export function MarketInterestRequests({
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                const filtered = interestRequests.filter((req) => {
-                  const matchSearch =
-                    req.name
-                      .toLowerCase()
-                      .includes(interestSearch.toLowerCase()) ||
-                    req.email
-                      .toLowerCase()
-                      .includes(interestSearch.toLowerCase()) ||
-                    req.city
-                      .toLowerCase()
-                      .includes(interestSearch.toLowerCase());
-                  const matchRole =
-                    interestRoleFilter === "all" ||
-                    req.role === interestRoleFilter;
-                  return matchSearch && matchRole;
-                });
-
-                if (filtered.length === 0) {
-                  return (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        style={{
-                          padding: "24px 12px",
-                          textAlign: "center",
-                        }}
-                      >
-                        <EmptyState message="No interest requests match your filters." />
-                      </td>
-                    </tr>
-                  );
-                }
-
-                return filtered.map((req) => (
+              {paginated.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: "24px 12px", textAlign: "center" }}>
+                    <EmptyState message="No interest requests match your filters." />
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((req) => (
                   <tr
                     key={req.id}
                     style={{
@@ -358,13 +360,12 @@ export function MarketInterestRequests({
                         color: "#A8A8A8",
                       }}
                     >
-                      {new Date(req.created_at).toLocaleDateString()}
+                      {formatIsoDate(req.created_at)}
                     </td>
                     <td style={{ padding: "14px 12px" }}>
                       <button
-                        onClick={() =>
-                          alert(`Processing regional marketing to ${req.email}`)
-                        }
+                        type="button"
+                        onClick={() => setReviewRequest(req)}
                         style={{
                           padding: "6px 12px",
                           borderRadius: "8px",
@@ -380,12 +381,36 @@ export function MarketInterestRequests({
                       </button>
                     </td>
                   </tr>
-                ));
-              })()}
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          itemLabel="requests"
+          className="mt-4 border-t-0 pt-2"
+        />
       </div>
     </div>
+
+      <RegionReviewModal
+        request={reviewRequest}
+        allRequests={interestRequests}
+        regions={regions}
+        open={!!reviewRequest}
+        onOpenChange={(open) => !open && setReviewRequest(null)}
+        onAction={async (action, request) => {
+          await onRegionAction(action, request);
+          setReviewRequest(null);
+        }}
+        isPending={regionActionPending}
+      />
+    </>
   );
 }

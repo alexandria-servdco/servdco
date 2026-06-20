@@ -29,6 +29,7 @@ import { useBrowseChefs } from "@/hooks/useChefs";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resolveAvatarUrl } from "@/lib/avatar";
 import { MarketplaceEmptyState } from "@/components/marketplace/MarketplaceEmptyState";
+import { BrandSelect } from "@/components/ui/BrandSelect";
 
 export default function Index() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -525,7 +526,7 @@ export default function Index() {
                       />
                       <span>{chef.rating}</span>
                       <span className="text-[#A8A8A8] font-semibold">
-                        ({chef.reviews})
+                        ({Number(chef.reviews) > 0 ? `${chef.reviews} reviews` : "No reviews"})
                       </span>
                     </div>
                     <div className="flex items-center gap-1 text-[11.5px] text-[#A8A8A8] font-semibold">
@@ -882,22 +883,17 @@ export default function Index() {
                     <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
                       I am interested as
                     </label>
-                    <select
+                    <BrandSelect
                       value={cityForm.role}
-                      onChange={(e) =>
-                        setCityForm({
-                          ...cityForm,
-                          role: e.target.value as any,
-                        })
+                      onValueChange={(v) =>
+                        setCityForm({ ...cityForm, role: v as typeof cityForm.role })
                       }
-                      className="w-full px-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] transition-colors cursor-pointer"
-                    >
-                      <option value="family">
-                        Family (Interested in hiring)
-                      </option>
-                      <option value="chef">Cook (Interested in cooking)</option>
-                      <option value="both">Both</option>
-                    </select>
+                      options={[
+                        { value: "family", label: "Family (Interested in hiring)" },
+                        { value: "chef", label: "Cook (Interested in cooking)" },
+                        { value: "both", label: "Both" },
+                      ]}
+                    />
                   </div>
                 </div>
 

@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Search, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { BrandSelect } from "@/components/ui/BrandSelect";
+import { PaginationBar } from "@/components/ui/PaginationBar";
+import { formatIsoDate } from "@/lib/formatDate";
+
+const PAGE_SIZE = 15;
 
 interface UserManagementTableProps {
   users: any[];
@@ -18,6 +23,27 @@ export function UserManagementTable({
   const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [userStatusFilter, setUserStatusFilter] = useState("all");
   const [userPage, setUserPage] = useState(1);
+
+  const filtered = useMemo(
+    () =>
+      users.filter((usr) => {
+        const matchSearch =
+          usr.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+          usr.email.toLowerCase().includes(userSearch.toLowerCase());
+        const matchRole =
+          userRoleFilter === "all" || usr.role === userRoleFilter;
+        const matchStatus =
+          userStatusFilter === "all" || usr.status === userStatusFilter;
+        return matchSearch && matchRole && matchStatus;
+      }),
+    [users, userSearch, userRoleFilter, userStatusFilter],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice(
+    (userPage - 1) * PAGE_SIZE,
+    userPage * PAGE_SIZE,
+  );
 
   return (
     <div
@@ -81,47 +107,33 @@ export function UserManagementTable({
             />
           </div>
 
-          <select
+          <BrandSelect
             value={userRoleFilter}
-            onChange={(e) => {
-              setUserRoleFilter(e.target.value);
+            onValueChange={(v) => {
+              setUserRoleFilter(v);
               setUserPage(1);
             }}
-            style={{
-              padding: "6px 10px",
-              background: "#111111",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "10px",
-              fontSize: "12px",
-              color: "#F5F5F5",
-              outline: "none",
-            }}
-          >
-            <option value="all">All Roles</option>
-            <option value="family">Family</option>
-            <option value="chef">Cook</option>
-          </select>
+            options={[
+              { value: "all", label: "All Roles" },
+              { value: "family", label: "Family" },
+              { value: "chef", label: "Cook" },
+            ]}
+            className="w-[120px]"
+          />
 
-          <select
+          <BrandSelect
             value={userStatusFilter}
-            onChange={(e) => {
-              setUserStatusFilter(e.target.value);
+            onValueChange={(v) => {
+              setUserStatusFilter(v);
               setUserPage(1);
             }}
-            style={{
-              padding: "6px 10px",
-              background: "#111111",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "10px",
-              fontSize: "12px",
-              color: "#F5F5F5",
-              outline: "none",
-            }}
-          >
-            <option value="all">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-          </select>
+            options={[
+              { value: "all", label: "All Statuses" },
+              { value: "active", label: "Active" },
+              { value: "suspended", label: "Suspended" },
+            ]}
+            className="w-[130px]"
+          />
         </div>
       </div>
 
@@ -158,44 +170,14 @@ export function UserManagementTable({
             </tr>
           </thead>
           <tbody>
-            {(() => {
-              const filtered = users.filter((usr) => {
-                const matchSearch =
-                  usr.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-                  usr.email.toLowerCase().includes(userSearch.toLowerCase());
-                const matchRole =
-                  userRoleFilter === "all" || usr.role === userRoleFilter;
-                const matchStatus =
-                  userStatusFilter === "all" || usr.status === userStatusFilter;
-                return matchSearch && matchRole && matchStatus;
-              });
-
-              const perPage = 5;
-              const totalPages = Math.ceil(filtered.length / perPage);
-              const paginated = filtered.slice(
-                (userPage - 1) * perPage,
-                userPage * perPage,
-              );
-
-              if (paginated.length === 0) {
-                return (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      style={{
-                        padding: "24px 12px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <EmptyState message="No users match your criteria." />
-                    </td>
-                  </tr>
-                );
-              }
-
-              return (
-                <>
-                  {paginated.map((usr) => (
+            {paginated.length === 0 ? (
+              <tr>
+                <td colSpan={8} style={{ padding: "24px 12px", textAlign: "center" }}>
+                  <EmptyState message="No users match your criteria." />
+                </td>
+              </tr>
+            ) : (
+              paginated.map((usr) => (
                     <tr
                       key={usr.id}
                       style={{
@@ -282,7 +264,7 @@ export function UserManagementTable({
                           color: "#A8A8A8",
                         }}
                       >
-                        {new Date(usr.created_at).toLocaleDateString()}
+                        {formatIsoDate(usr.created_at)}
                       </td>
                       <td style={{ padding: "14px 12px" }}>
                         <div style={{ display: "flex", gap: "6px" }}>
@@ -327,55 +309,21 @@ export function UserManagementTable({
                         </div>
                       </td>
                     </tr>
-                  ))}
-                  {/* Pagination indicators */}
-                  {totalPages > 1 && (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        style={{
-                          padding: "16px 12px",
-                          textAlign: "right",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "inline-flex",
-                            gap: "6px",
-                          }}
-                        >
-                          {Array.from({ length: totalPages }).map((_, pIdx) => (
-                            <button
-                              key={pIdx}
-                              onClick={() => setUserPage(pIdx + 1)}
-                              style={{
-                                width: "28px",
-                                height: "28px",
-                                borderRadius: "6px",
-                                border: "none",
-                                background:
-                                  userPage === pIdx + 1
-                                    ? "#FF7A59"
-                                    : "rgba(255,255,255,0.05)",
-                                color: "white",
-                                fontSize: "12px",
-                                fontWeight: "600",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {pIdx + 1}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              );
-            })()}
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      <PaginationBar
+        page={userPage}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        onPageChange={setUserPage}
+        itemLabel="users"
+        className="mt-4 border-t-0 pt-2"
+      />
     </div>
   );
 }

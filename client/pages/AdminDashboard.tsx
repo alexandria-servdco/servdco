@@ -63,6 +63,7 @@ import {
 import { DashboardWidgetSkeleton, CardSkeleton } from "@/components/ui/Skeletons";
 
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { BrandSelect } from "@/components/ui/BrandSelect";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
@@ -70,6 +71,8 @@ import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { AdminOverviewService } from "@/services/supabase/admin-overview.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
+import { resolveStateCode } from "@/lib/us-locations";
+import type { InterestRequestRow } from "@/components/admin/RegionReviewModal";
 import { useDocumentModeration } from "@/hooks/useDocumentModeration";
 import { ChartErrorBoundary } from "@/components/errors/ChartErrorBoundary";
 import { toast } from "sonner";
@@ -281,12 +284,14 @@ export default function AdminDashboard({
   const [interestSearch, setInterestSearch] = useState("");
   const [interestRoleFilter, setInterestRoleFilter] = useState("all");
   const [interestStateFilter, setInterestStateFilter] = useState("all");
+  const [regionActionPending, setRegionActionPending] = useState(false);
 
   // Document modal preview state
   const [previewDoc, setPreviewDoc] = useState<any>(null);
   const [pendingDocAction, setPendingDocAction] = useState<string | null>(null);
   const [docActionSuccess, setDocActionSuccess] = useState(false);
   const previewDocIdRef = useRef<string | null>(null);
+  const silentRefreshTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const moderateDocument = useDocumentModeration();
 
   const location = useLocation();
@@ -335,27 +340,35 @@ export default function AdminDashboard({
   }, []);
 
   const silentRefresh = useCallback(async () => {
-    try {
-      const bData = await api.getBookings();
-      setBookings(bData);
-
-      const dData = await api.getDocuments();
-      setDocuments(dData);
-
-      const cData = await api.getChefs();
-      setChefs(cData);
-
-      const metrics = await AdminOverviewService.getSupplementaryMetrics();
-      setOverviewMetrics(metrics);
-
-      const previewId = previewDocIdRef.current;
-      if (previewId) {
-        const updated = dData.find((d: { id: string }) => d.id === previewId);
-        if (updated) setPreviewDoc(updated);
-      }
-    } catch (err) {
-      console.error("Realtime refresh failed:", err);
+    if (silentRefreshTimerRef.current) {
+      clearTimeout(silentRefreshTimerRef.current);
     }
+    silentRefreshTimerRef.current = setTimeout(async () => {
+      try {
+        const previewId = previewDocIdRef.current;
+
+        if (previewId) {
+          const dData = await api.getDocuments();
+          setDocuments(dData);
+          const updated = dData.find((d: { id: string }) => d.id === previewId);
+          if (updated) setPreviewDoc(updated);
+          return;
+        }
+
+        const [bData, dData, cData, metrics] = await Promise.all([
+          api.getBookings(),
+          api.getDocuments(),
+          api.getChefs(),
+          AdminOverviewService.getSupplementaryMetrics(),
+        ]);
+        setBookings(bData);
+        setDocuments(dData);
+        setChefs(cData);
+        setOverviewMetrics(metrics);
+      } catch (err) {
+        console.error("Realtime refresh failed:", err);
+      }
+    }, 450);
   }, []);
 
   useEffect(() => {
@@ -440,6 +453,72 @@ export default function AdminDashboard({
       setSelectedStateId(stateId);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleRegionReview = async (
+    action: "approve" | "queue" | "reject",
+    request: InterestRequestRow,
+  ) => {
+    setRegionActionPending(true);
+    try {
+      const stateCode =
+        resolveStateCode(request.state) ?? request.state.trim().toUpperCase();
+      const stateName = STATE_NAMES[stateCode] ?? request.state;
+      const existing = regions.find(
+        (r) =>
+          r.id === stateCode ||
+          r.state.toLowerCase() === request.state.trim().toLowerCase(),
+      );
+
+      if (action === "approve") {
+        if (!existing) await api.initializeState(stateCode, stateName);
+        await api.updateRegionSettings(stateCode, {
+          is_active: true,
+          is_waitlist: false,
+          city: request.city,
+        });
+        toast.success(`${request.city}, ${stateName} approved for launch`);
+      } else if (action === "queue") {
+        if (!existing) await api.initializeState(stateCode, stateName);
+        await api.updateRegionSettings(stateCode, {
+          is_active: false,
+          is_waitlist: true,
+          city: request.city,
+        });
+        toast.success(`${request.city}, ${stateName} queued on waitlist`);
+      } else {
+        if (existing) {
+          await api.updateRegionSettings(stateCode, {
+            is_active: false,
+            is_waitlist: false,
+          });
+        }
+        toast.message(`Region review declined for ${request.city}`);
+      }
+
+      await AdminAuditService.log({
+        action: `region.${action}`,
+        entityType: "interest_request",
+        entityId: request.id,
+        metadata: {
+          city: request.city,
+          state: request.state,
+          email: request.email,
+          role: request.role,
+        },
+      });
+
+      const intRequests = await api.getInterestRequests();
+      setInterestRequests(intRequests);
+      const data = await api.getRegions();
+      setRegions(data.regions);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update region. Please try again.");
+      throw err;
+    } finally {
+      setRegionActionPending(false);
     }
   };
 
@@ -558,9 +637,8 @@ export default function AdminDashboard({
     moderateDocument.mutate(
       { id, action: "approved" },
       {
-        onSuccess: async () => {
+        onSuccess: () => {
           applyDocumentStatus(id, "approved");
-          await syncDocumentsAfterModeration();
         },
         onSettled: () => setPendingDocAction(null),
       },
@@ -580,11 +658,10 @@ export default function AdminDashboard({
     moderateDocument.mutate(
       { id: docReasonModal.id, action, reason: docReasonText.trim() },
       {
-        onSuccess: async () => {
+        onSuccess: () => {
           applyDocumentStatus(docReasonModal.id, action);
           setDocReasonModal(null);
           setDocReasonText("");
-          await syncDocumentsAfterModeration();
         },
         onSettled: () => {
           setDocActionLoading(false);
@@ -2721,6 +2798,9 @@ export default function AdminDashboard({
                 setInterestSearch={setInterestSearch}
                 interestRoleFilter={interestRoleFilter}
                 setInterestRoleFilter={setInterestRoleFilter}
+                regions={regions}
+                onRegionAction={handleRegionReview}
+                regionActionPending={regionActionPending}
               />
             )}
 
@@ -2904,36 +2984,24 @@ export default function AdminDashboard({
                   State Name
                 </label>
                 {editingRegion.isNew ? (
-                  <select
-                    value={editingRegion.state}
-                    onChange={(e) => {
-                      const stId = e.target.value;
+                  <BrandSelect
+                    value={
+                      Object.prototype.hasOwnProperty.call(STATE_NAMES, editingRegion.id)
+                        ? editingRegion.id
+                        : ""
+                    }
+                    onValueChange={(stId) => {
                       setEditingRegion({
                         ...editingRegion,
                         id: stId,
                         state: STATE_NAMES[stId] || stId,
                       });
                     }}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      background: "#111111",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: "10px",
-                      fontSize: "13.5px",
-                      color: "#F5F5F5",
-                      outline: "none",
-                    }}
-                  >
-                    <option value="">Select a State</option>
-                    {Object.entries(STATE_NAMES)
+                    placeholder="Select a State"
+                    options={Object.entries(STATE_NAMES)
                       .filter(([stId]) => !regions.some((r) => r.id === stId))
-                      .map(([stId, name]) => (
-                        <option key={stId} value={stId}>
-                          {name}
-                        </option>
-                      ))}
-                  </select>
+                      .map(([stId, name]) => ({ value: stId, label: name }))}
+                  />
                 ) : (
                   <input
                     type="text"

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { MessageSquare, Loader2, Inbox } from "lucide-react";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
+import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
+import { useAuth } from "@/hooks/useAuth";
 import { MessagingPanel } from "@/components/messaging/MessagingPanel";
 
 interface MessagingHubProps {
@@ -18,6 +20,8 @@ export function MessagingHub({
   subtitle = "Chat with families and cooks connected through your bookings.",
 }: MessagingHubProps) {
   const { data: enabled = false, isLoading: flagLoading } = useMessagingEnabled();
+  const { userId } = useAuth();
+  useRealtimeConversations(userId);
   const { data: conversations = [], isLoading } = useConversations();
   const [activeId, setActiveId] = useState<string | null>(null);
 

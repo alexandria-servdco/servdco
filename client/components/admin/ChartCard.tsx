@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { BrandSelect } from "@/components/ui/BrandSelect";
 
 export interface ChartCardProps {
   title: string;
@@ -7,6 +8,8 @@ export interface ChartCardProps {
 }
 
 export function ChartCard({ title, children, hasFilter = false }: ChartCardProps) {
+  const [range, setRange] = useState("week");
+
   return (
     <div
       className="velvet-card"
@@ -34,23 +37,16 @@ export function ChartCard({ title, children, hasFilter = false }: ChartCardProps
           {title}
         </h2>
         {hasFilter && (
-          <select
-            style={{
-              padding: "5px 10px",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "8px",
-              fontSize: "12px",
-              color: "#F5F5F5",
-              outline: "none",
-              cursor: "pointer",
-              background: "#111111",
-              fontWeight: "500",
-            }}
-          >
-            <option>This Week</option>
-            <option>Last Week</option>
-            <option>This Month</option>
-          </select>
+          <BrandSelect
+            value={range}
+            onValueChange={setRange}
+            options={[
+              { value: "week", label: "This Week" },
+              { value: "last_week", label: "Last Week" },
+              { value: "month", label: "This Month" },
+            ]}
+            className="w-[130px]"
+          />
         )}
       </div>
       {children}

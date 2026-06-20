@@ -24,6 +24,15 @@ export interface AdminAnalyticsData {
   totalTipsCents: number;
   totalTransfersPaid: number;
   activeSubscriptions: number;
+  funnel: {
+    totalSignups: number;
+    totalBookings: number;
+    bookingsAccepted: number;
+    paymentsSucceeded: number;
+    bookingsCompleted: number;
+    conversionRate: number;
+    familyPlatformFeeCents: number;
+  };
 }
 
 function monthKey(d: Date): string {
@@ -48,7 +57,7 @@ export const AdminAnalyticsSupabaseService = {
     const since90 = new Date();
     since90.setDate(since90.getDate() - 90);
 
-    const [profilesRes, paymentsRes, bookingsRes, tipsRes, transfersRes, subsRes] =
+    const [profilesRes, paymentsRes, bookingsRes, tipsRes, transfersRes, subsRes, familyFeeRes] =
       await Promise.all([
         client
           .from("profiles")
@@ -77,6 +86,10 @@ export const AdminAnalyticsSupabaseService = {
           .from("subscriptions")
           .select("id, status")
           .in("status", ["active", "trialing"]),
+        client
+          .from("bookings")
+          .select("family_platform_fee_cents, status")
+          .is("deleted_at", null),
       ]);
 
     if (profilesRes.error) throw new SupabaseQueryError(profilesRes.error.message);
@@ -137,6 +150,19 @@ export const AdminAnalyticsSupabaseService = {
       0,
     );
 
+    const totalSignups = (profilesRes.data ?? []).length;
+    const allBookings = familyFeeRes.data ?? [];
+    const totalBookings = allBookings.length;
+    const bookingsAccepted = allBookings.filter((b) =>
+      ["accepted", "awaiting_payment", "confirmed", "en_route", "arrived", "cooking", "awaiting_family_confirmation", "completed"].includes(b.status ?? ""),
+    ).length;
+    const bookingsCompleted = allBookings.filter((b) => b.status === "completed").length;
+    const paymentsSucceeded = (paymentsRes.data ?? []).length;
+    const familyPlatformFeeCents = allBookings.reduce(
+      (s, b) => s + (b.family_platform_fee_cents ?? 0),
+      0,
+    );
+
     return {
       monthlySignups,
       dailyRevenue:
@@ -150,6 +176,18 @@ export const AdminAnalyticsSupabaseService = {
       totalTipsCents,
       totalTransfersPaid: transfersRes.data?.length ?? 0,
       activeSubscriptions: subsRes.data?.length ?? 0,
+      funnel: {
+        totalSignups,
+        totalBookings,
+        bookingsAccepted,
+        paymentsSucceeded,
+        bookingsCompleted,
+        conversionRate:
+          totalBookings > 0
+            ? Math.round((paymentsSucceeded / totalBookings) * 100)
+            : 0,
+        familyPlatformFeeCents,
+      },
     };
   },
 };

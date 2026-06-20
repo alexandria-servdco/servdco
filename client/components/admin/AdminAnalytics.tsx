@@ -40,6 +40,30 @@ export function AdminAnalytics({ regions }: AdminAnalyticsProps) {
       >
         {[
           {
+            label: "Total Signups (90d)",
+            value: String(data.funnel.totalSignups),
+          },
+          {
+            label: "Bookings Submitted",
+            value: String(data.funnel.totalBookings),
+          },
+          {
+            label: "Payments Completed",
+            value: String(data.funnel.paymentsSucceeded),
+          },
+          {
+            label: "Bookings Completed",
+            value: String(data.funnel.bookingsCompleted),
+          },
+          {
+            label: "Payment Conversion",
+            value: `${data.funnel.conversionRate}%`,
+          },
+          {
+            label: "Family Platform Fees (booked)",
+            value: `$${(data.funnel.familyPlatformFeeCents / 100).toFixed(2)}`,
+          },
+          {
             label: "Tips (Succeeded)",
             value: `$${(data.totalTipsCents / 100).toLocaleString()}`,
           },

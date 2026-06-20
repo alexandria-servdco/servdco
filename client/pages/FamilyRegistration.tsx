@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
 import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationModal";
 import { familyRegisterCoreSchema, safeParse } from "@shared/validation";
+import { trackEvent } from "@/lib/analytics";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -79,6 +80,7 @@ export default function FamilyRegistration() {
     }
 
     setLoading(true);
+    trackEvent("signup_started", { role: "family" });
 
     try {
       const result = await AuthService.register({
@@ -102,6 +104,7 @@ export default function FamilyRegistration() {
       }
 
       if (result.status === "active") {
+        trackEvent("signup_completed", { role: "family" });
         navigate("/dashboard");
       } else {
         navigate(`/waitlist?role=family&state=${encodeURIComponent(formData.state)}&email=${encodeURIComponent(formData.email)}`);

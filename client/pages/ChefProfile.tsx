@@ -28,6 +28,7 @@ import { calculateSessionPrice, calculateFamilyTotalCharged } from "@/lib/bookin
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { EmailService } from "@/services/email.service";
+import { trackEvent } from "@/lib/analytics";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { normalizeAvatarUrl } from "@/lib/avatar";
 
@@ -165,6 +166,10 @@ export default function ChefProfile() {
     try {
       const result = await createBooking.mutateAsync(payload);
 
+      trackEvent("booking_submitted", {
+        service_type: payload.service_type,
+        guests: payload.guests_count,
+      });
       setBookingBooked(true);
       toast.success("Booking request sent!", {
         description: result.message,

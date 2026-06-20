@@ -12,6 +12,9 @@ import { motion } from "framer-motion";
 import { GlobalErrorBoundary } from "@/components/errors/GlobalErrorBoundary";
 import { RouteErrorBoundary } from "@/components/errors/RouteErrorBoundary";
 import { validateClientStartup } from "@/lib/env/validateStartup";
+import { initAnalytics } from "@/lib/analytics";
+import { initSentry } from "@/lib/monitoring/sentry";
+import { PageMetaManager } from "@/components/seo/PageMetaManager";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -43,6 +46,8 @@ const BrowseChefs = lazy(() => import("./pages/BrowseChefs"));
 const ChefProfile = lazy(() => import("./pages/ChefProfile"));
 
 validateClientStartup();
+void initSentry();
+initAnalytics();
 
 function RouteFallback() {
   return (
@@ -113,6 +118,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <PageMetaManager />
             <a
               href="#main-content"
               className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[#FF7A59] focus:text-white focus:rounded-md focus:font-bold focus:text-sm"

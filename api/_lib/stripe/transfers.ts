@@ -67,7 +67,7 @@ export async function scheduleTransferForCompletedBooking(
 
   const { data: booking } = await client
     .from("bookings")
-    .select("id, chef_profile_id, status, updated_at")
+    .select("id, chef_profile_id, status, updated_at, price_cents, family_platform_fee_cents")
     .eq("id", bookingId)
     .maybeSingle();
 
@@ -82,6 +82,8 @@ export async function scheduleTransferForCompletedBooking(
 
   if (!payment || payment.cook_payout_cents <= 0) return;
 
+  const sessionGrossCents = booking.price_cents ?? payment.amount_cents;
+
   const holdHours = await getBookingHoldHours();
   const completedAt = new Date(booking.updated_at ?? Date.now());
   const scheduledAt = new Date(
@@ -92,7 +94,7 @@ export async function scheduleTransferForCompletedBooking(
     paymentId: payment.id,
     bookingId: booking.id,
     chefProfileId: payment.chef_profile_id,
-    grossCents: payment.amount_cents,
+    grossCents: sessionGrossCents,
     platformFeeCents: payment.platform_fee_cents,
     netCents: payment.cook_payout_cents,
     scheduledAt,

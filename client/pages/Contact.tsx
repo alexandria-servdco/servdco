@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import { Mail, Phone, MapPin, CheckCircle, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { contactSchema, safeParse } from "@shared/validation";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Contact() {
   const [formState, setFormState] = useState({
@@ -28,6 +29,7 @@ export default function Contact() {
     setError("");
     try {
       await api.submitContact({ name, email, subject, message });
+      trackEvent("contact_form_submission");
       setSubmitted(true);
       setFormState({ name: "", email: "", subject: "", message: "" });
       setTimeout(() => setSubmitted(false), 4000);

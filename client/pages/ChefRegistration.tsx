@@ -23,6 +23,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import { ChefsSupabaseService } from "@/services/supabase/chefs.service";
 import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationModal";
 import { chefRegisterCoreSchema, safeParse } from "@shared/validation";
+import { trackEvent } from "@/lib/analytics";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -77,6 +78,7 @@ export default function ChefRegistration() {
     if (loading) return;
 
     if (currentStep === 1) {
+      trackEvent("signup_started", { role: "chef" });
       const parsed = safeParse(chefRegisterCoreSchema, {
         name: formData.fullName,
         email: formData.email,
@@ -164,6 +166,7 @@ export default function ChefRegistration() {
         }
 
         if (result.status === "active") {
+          trackEvent("signup_completed", { role: "chef" });
           navigate("/chef-dashboard?onboarding=verification");
         } else {
           navigate(

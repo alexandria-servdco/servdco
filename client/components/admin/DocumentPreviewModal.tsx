@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, CheckCircle2 } from "lucide-react";
 import type { ChefDocument } from "@/lib/launchOpsTypes";
 import { DocumentViewer } from "@/components/admin/DocumentViewer";
 
@@ -11,7 +11,14 @@ interface DocumentPreviewModalProps {
   onResubmit: (id: string) => void;
   pendingAction: string | null;
   isPending: boolean;
+  actionSuccess?: boolean;
 }
+
+const STATUS_STYLES: Record<ChefDocument["status"], string> = {
+  pending: "text-amber-400",
+  approved: "text-emerald-400",
+  rejected: "text-red-400",
+};
 
 export function DocumentPreviewModal({
   document,
@@ -21,6 +28,7 @@ export function DocumentPreviewModal({
   onResubmit,
   pendingAction,
   isPending,
+  actionSuccess = false,
 }: DocumentPreviewModalProps) {
   return (
     <AnimatePresence>
@@ -62,11 +70,27 @@ export function DocumentPreviewModal({
               </button>
             </div>
 
+            <AnimatePresence mode="wait">
+              {actionSuccess && (
+                <motion.div
+                  key="success-banner"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mx-6 mt-4 flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-2.5">
+                    <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                    <p className="text-xs font-semibold text-emerald-300">
+                      Action saved — status updated below.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="p-6 h-[420px]">
-              <DocumentViewer
-                url={document.url}
-                fileName={document.type}
-              />
+              <DocumentViewer url={document.url} fileName={document.type} />
             </div>
 
             <div className="px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#161616]">
@@ -74,9 +98,14 @@ export function DocumentPreviewModal({
                 <p className="text-[10px] uppercase font-bold text-[#A8A8A8] tracking-wider">
                   Validation Status
                 </p>
-                <p className="text-sm font-semibold text-white capitalize mt-0.5">
+                <motion.p
+                  key={document.status}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`text-sm font-semibold capitalize mt-0.5 ${STATUS_STYLES[document.status]}`}
+                >
                   {document.status}
-                </p>
+                </motion.p>
               </div>
 
               {document.status === "pending" ? (

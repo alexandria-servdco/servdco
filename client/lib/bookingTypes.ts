@@ -198,3 +198,23 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   completed: "Completed",
   cancelled: "Cancelled",
 };
+
+export const BOOKING_FILTER_OPTIONS: Array<{
+  value: "all" | BookingStatus;
+  label: string;
+}> = [
+  { value: "all", label: "All" },
+  { value: "pending", label: BOOKING_STATUS_LABELS.pending },
+  { value: "accepted", label: BOOKING_STATUS_LABELS.accepted },
+  { value: "awaiting_payment", label: BOOKING_STATUS_LABELS.awaiting_payment },
+  { value: "confirmed", label: BOOKING_STATUS_LABELS.confirmed },
+  { value: "en_route", label: BOOKING_STATUS_LABELS.en_route },
+  { value: "arrived", label: BOOKING_STATUS_LABELS.arrived },
+  { value: "cooking", label: BOOKING_STATUS_LABELS.cooking },
+  {
+    value: "awaiting_family_confirmation",
+    label: BOOKING_STATUS_LABELS.awaiting_family_confirmation,
+  },
+  { value: "completed", label: BOOKING_STATUS_LABELS.completed },
+  { value: "cancelled", label: BOOKING_STATUS_LABELS.cancelled },
+];

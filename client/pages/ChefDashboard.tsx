@@ -79,6 +79,8 @@ import {
 import { availabilityQueryKeys } from "@/services/supabase/availability.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useRealtimeDashboard } from "@/hooks/useRealtimeDashboard";
+import { useAuth } from "@/hooks/useAuth";
 import { useIsPremiumChef } from "@/hooks/useSubscription";
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { StripeService } from "@/services/stripe.service";
@@ -87,8 +89,10 @@ import { useChefAnalytics } from "@/hooks/useChefAnalytics";
 import type { BookingStatus } from "@shared/booking";
 import {
   calculateChefProfileCompletion,
+  getChefProfileCompletionDetail,
   profileCompletionLabel,
 } from "@shared/profileCompletion";
+import { BOOKING_FILTER_OPTIONS, BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
 
 const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
   "accepted",
@@ -100,6 +104,33 @@ const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
   "awaiting_family_confirmation",
 ];
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function buildCalendarCells(
+  month: Date,
+  bookedDates: Set<number>,
+  availableWeekdays: Set<number>,
+) {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const firstWeekday = new Date(year, monthIndex, 1).getDay();
+  const cells: Array<{ day: number | null; booked: boolean; available: boolean }> = [];
+
+  for (let i = 0; i < firstWeekday; i++) {
+    cells.push({ day: null, booked: false, available: false });
+  }
+  for (let day = 1; day <= daysInMonth; day++) {
+    const weekday = new Date(year, monthIndex, day).getDay();
+    cells.push({
+      day,
+      booked: bookedDates.has(day),
+      available: availableWeekdays.has(weekday) && !bookedDates.has(day),
+    });
+  }
+  return cells;
+}
+
 export default function ChefDashboard() {
   useNotifications();
   const location = useLocation();
@@ -108,6 +139,12 @@ export default function ChefDashboard() {
   const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
   const { profile } = useCurrentProfile();
   const { data: ownChefProfile } = useChefProfileByUser(profile?.id);
+  const { userId } = useAuth();
+  useRealtimeDashboard({
+    userId,
+    chefProfileId: ownChefProfile?.id,
+    role: profile?.role === "chef" ? "chef" : null,
+  });
   const resolvedChefId = ownChefProfile?.id ?? chefProfileId;
   const { data: reviews = [], isLoading: reviewsLoading } =
     useReviews(resolvedChefId || undefined);
@@ -166,11 +203,9 @@ export default function ChefDashboard() {
   const profileProgress = useMemo(
     () =>
       calculateChefProfileCompletion({
-        full_name: profile?.full_name,
         avatar_url: profile?.avatar_url ?? profileData.avatarUrl,
         city: profile?.city,
         state: profile?.state,
-        phone: profile?.phone,
         bio: ownChefProfile?.bio ?? profileData.bio,
         cuisines: ownChefProfile?.cuisine
           ? ownChefProfile.cuisine
@@ -179,7 +214,9 @@ export default function ChefDashboard() {
               .filter(Boolean)
           : profileData.cuisines,
         availabilityCount: availabilitySlots.length,
-        documentsSubmittedCount: submittedDocCount,
+        servSafeSubmitted: docStatus("ServSafe Certificate") !== "missing",
+        insuranceSubmitted: docStatus("Insurance") !== "missing",
+        backgroundCheckSubmitted: docStatus("Background Check") !== "missing",
         verification_status: verificationStatus,
       }),
     [
@@ -190,11 +227,85 @@ export default function ChefDashboard() {
       ownChefProfile?.bio,
       ownChefProfile?.cuisine,
       availabilitySlots.length,
-      submittedDocCount,
+      ownDocuments,
+      verificationStatus,
+    ],
+  );
+  const chefCompletionDetail = useMemo(
+    () =>
+      getChefProfileCompletionDetail({
+        avatar_url: profile?.avatar_url ?? profileData.avatarUrl,
+        city: profile?.city,
+        state: profile?.state,
+        bio: ownChefProfile?.bio ?? profileData.bio,
+        cuisines: ownChefProfile?.cuisine
+          ? ownChefProfile.cuisine
+              .split(/[\/,]/)
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : profileData.cuisines,
+        availabilityCount: availabilitySlots.length,
+        servSafeSubmitted: docStatus("ServSafe Certificate") !== "missing",
+        insuranceSubmitted: docStatus("Insurance") !== "missing",
+        backgroundCheckSubmitted: docStatus("Background Check") !== "missing",
+        verification_status: verificationStatus,
+      }),
+    [
+      profile,
+      profileData.avatarUrl,
+      profileData.bio,
+      profileData.cuisines,
+      ownChefProfile?.bio,
+      ownChefProfile?.cuisine,
+      availabilitySlots.length,
+      ownDocuments,
       verificationStatus,
     ],
   );
   const profileProgressLabel = profileCompletionLabel(profileProgress);
+
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+
+  const calendarBookedDates = useMemo(() => {
+    const dates = new Set<number>();
+    for (const booking of bookings) {
+      if (!booking.date || booking.status === "cancelled") continue;
+      const parsed = new Date(booking.date);
+      if (
+        parsed.getMonth() === calendarMonth.getMonth() &&
+        parsed.getFullYear() === calendarMonth.getFullYear()
+      ) {
+        dates.add(parsed.getDate());
+      }
+    }
+    return dates;
+  }, [bookings, calendarMonth]);
+
+  const calendarAvailableWeekdays = useMemo(() => {
+    const weekdays = new Set<number>();
+    for (const slot of availabilitySlots) {
+      const idx = DAY_NAMES.findIndex(
+        (name) => name.toLowerCase() === slot.day.toLowerCase(),
+      );
+      if (idx >= 0) weekdays.add(idx);
+    }
+    return weekdays;
+  }, [availabilitySlots]);
+
+  const calendarCells = useMemo(
+    () =>
+      buildCalendarCells(
+        calendarMonth,
+        calendarBookedDates,
+        calendarAvailableWeekdays,
+      ),
+    [calendarMonth, calendarBookedDates, calendarAvailableWeekdays],
+  );
+
+  const calendarMonthLabel = calendarMonth.toLocaleString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
 
   // Weekly Schedule states
   const [newDay, setNewDay] = useState("Monday");
@@ -816,7 +927,7 @@ export default function ChefDashboard() {
                         <p className="text-[10px] text-[#A8A8A8] mt-0.5">
                           {profileProgress >= 100
                             ? "Your profile is ready for bookings."
-                            : "Add bio, cuisines, availability, avatar, and verification documents."}
+                            : `${chefCompletionDetail.completed} of ${chefCompletionDetail.total} completed — add bio, cuisines, availability, avatar, and verification documents.`}
                         </p>
                       </div>
                     </div>
@@ -827,23 +938,21 @@ export default function ChefDashboard() {
           ) : currentTab === "bookings" ? (
             /* Bookings List Table & Filters */
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-4 border-b border-white/5">
-                <div className="flex gap-2">
-                  {["all", "confirmed", "pending", "cancelled"].map(
-                    (filter) => (
-                      <button
-                        key={filter}
-                        onClick={() => setBookingFilter(filter)}
-                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                          bookingFilter === filter
-                            ? "bg-[#FF7A59]/10 border-[#FF7A59]/30 text-[#FF7A59]"
-                            : "bg-white/5 border-transparent text-[#A8A8A8] hover:text-white"
-                        }`}
-                      >
-                        {filter.toUpperCase()}
-                      </button>
-                    ),
-                  )}
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pb-4 border-b border-white/5">
+                <div className="flex flex-wrap gap-2 max-w-full">
+                  {BOOKING_FILTER_OPTIONS.map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setBookingFilter(filter.value)}
+                      className={`px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${
+                        bookingFilter === filter.value
+                          ? "bg-[#FF7A59]/10 border-[#FF7A59]/30 text-[#FF7A59]"
+                          : "bg-white/5 border-transparent text-[#A8A8A8] hover:text-white"
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
                 </div>
 
                 <input
@@ -906,13 +1015,31 @@ export default function ChefDashboard() {
               <div className="lg:col-span-2 velvet-card p-6 space-y-4">
                 <div className="flex justify-between items-center pb-4 border-b border-white/5">
                   <h3 className="font-bold text-white text-base font-serif">
-                    May 2026
+                    {calendarMonthLabel}
                   </h3>
                   <div className="flex gap-1.5">
-                    <button className="p-1 hover:bg-white/5 rounded text-[#A8A8A8] hover:text-white transition-colors">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCalendarMonth(
+                          (prev) =>
+                            new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
+                        )
+                      }
+                      className="p-1 hover:bg-white/5 rounded text-[#A8A8A8] hover:text-white transition-colors"
+                    >
                       <ChevronLeft size={16} />
                     </button>
-                    <button className="p-1 hover:bg-white/5 rounded text-[#A8A8A8] hover:text-white transition-colors">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCalendarMonth(
+                          (prev) =>
+                            new Date(prev.getFullYear(), prev.getMonth() + 1, 1),
+                        )
+                      }
+                      className="p-1 hover:bg-white/5 rounded text-[#A8A8A8] hover:text-white transition-colors"
+                    >
                       <ChevronRight size={16} />
                     </button>
                   </div>
@@ -925,27 +1052,34 @@ export default function ChefDashboard() {
                 </div>
 
                 <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((date) => {
-                    const isAvailable = [5, 10, 15, 20].includes(date);
-                    const isBooked = [24, 25].includes(date);
+                  {calendarCells.map((cell, index) => {
+                    if (cell.day === null) {
+                      return (
+                        <div
+                          key={`empty-${index}`}
+                          className="h-16 rounded-xl border border-transparent"
+                        />
+                      );
+                    }
+                    const { day, booked, available } = cell;
                     return (
                       <div
-                        key={date}
-                        className={`h-16 rounded-xl p-1.5 flex flex-col justify-between border cursor-pointer transition-all ${
-                          isAvailable
-                            ? "bg-[#2E7D66]/5 border-[#2E7D66]/20 text-[#2E7D66] hover:bg-[#2E7D66]/10"
-                            : isBooked
-                              ? "bg-[#FF7A59]/5 border-[#FF7A59]/20 text-[#FF7A59] hover:bg-[#FF7A59]/10"
-                              : "bg-white/[0.01] border-white/5 text-[#A8A8A8] hover:bg-white/5"
+                        key={day}
+                        className={`h-16 rounded-xl p-1.5 flex flex-col justify-between border transition-all ${
+                          booked
+                            ? "bg-[#FF7A59]/5 border-[#FF7A59]/20 text-[#FF7A59]"
+                            : available
+                              ? "bg-[#2E7D66]/5 border-[#2E7D66]/20 text-[#2E7D66]"
+                              : "bg-white/[0.01] border-white/5 text-[#A8A8A8]"
                         }`}
                       >
-                        <span className="text-[10px] font-bold">{date}</span>
+                        <span className="text-[10px] font-bold">{day}</span>
                         <div className="flex gap-1">
-                          {isAvailable && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#2E7D66]"></span>
+                          {available && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#2E7D66]" />
                           )}
-                          {isBooked && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A59]"></span>
+                          {booked && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A59]" />
                           )}
                         </div>
                       </div>

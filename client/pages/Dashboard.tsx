@@ -9,8 +9,10 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useBookings } from "@/hooks/useBookings";
 import { BookingOperationalPanel } from "@/components/booking/BookingOperationalPanel";
-import { BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
+import { BOOKING_FILTER_OPTIONS, BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useRealtimeDashboard } from "@/hooks/useRealtimeDashboard";
+import { useAuth } from "@/hooks/useAuth";
 import { ChefService } from "@/services/chef.service";
 import { FamilyService } from "@/services/family.service";
 import { AuthService } from "@/services/auth.service";
@@ -27,7 +29,7 @@ import { MessagingHub } from "@/components/messaging/MessagingHub";
 import { TipPrompt } from "@/components/tips/TipPrompt";
 import { useBookingTipStatus } from "@/hooks/useTips";
 import {
-  calculateFamilyProfileCompletion,
+  getFamilyProfileCompletionDetail,
   profileCompletionLabel,
 } from "@shared/profileCompletion";
 import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
@@ -37,11 +39,16 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { profile } = useCurrentProfile();
+  const { user, userId } = useAuth();
   const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
   const completedIds = bookings.filter((b) => b.status === "completed").map((b) => b.id);
   const { data: tipMap } = useBookingTipStatus(completedIds);
   const { data: stripeEnabled = false } = useStripeCheckoutEnabled();
   useNotifications();
+  useRealtimeDashboard({
+    userId,
+    role: profile?.role === "family" ? "family" : null,
+  });
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [chefs, setChefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,14 +67,15 @@ export default function Dashboard() {
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
-  const profileProgress = calculateFamilyProfileCompletion({
-    full_name: profile?.full_name,
+  const familyCompletionDetail = getFamilyProfileCompletionDetail({
+    avatar_url: profile?.avatar_url,
     phone: profile?.phone,
     city: profile?.city,
     state: profile?.state,
     zip: profile?.zip,
-    email: profile?.email,
+    email_verified: Boolean(user?.email_confirmed_at),
   });
+  const profileProgress = familyCompletionDetail.percent;
   const profileProgressLabel = profileCompletionLabel(profileProgress);
 
   // Settings Form state
@@ -94,11 +102,11 @@ export default function Dashboard() {
     setProfileData({
       name: profile.full_name || "",
       email: profile.email || "",
-      phone: profile.phone || "(555) 234-5678",
-      city: profile.city || "Columbus",
+      phone: profile.phone || "",
+      city: profile.city || "",
       state: profile.state || "Ohio",
-      zip: profile.zip || "43215",
-      dietary: ["Keto", "Organic"]
+      zip: profile.zip || "",
+      dietary: profile.dietary_preferences ?? [],
     });
 
     const fetchData = async () => {
@@ -176,7 +184,7 @@ export default function Dashboard() {
         <div className="sticky top-0 bg-[#0E0E0E]/90 backdrop-blur-md border-b border-white/5 px-8 py-6 flex justify-between items-center z-20">
           <div>
             <h1 className="text-3xl font-bold text-white font-serif">
-              {currentTab === "dashboard" ? `Welcome back, ${currentUser?.name || "Sarah"}!` : `Family ${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}`}
+              {currentTab === "dashboard" ? `Welcome back, ${currentUser?.name || "there"}!` : `Family ${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}`}
             </h1>
             <p className="text-[#A8A8A8] text-xs mt-1 font-medium">
               Good food brings families closer. Let's find your next amazing home meal.
@@ -209,6 +217,9 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-sm font-bold text-white">{profileProgressLabel} to unlock full private dining bookings!</p>
+                <p className="text-xs text-[#A8A8A8]">
+                  {familyCompletionDetail.completed} of {familyCompletionDetail.total} completed
+                </p>
                 <p className="text-xs text-[#A8A8A8] mt-0.5">Please add your contact details and dining preferences to reach 100%.</p>
               </div>
             </div>
@@ -360,8 +371,10 @@ export default function Dashboard() {
                             <h3 className="font-bold text-white text-sm font-serif group-hover:text-[#FF7A59] transition-colors">{chef.name}</h3>
                             <p className="text-[9px] text-[#A8A8A8] uppercase tracking-wider font-bold mt-0.5">{chef.specialty}</p>
                             <div className="flex items-center gap-1 mt-1 text-[11px] font-bold text-white">
-                              <span>{chef.rating || "4.9"}</span>
-                              <span className="text-yellow-400">★</span>
+                              <span>{chef.rating != null && chef.rating > 0 ? chef.rating.toFixed(1) : "New"}</span>
+                              {chef.rating != null && chef.rating > 0 && (
+                                <span className="text-yellow-400">★</span>
+                              )}
                             </div>
                           </div>
 
@@ -392,7 +405,7 @@ export default function Dashboard() {
                             </div>
                             <div className="space-y-0.5">
                               <p className="text-xs text-white font-medium leading-snug">
-                                {b.status} booking with {b.chefName ?? b.chef_name}
+                                {BOOKING_STATUS_LABELS[b.status as keyof typeof BOOKING_STATUS_LABELS] ?? b.status} booking with {b.chefName ?? b.chef_name}
                               </p>
                               <p className="text-[9px] text-[#A8A8A8]">{b.date}</p>
                             </div>
@@ -407,31 +420,19 @@ export default function Dashboard() {
           ) : currentTab === "bookings" ? (
             /* Tab 2: Bookings List */
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-4 border-b border-white/5">
-                <div className="flex gap-2">
-                  {[
-                    "all",
-                    "pending",
-                    "accepted",
-                    "awaiting_payment",
-                    "confirmed",
-                    "en_route",
-                    "arrived",
-                    "cooking",
-                    "awaiting_family_confirmation",
-                    "completed",
-                    "cancelled",
-                  ].map((filter) => (
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pb-4 border-b border-white/5">
+                <div className="flex flex-wrap gap-2 max-w-full">
+                  {BOOKING_FILTER_OPTIONS.map((filter) => (
                     <button
-                      key={filter}
-                      onClick={() => setStatusFilter(filter)}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                        statusFilter === filter
+                      key={filter.value}
+                      onClick={() => setStatusFilter(filter.value)}
+                      className={`px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${
+                        statusFilter === filter.value
                           ? "bg-[#FF7A59]/10 border-[#FF7A59]/30 text-[#FF7A59]"
                           : "bg-white/5 border-transparent text-[#A8A8A8] hover:text-white"
                       }`}
                     >
-                      {filter.toUpperCase()}
+                      {filter.label}
                     </button>
                   ))}
                 </div>

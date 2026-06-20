@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/lib/api";
 import { AuthService } from "@/services/auth.service";
@@ -64,6 +64,7 @@ import { DashboardWidgetSkeleton, CardSkeleton } from "@/components/ui/Skeletons
 import { useAdminStore } from "@/store/useAdminStore";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useRealtimeDashboard } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -253,6 +254,8 @@ export default function AdminDashboard({
   // Document modal preview state
   const [previewDoc, setPreviewDoc] = useState<any>(null);
   const [pendingDocAction, setPendingDocAction] = useState<string | null>(null);
+  const [docActionSuccess, setDocActionSuccess] = useState(false);
+  const previewDocIdRef = useRef<string | null>(null);
   const moderateDocument = useDocumentModeration();
 
   const location = useLocation();
@@ -269,7 +272,7 @@ export default function AdminDashboard({
     }
   }, [location.pathname]);
 
-  const reloadData = async () => {
+  const reloadData = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await api.getRegions();
@@ -298,11 +301,45 @@ export default function AdminDashboard({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  const silentRefresh = useCallback(async () => {
+    try {
+      const bData = await api.getBookings();
+      setBookings(bData);
+
+      const dData = await api.getDocuments();
+      setDocuments(dData);
+
+      const cData = await api.getChefs();
+      setChefs(cData);
+
+      const metrics = await AdminOverviewService.getSupplementaryMetrics();
+      setOverviewMetrics(metrics);
+
+      const previewId = previewDocIdRef.current;
+      if (previewId) {
+        const updated = dData.find((d: { id: string }) => d.id === previewId);
+        if (updated) setPreviewDoc(updated);
+      }
+    } catch (err) {
+      console.error("Realtime refresh failed:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    previewDocIdRef.current = previewDoc?.id ?? null;
+  }, [previewDoc]);
+
+  useRealtimeDashboard({
+    userId: user?.id ?? adminProfile?.id,
+    role: adminProfile?.role === "admin" ? "admin" : null,
+    onAdminRefresh: silentRefresh,
+  });
 
   useEffect(() => {
     reloadData();
-  }, []);
+  }, [reloadData]);
 
   const handleNavClick = (id: string) => {
     setActiveNav(id);
@@ -449,6 +486,32 @@ export default function AdminDashboard({
   const syncDocumentsAfterModeration = async () => {
     const dData = await api.getDocuments();
     setDocuments(dData);
+    if (previewDoc) {
+      const updated = dData.find((d: { id: string }) => d.id === previewDoc.id);
+      if (updated) setPreviewDoc(updated);
+    }
+  };
+
+  const applyDocumentStatus = (
+    id: string,
+    action: "approved" | "rejected" | "resubmit",
+  ) => {
+    const newStatus =
+      action === "approved"
+        ? "approved"
+        : action === "rejected"
+          ? "rejected"
+          : "pending";
+    setPreviewDoc((prev) =>
+      prev?.id === id ? { ...prev, status: newStatus } : prev,
+    );
+    setDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === id ? { ...doc, status: newStatus } : doc,
+      ),
+    );
+    setDocActionSuccess(true);
+    window.setTimeout(() => setDocActionSuccess(false), 3000);
   };
 
   const handleDocumentAction = (
@@ -465,7 +528,7 @@ export default function AdminDashboard({
       { id, action: "approved" },
       {
         onSuccess: async () => {
-          setPreviewDoc(null);
+          applyDocumentStatus(id, "approved");
           await syncDocumentsAfterModeration();
         },
         onSettled: () => setPendingDocAction(null),
@@ -487,7 +550,7 @@ export default function AdminDashboard({
       { id: docReasonModal.id, action, reason: docReasonText.trim() },
       {
         onSuccess: async () => {
-          setPreviewDoc(null);
+          applyDocumentStatus(docReasonModal.id, action);
           setDocReasonModal(null);
           setDocReasonText("");
           await syncDocumentsAfterModeration();
@@ -1118,7 +1181,7 @@ export default function AdminDashboard({
                 >
                   {/* Bookings Trend Chart */}
                   <ChartCard
-                    title="Platform Booking Trends (Real-time)"
+                    title="Platform Booking Trends"
                     hasFilter
                   >
                     <ResponsiveContainer width="100%" height={260}>
@@ -3150,12 +3213,16 @@ export default function AdminDashboard({
 
       <DocumentPreviewModal
         document={previewDoc}
-        onClose={() => setPreviewDoc(null)}
+        onClose={() => {
+          setPreviewDoc(null);
+          setDocActionSuccess(false);
+        }}
         onApprove={(id) => handleDocumentAction(id, "approved")}
         onReject={(id) => handleDocumentAction(id, "rejected")}
         onResubmit={(id) => handleDocumentAction(id, "resubmit")}
         pendingAction={pendingDocAction}
         isPending={moderateDocument.isPending || docActionLoading}
+        actionSuccess={docActionSuccess}
       />
 
       <Dialog

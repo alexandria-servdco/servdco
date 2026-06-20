@@ -17,7 +17,7 @@ export function useRealtimeNotifications() {
     if (!client) return;
 
     const channel = client
-      .channel(`notifications:${userId}`)
+      .channel(`user-notifications:${userId}`)
       .on(
         "postgres_changes",
         {

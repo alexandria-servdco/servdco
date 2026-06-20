@@ -82,15 +82,9 @@ export function useRealtimeDashboard({
       onAdminRefreshRef.current?.();
     };
 
-    channels.push(
-      subscribe(
-        client,
-        `notifications:${userId}`,
-        "notifications",
-        `user_id=eq.${userId}`,
-        invalidateNotifications,
-      ),
-    );
+    // Notifications are handled by useRealtimeNotifications (via useNotifications).
+    // Do not subscribe to notifications:${userId} here — Supabase throws if
+    // postgres_changes listeners are added after subscribe on the same channel.
 
     if (role === "family") {
       channels.push(

@@ -133,7 +133,7 @@ export const MessagesSupabaseService = {
     if (error) throw new SupabaseQueryError(error.message, error);
   },
 
-  /** Optional typing indicator via Realtime broadcast metadata. */
+  /** Optional typing indicator via Realtime broadcast — never blocks send. */
   async broadcastTyping(conversationId: string, isTyping: boolean): Promise<void> {
     const client = getSupabaseClient();
     if (!client) return;
@@ -142,17 +142,36 @@ export const MessagesSupabaseService = {
     const userId = authData.user?.id;
     if (!userId) return;
 
-    const channel = client.channel(`typing:${conversationId}`);
-    await new Promise<void>((resolve) => {
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") resolve();
+    const channel = client.channel(`typing:${conversationId}:${userId}`);
+
+    try {
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          channel.subscribe((status) => {
+            if (
+              status === "SUBSCRIBED" ||
+              status === "CHANNEL_ERROR" ||
+              status === "TIMED_OUT" ||
+              status === "CLOSED"
+            ) {
+              resolve();
+            }
+          });
+        }),
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, 1500);
+        }),
+      ]);
+
+      await channel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { user_id: userId, is_typing: isTyping },
       });
-    });
-    await channel.send({
-      type: "broadcast",
-      event: "typing",
-      payload: { user_id: userId, is_typing: isTyping },
-    });
-    client.removeChannel(channel);
+    } catch {
+      // Typing is best-effort only
+    } finally {
+      client.removeChannel(channel);
+    }
   },
 };

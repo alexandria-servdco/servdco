@@ -47,7 +47,7 @@ export function MessagingPanel({
 
   useTypingIndicator(conversationId, handleTyping);
 
-  const messages = data?.pages.flatMap((p) => p.messages) ?? [];
+  const messages = data?.pages?.flatMap((p) => p?.messages ?? []) ?? [];
 
   useEffect(() => {
     if (conversationId) {
@@ -63,14 +63,15 @@ export function MessagingPanel({
     });
   }, [messages.length]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitMessage = useCallback(() => {
     if ((!draft.trim() && !pendingFile) || sendMessage.isPending) return;
-    const text = draft.trim() || (pendingFile ? `[Attachment: ${pendingFile.name}]` : "");
+
+    const text =
+      draft.trim() || (pendingFile ? `[Attachment: ${pendingFile.name}]` : "");
     const file = pendingFile;
     setDraft("");
     setPendingFile(null);
-    await MessagesSupabaseService.broadcastTyping(conversationId, false);
+
     sendMessage.mutate(text, {
       onSuccess: async (msg) => {
         if (file) {
@@ -87,7 +88,33 @@ export function MessagingPanel({
         toast.error(err instanceof Error ? err.message : "Failed to send message.");
       },
     });
+
+    void MessagesSupabaseService.broadcastTyping(conversationId, false);
+  }, [conversationId, draft, pendingFile, sendMessage]);
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    submitMessage();
   };
+
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleDraftChange = (value: string) => {
+    setDraft(value);
+    if (!value.trim()) return;
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      void MessagesSupabaseService.broadcastTyping(conversationId, true);
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    };
+  }, []);
 
   const handleModeratorDelete = async (messageId: string) => {
     if (!adminView || !window.confirm("Remove this message?")) return;
@@ -97,13 +124,6 @@ export function MessagingPanel({
       entityType: "message",
       entityId: messageId,
     });
-  };
-
-  const handleDraftChange = (value: string) => {
-    setDraft(value);
-    if (value.trim()) {
-      MessagesSupabaseService.broadcastTyping(conversationId, true);
-    }
   };
 
   return (
@@ -234,15 +254,22 @@ export function MessagingPanel({
           type="text"
           value={draft}
           onChange={(e) => handleDraftChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submitMessage();
+            }
+          }}
           placeholder="Type a message..."
           className="flex-1 px-3 py-2 bg-[#161616] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
         />
         <button
-          type="submit"
+          type="button"
           disabled={(!draft.trim() && !pendingFile) || sendMessage.isPending}
+          onClick={submitMessage}
           className="px-4 py-2 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all"
         >
-          Send
+          {sendMessage.isPending ? "Sending…" : "Send"}
         </button>
       </form>
     </div>

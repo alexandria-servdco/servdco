@@ -36,12 +36,12 @@ export default function Index() {
 
   useEffect(() => {
     const enable = () => setLoadMarketplace(true);
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(enable, { timeout: 2000 });
-      return () => window.cancelIdleCallback(id);
+    if ("requestIdleCallback" in globalThis) {
+      const id = globalThis.requestIdleCallback(enable, { timeout: 2000 });
+      return () => globalThis.cancelIdleCallback(id);
     }
-    const timer = window.setTimeout(enable, 1200);
-    return () => window.clearTimeout(timer);
+    const timer = globalThis.setTimeout(enable, 1200);
+    return () => globalThis.clearTimeout(timer);
   }, []);
 
   const { data: featuredChefs = [], isLoading: chefsLoading } = useBrowseChefs({

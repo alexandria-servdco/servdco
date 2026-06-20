@@ -4,6 +4,7 @@ import { AdminService } from "@/services/admin.service";
 import { documentQueryKeys } from "@/services/supabase/documents.service";
 import type { ChefDocument } from "@/lib/launchOpsTypes";
 import { extractErrorMessage } from "@/lib/errors";
+import { EmailService } from "@/services/email.service";
 
 type DocAction = "approved" | "rejected" | "resubmit";
 
@@ -66,6 +67,13 @@ export function useDocumentModeration() {
             ? "Document rejected"
             : "Resubmission requested";
       toast.success(label);
+      const emailEvent =
+        vars.action === "approved"
+          ? "document_approved"
+          : vars.action === "rejected"
+            ? "document_rejected"
+            : "document_resubmission_requested";
+      void EmailService.sendDocumentEvent(vars.id, emailEvent);
       queryClient.invalidateQueries({ queryKey: documentQueryKeys.list() });
     },
   });

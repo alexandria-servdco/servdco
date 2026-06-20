@@ -6,7 +6,12 @@ import { api } from "@/lib/api";
 import { contactSchema, safeParse } from "@shared/validation";
 
 export default function Contact() {
-  const [formState, setFormState] = useState({ name: "", email: "", message: "" });
+  const [formState, setFormState] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -18,13 +23,13 @@ export default function Contact() {
       setError(parsed.error);
       return;
     }
-    const { name, email, message } = parsed.data;
+    const { name, email, subject, message } = parsed.data;
     setLoading(true);
     setError("");
     try {
-      await api.submitContact({ name, email, message });
+      await api.submitContact({ name, email, subject, message });
       setSubmitted(true);
-      setFormState({ name: "", email: "", message: "" });
+      setFormState({ name: "", email: "", subject: "", message: "" });
       setTimeout(() => setSubmitted(false), 4000);
     } catch {
       setError("Failed to send message. Please try again or email hello@servdco.com.");
@@ -144,6 +149,19 @@ export default function Contact() {
                         placeholder="Enter your email"
                         value={formState.email}
                         onChange={(e) => setFormState({ ...formState, email: e.target.value })}
+                        className="w-full px-4 py-3.5 bg-[#161616] border border-white/5 rounded-xl text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#FF7A59] transition-colors"
+                      />
+                    </div>
+
+                    {/* Subject */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">Subject</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="What is this regarding?"
+                        value={formState.subject}
+                        onChange={(e) => setFormState({ ...formState, subject: e.target.value })}
                         className="w-full px-4 py-3.5 bg-[#161616] border border-white/5 rounded-xl text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#FF7A59] transition-colors"
                       />
                     </div>

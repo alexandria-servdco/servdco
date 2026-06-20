@@ -155,6 +155,17 @@ export const AdminService = {
     return { success: true, documents: docs };
   },
 
+  async listOrphanedDocuments() {
+    assertSupabaseConfigured();
+    return DocumentsSupabaseService.listOrphaned();
+  },
+
+  async removeOrphanedDocument(id: string) {
+    assertSupabaseConfigured();
+    await DocumentsSupabaseService.softDelete(id);
+    return { success: true };
+  },
+
   async updateChefStatus(
     id: string,
     status: "approved" | "pending" | "rejected" | "suspended",

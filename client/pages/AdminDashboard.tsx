@@ -39,6 +39,7 @@ import {
   Loader2,
   LogOut,
   MessageSquare,
+  Mail,
 } from "lucide-react";
 import {
   LineChart,
@@ -97,6 +98,8 @@ const ContentModeration = lazy(() => import("@/components/admin/ContentModeratio
 const GlobalAnnouncements = lazy(() => import("@/components/admin/GlobalAnnouncements").then(m => ({ default: m.GlobalAnnouncements })));
 const AdminNotificationMonitor = lazy(() => import("@/components/admin/AdminNotificationMonitor").then(m => ({ default: m.AdminNotificationMonitor })));
 const PlatformSettings = lazy(() => import("@/components/admin/PlatformSettings").then(m => ({ default: m.PlatformSettings })));
+const ContactMessagesPanel = lazy(() => import("@/components/admin/ContactMessagesPanel").then(m => ({ default: m.ContactMessagesPanel })));
+const OrphanedDocumentsUtility = lazy(() => import("@/components/admin/OrphanedDocumentsUtility").then(m => ({ default: m.OrphanedDocumentsUtility })));
 const MarketInterestRequests = lazy(() => import("@/components/admin/MarketInterestRequests").then(m => ({ default: m.MarketInterestRequests })));
 const AdminMessagingHub = lazy(() => import("@/components/messaging/AdminMessagingHub").then(m => ({ default: m.AdminMessagingHub })));
 const AdminAuditLogs = lazy(() => import("@/components/admin/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
@@ -122,6 +125,7 @@ const NAV_ITEMS = [
   { id: "bookings", label: "Bookings", icon: CalendarDays },
   { id: "messaging", label: "Messaging", icon: MessageSquare },
   { id: "documents", label: "Verification", icon: FileText },
+  { id: "contact_messages", label: "Contact", icon: Mail },
   { id: "payouts", label: "Payouts", icon: DollarSign },
   { id: "moderation", label: "Moderation", icon: ShieldAlert },
   { id: "announcements", label: "Announcements", icon: Megaphone },
@@ -949,6 +953,7 @@ export default function AdminDashboard({
               {activeNav === "bookings" && "Marketplace Bookings"}
               {activeNav === "messaging" && "Platform Messaging"}
               {activeNav === "documents" && "Trust & Verification Center"}
+              {activeNav === "contact_messages" && "Contact Messages"}
               {activeNav === "payouts" && "Payout Control"}
               {activeNav === "moderation" && "Content Moderation"}
               {activeNav === "announcements" && "Global Announcements"}
@@ -980,6 +985,8 @@ export default function AdminDashboard({
                 "Monitor family ↔ cook conversations linked to bookings."}
               {activeNav === "documents" &&
                 "Inspect submitted cook certifications, ServSafe, ID verification and insurance policies."}
+              {activeNav === "contact_messages" &&
+                "Review and resolve messages from the public contact form."}
               {activeNav === "payouts" &&
                 "Manage cook payouts, disputes, and holds."}
               {activeNav === "moderation" &&
@@ -2719,11 +2726,24 @@ export default function AdminDashboard({
             )}
             {/* ── Tab: TRUST & VERIFICATION DOCUMENTS ────────────────────────── */}
             {activeNav === "documents" && (
-              <VerificationCenter
-                documents={documents}
-                setPreviewDoc={setPreviewDoc}
-                handleDocumentAction={handleDocumentAction}
-              />
+              <div className="space-y-6">
+                <VerificationCenter
+                  documents={documents}
+                  setPreviewDoc={setPreviewDoc}
+                  handleDocumentAction={handleDocumentAction}
+                />
+                <Suspense fallback={<CardSkeleton />}>
+                  <OrphanedDocumentsUtility
+                    onRefresh={syncDocumentsAfterModeration}
+                  />
+                </Suspense>
+              </div>
+            )}
+
+            {activeNav === "contact_messages" && (
+              <Suspense fallback={<CardSkeleton />}>
+                <ContactMessagesPanel />
+              </Suspense>
             )}
 
             {/* ── Tab: ANALYTICS ────────────────────────────────────────────── */}

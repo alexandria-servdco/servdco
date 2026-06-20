@@ -1,0 +1,44 @@
+{
+  "version": "20250620143000",
+  "applied": true,
+  "alreadyApplied": false,
+  "columns": {
+    "meal_request": {
+      "column_name": "meal_request",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    "ingredients_available": {
+      "column_name": "ingredients_available",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    "recipe_notes": {
+      "column_name": "recipe_notes",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    "family_platform_fee_cents": {
+      "column_name": "family_platform_fee_cents",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    "contact_subject": {
+      "column_name": "subject"
+    }
+  },
+  "platformSetting": {
+    "key": "family_platform_fee_dollars",
+    "value": 5
+  },
+  "error": null,
+  "totalMigrations": 32,
+  "latestMigrations": [
+    "20250612130027",
+    "20250612140028",
+    "20250612150029",
+    "20250620120030",
+    "20250620143000"
+  ],
+  "allPresent": true
+}

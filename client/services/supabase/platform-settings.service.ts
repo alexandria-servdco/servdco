@@ -35,6 +35,7 @@ export const PlatformSettingsSupabaseService = {
         "platform_fee_percentage",
         "chef_premium_price_monthly_cents",
         "booking_hold_hours",
+        "family_platform_fee_dollars",
       ]);
 
     if (error) throw new SupabaseQueryError(error.message, error);
@@ -45,11 +46,15 @@ export const PlatformSettingsSupabaseService = {
       parseJsonValue(map.get("chef_premium_price_monthly_cents") ?? "1500"),
     );
     const holdHours = Number(parseJsonValue(map.get("booking_hold_hours") ?? "24"));
+    const familyFee = Number(
+      parseJsonValue(map.get("family_platform_fee_dollars") ?? "5"),
+    );
 
     return {
       platformFeePercentage: Number(feeRaw),
       chefPremiumPriceMonthly: Math.round(premiumCents / 100),
       bookingHoldHours: holdHours,
+      familyPlatformFeeDollars: familyFee,
     };
   },
 
@@ -83,6 +88,18 @@ export const PlatformSettingsSupabaseService = {
           updated_at: now,
         })
         .eq("key", "chef_premium_price_monthly_cents");
+      if (error) throw new SupabaseQueryError(error.message, error);
+    }
+
+    if (updates.familyPlatformFeeDollars !== undefined) {
+      const { error } = await client
+        .from("platform_settings")
+        .update({
+          value: String(updates.familyPlatformFeeDollars),
+          updated_by: authData.user?.id ?? null,
+          updated_at: now,
+        })
+        .eq("key", "family_platform_fee_dollars");
       if (error) throw new SupabaseQueryError(error.message, error);
     }
 

@@ -98,10 +98,45 @@ export function BookingOperationalPanel({
         )}
       </div>
 
+      {booking.meal_request && (
+        <div className="rounded-xl bg-[#161616] border border-white/5 p-3 space-y-1">
+          <p className="text-[10px] uppercase font-bold text-[#FF7A59] tracking-wider">
+            Meal request
+          </p>
+          <p className="text-xs text-white">{booking.meal_request}</p>
+          {booking.ingredients_available && (
+            <p className="text-xs text-[#A8A8A8]">
+              <span className="font-semibold text-white">On hand: </span>
+              {booking.ingredients_available}
+            </p>
+          )}
+          {booking.recipe_notes && (
+            <p className="text-xs text-[#A8A8A8]">
+              <span className="font-semibold text-white">Notes: </span>
+              {booking.recipe_notes}
+            </p>
+          )}
+        </div>
+      )}
+
       {booking.special_instructions && (
         <p className="text-xs text-[#A8A8A8]">
           <span className="font-bold text-white">Instructions: </span>
           {booking.special_instructions}
+        </p>
+      )}
+
+      {(booking.family_platform_fee_cents ?? 0) > 0 && role === "family" && (
+        <p className="text-xs text-[#A8A8A8]">
+          Session ${booking.price.toFixed(2)} + family platform fee $
+          {((booking.family_platform_fee_cents ?? 0) / 100).toFixed(2)} ={" "}
+          <span className="font-bold text-white">
+            $
+            {(
+              booking.price +
+              (booking.family_platform_fee_cents ?? 0) / 100
+            ).toFixed(2)}
+          </span>
         </p>
       )}
 

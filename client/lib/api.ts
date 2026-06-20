@@ -168,9 +168,10 @@ export const api = {
   async submitContact(params: {
     name: string;
     email: string;
+    subject: string;
     message: string;
   }): Promise<{ success: boolean; message: string }> {
-    return ContactService.submit(params);
+    return ContactService.submitViaApi(params);
   },
 
   async submitDocuments(params: {

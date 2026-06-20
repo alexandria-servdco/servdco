@@ -68,6 +68,7 @@ describe("contact and waitlist validation", () => {
     const result = contactSchema.safeParse({
       name: "Alex",
       email: "alex@example.com",
+      subject: "Booking question",
       message: "I have a question about bookings.",
     });
     expect(result.success).toBe(true);
@@ -99,6 +100,7 @@ describe("booking validation", () => {
       date: "2026-07-01",
       guests_count: 4,
       price: 120,
+      meal_request: "Taco night",
       address: {
         street_address: "123 Main St",
         city: "Columbus",

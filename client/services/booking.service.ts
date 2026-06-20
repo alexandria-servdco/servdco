@@ -32,6 +32,10 @@ export const BookingService = {
     gate_code?: string;
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
+    meal_request: string;
+    ingredients_available?: string;
+    recipe_notes?: string;
+    family_platform_fee_dollars?: number;
     address: Omit<BookingAddress, "id" | "booking_id">;
   }) {
     if (!isUuid(params.cook_id)) {

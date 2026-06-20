@@ -9,7 +9,8 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { useBookings } from "@/hooks/useBookings";
 import { BookingOperationalPanel } from "@/components/booking/BookingOperationalPanel";
-import { BOOKING_FILTER_OPTIONS, BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
+import { BookingStatusFilterBar } from "@/components/booking/BookingStatusFilterBar";
+import { BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useRealtimeDashboard } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
@@ -421,21 +422,10 @@ export default function Dashboard() {
             /* Tab 2: Bookings List */
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pb-4 border-b border-white/5">
-                <div className="flex flex-wrap gap-2 max-w-full">
-                  {BOOKING_FILTER_OPTIONS.map((filter) => (
-                    <button
-                      key={filter.value}
-                      onClick={() => setStatusFilter(filter.value)}
-                      className={`px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${
-                        statusFilter === filter.value
-                          ? "bg-[#FF7A59]/10 border-[#FF7A59]/30 text-[#FF7A59]"
-                          : "bg-white/5 border-transparent text-[#A8A8A8] hover:text-white"
-                      }`}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
+                <BookingStatusFilterBar
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                />
                 <input
                   type="text"
                   placeholder="Search cook name..."

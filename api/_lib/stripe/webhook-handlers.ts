@@ -23,6 +23,7 @@ import {
   handleTipPaymentIntentFailed,
   handleTipPaymentIntentSucceeded,
 } from "./tip-webhooks.js";
+import { sendResendEmail } from "../email/resend.js";
 
 async function fetchChargeId(paymentIntentId: string): Promise<string | null> {
   try {
@@ -120,6 +121,24 @@ async function handleBookingCheckoutCompleted(session: Stripe.Checkout.Session) 
       event: "payment_successful",
     },
   });
+
+  const { data: familyProfile } = await client
+    .from("profiles")
+    .select("email, full_name")
+    .eq("id", payment.family_id)
+    .maybeSingle();
+
+  if (familyProfile?.email) {
+    await sendResendEmail({
+      to: familyProfile.email,
+      subject: "Servd Co — Payment Confirmed",
+      html: `
+        <p>Hi ${familyProfile.full_name ?? "there"},</p>
+        <p>Your payment is confirmed and your booking is now confirmed.</p>
+        <p><a href="https://servdco-one.vercel.app/family-dashboard/bookings">View your dashboard</a></p>
+      `,
+    });
+  }
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {

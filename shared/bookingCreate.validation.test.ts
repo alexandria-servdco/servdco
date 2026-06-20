@@ -8,6 +8,7 @@ const basePayload = {
   date: "2026-07-15",
   guests_count: 4,
   price: 60,
+  meal_request: "Spaghetti and garlic bread",
   address: {
     street_address: "123 Main St",
     city: "Columbus",

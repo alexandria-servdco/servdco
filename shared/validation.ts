@@ -43,6 +43,7 @@ export const chefRegisterSchema = familyRegisterCoreSchema.extend({
 export const contactSchema = z.object({
   name: z.string().trim().min(2, "Name is required.").max(120),
   email: emailSchema,
+  subject: z.string().trim().min(2, "Subject is required.").max(200),
   message: z
     .string()
     .trim()
@@ -84,6 +85,13 @@ export const bookingCreateSchema = z.object({
   booking_end_time: z.string().trim().max(16).optional(),
   guests_count: z.number().int().min(1).max(50),
   price: z.number().positive().max(100_000),
+  meal_request: z
+    .string()
+    .trim()
+    .min(3, "Please describe what meal you would like prepared.")
+    .max(2000),
+  ingredients_available: z.string().trim().max(2000).optional(),
+  recipe_notes: z.string().trim().max(2000).optional(),
   special_instructions: z.string().trim().max(2000).optional(),
   dietary_restrictions: z.array(z.string().trim().max(80)).max(20).optional(),
   allergies: z.string().trim().max(500).optional(),

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Bell,
   ChevronLeft,
@@ -92,7 +92,9 @@ import {
   getChefProfileCompletionDetail,
   profileCompletionLabel,
 } from "@shared/profileCompletion";
-import { BOOKING_FILTER_OPTIONS, BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
+import { BookingStatusFilterBar } from "@/components/booking/BookingStatusFilterBar";
+import { VerificationResources } from "@/components/chef/VerificationResources";
+import { BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
 
 const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
   "accepted",
@@ -135,6 +137,10 @@ export default function ChefDashboard() {
   useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(
+    searchParams.get("onboarding") === "verification",
+  );
   const [chefProfileId, setChefProfileId] = useState("");
   const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
   const { profile } = useCurrentProfile();
@@ -179,6 +185,16 @@ export default function ChefDashboard() {
   const verificationDocPercent = Math.round(
     (approvedDocCount / requiredDocTypes.length) * 100,
   );
+  const needsVerification = verificationStatus !== "approved";
+
+  useEffect(() => {
+    if (searchParams.get("onboarding") === "verification") {
+      setShowOnboardingBanner(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("onboarding");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Filter state for Bookings subtab
   const [bookingFilter, setBookingFilter] = useState("all");
@@ -675,6 +691,32 @@ export default function ChefDashboard() {
           </div>
         </div>
 
+        {/* Post-signup verification onboarding */}
+        {(showOnboardingBanner || needsVerification) && (
+          <div className="bg-gradient-to-r from-[#2E7D66]/10 to-[#FF7A59]/10 border-b border-[#2E7D66]/20 px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+              <p className="text-sm font-bold text-white">
+                Your account has been created. Complete verification to receive
+                booking requests.
+              </p>
+              <p className="text-xs text-[#A8A8A8] mt-0.5">
+                Upload ServSafe, insurance, and background check documents for
+                admin review.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowOnboardingBanner(false);
+                navigate("/chef-dashboard/verification");
+              }}
+              className="px-5 py-2.5 rounded-2xl bg-[#2E7D66] text-white text-xs font-bold hover:bg-[#256b58] transition-all shrink-0"
+            >
+              Complete Verification
+            </button>
+          </div>
+        )}
+
         {/* Profile Completion banner */}
         {profileProgress < 100 && (
           <div className="bg-gradient-to-r from-[#FF8F73]/10 to-[#FF7A59]/10 border-b border-[#FF7A59]/20 px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 transition-all">
@@ -687,18 +729,24 @@ export default function ChefDashboard() {
                   {profileProgressLabel} to receive bookings!
                 </p>
                 <p className="text-xs text-[#A8A8A8] mt-0.5">
-                  Please update your culinary bio, cuisines list, and schedule
-                  to reach 100%.
+                  {chefCompletionDetail.completed} of {chefCompletionDetail.total}{" "}
+                  completed — avatar, bio, cuisines, availability, location, and
+                  verification documents.
                 </p>
               </div>
             </div>
             <button
+              type="button"
               onClick={() => {
-                navigate("/chef-dashboard/profile");
+                navigate(
+                  needsVerification
+                    ? "/chef-dashboard/verification"
+                    : "/chef-dashboard/profile",
+                );
               }}
               className="px-5 py-2.5 rounded-2xl bg-[#FF7A59] text-white text-xs font-bold hover:bg-[#E96745] transition-all shadow-[0_4px_12px_rgba(255,122,89,0.25)] shrink-0"
             >
-              Complete Profile
+              {needsVerification ? "Complete Verification" : "Complete Profile"}
             </button>
           </div>
         )}
@@ -939,21 +987,10 @@ export default function ChefDashboard() {
             /* Bookings List Table & Filters */
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pb-4 border-b border-white/5">
-                <div className="flex flex-wrap gap-2 max-w-full">
-                  {BOOKING_FILTER_OPTIONS.map((filter) => (
-                    <button
-                      key={filter.value}
-                      onClick={() => setBookingFilter(filter.value)}
-                      className={`px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${
-                        bookingFilter === filter.value
-                          ? "bg-[#FF7A59]/10 border-[#FF7A59]/30 text-[#FF7A59]"
-                          : "bg-white/5 border-transparent text-[#A8A8A8] hover:text-white"
-                      }`}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
+                <BookingStatusFilterBar
+                  value={bookingFilter}
+                  onChange={setBookingFilter}
+                />
 
                 <input
                   type="text"
@@ -1208,6 +1245,8 @@ export default function ChefDashboard() {
             </div>
           ) : currentTab === "verification" ? (
             /* Safety & verification document upload */
+            <div className="space-y-8">
+              <VerificationResources />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 <div className="velvet-card p-8 space-y-4">
@@ -1321,6 +1360,7 @@ export default function ChefDashboard() {
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           ) : currentTab === "availability" ? (
             /* Weekly schedule builder */

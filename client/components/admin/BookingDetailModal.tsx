@@ -92,11 +92,31 @@ export function BookingDetailModal({
                   <dd>{booking.guests_count ?? "—"}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#A8A8A8] text-xs">Amount</dt>
+                  <dt className="text-[#A8A8A8] text-xs">Session rate</dt>
                   <dd className="text-[#FF7A59] font-bold">
                     ${booking.price.toFixed(2)}
                   </dd>
                 </div>
+                {(booking.family_platform_fee_cents ?? 0) > 0 && (
+                  <div>
+                    <dt className="text-[#A8A8A8] text-xs">Family platform fee</dt>
+                    <dd>
+                      ${((booking.family_platform_fee_cents ?? 0) / 100).toFixed(2)}
+                    </dd>
+                  </div>
+                )}
+                {(booking.family_platform_fee_cents ?? 0) > 0 && (
+                  <div>
+                    <dt className="text-[#A8A8A8] text-xs">Total charged</dt>
+                    <dd className="font-bold text-white">
+                      $
+                      {(
+                        booking.price +
+                        (booking.family_platform_fee_cents ?? 0) / 100
+                      ).toFixed(2)}
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-[#A8A8A8] text-xs">Status</dt>
                   <dd>{BOOKING_STATUS_LABELS[booking.status]}</dd>
@@ -121,6 +141,31 @@ export function BookingDetailModal({
                 {booking.address.location_notes && (
                   <p className="text-xs text-[#A8A8A8] mt-1">
                     {booking.address.location_notes}
+                  </p>
+                )}
+              </section>
+            )}
+
+            {(booking.meal_request ||
+              booking.ingredients_available ||
+              booking.recipe_notes) && (
+              <section>
+                <h4 className="text-[10px] uppercase font-bold text-[#A8A8A8] mb-2">
+                  Meal request
+                </h4>
+                {booking.meal_request && (
+                  <p className="text-sm">{booking.meal_request}</p>
+                )}
+                {booking.ingredients_available && (
+                  <p className="text-xs text-[#A8A8A8] mt-2">
+                    <span className="font-semibold text-white">Ingredients on hand:</span>{" "}
+                    {booking.ingredients_available}
+                  </p>
+                )}
+                {booking.recipe_notes && (
+                  <p className="text-xs text-[#A8A8A8] mt-1">
+                    <span className="font-semibold text-white">Recipe notes:</span>{" "}
+                    {booking.recipe_notes}
                   </p>
                 )}
               </section>

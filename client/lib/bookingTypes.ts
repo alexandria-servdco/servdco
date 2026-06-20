@@ -60,6 +60,10 @@ export interface UiBooking extends BookingRecord {
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
   family_confirmed_at?: string | null;
+  meal_request?: string | null;
+  ingredients_available?: string | null;
+  recipe_notes?: string | null;
+  family_platform_fee_cents?: number;
   address?: BookingAddress | null;
   address_preview?: { city: string; state: string } | null;
   contact?: BookingContactInfo | null;
@@ -99,6 +103,10 @@ export function mapDbBookingToUi(row: {
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
   family_confirmed_at?: string | null;
+  meal_request?: string | null;
+  ingredients_available?: string | null;
+  recipe_notes?: string | null;
+  family_platform_fee_cents?: number;
   payment_id?: string | null;
   address?: BookingAddress | null;
   contact?: { full_name?: string | null; phone?: string | null; email?: string | null } | null;
@@ -170,6 +178,10 @@ export function mapDbBookingToUi(row: {
     emergency_contact_name: contactAccess ? row.emergency_contact_name ?? null : null,
     emergency_contact_phone: contactAccess ? row.emergency_contact_phone ?? null : null,
     family_confirmed_at: row.family_confirmed_at ?? null,
+    meal_request: row.meal_request ?? null,
+    ingredients_available: row.ingredients_available ?? null,
+    recipe_notes: row.recipe_notes ?? null,
+    family_platform_fee_cents: row.family_platform_fee_cents ?? 0,
     payment_id: row.payment_id ?? null,
     address,
     address_preview: addressPreview,

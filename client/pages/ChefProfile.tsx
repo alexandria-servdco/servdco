@@ -16,8 +16,6 @@ import {
   UserCircle,
   ArrowRight,
 } from "lucide-react";
-import { calculatePlatformFee, calculateCookPayout } from "@/utils/platformFee";
-import type { CookCardData } from "@/lib/cookMapper";
 import { useChefProfile } from "@/hooks/useChefProfile";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
@@ -26,7 +24,10 @@ import { NotificationService } from "@/services/notification.service";
 import { isUuid } from "@/lib/marketplaceTypes";
 import { AnalyticsSupabaseService } from "@/services/supabase/analytics.service";
 import { useReviews } from "@/hooks/useReviews";
-import { calculateBookingPrice } from "@/lib/bookingPricing";
+import { calculateSessionPrice, calculateFamilyTotalCharged } from "@/lib/bookingPricing";
+import { usePlatformStore } from "@/store/usePlatformStore";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { EmailService } from "@/services/email.service";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { normalizeAvatarUrl } from "@/lib/avatar";
 
@@ -62,6 +63,9 @@ export default function ChefProfile() {
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [allergies, setAllergies] = useState("");
   const [dietaryRestrictions, setDietaryRestrictions] = useState("");
+  const [mealRequest, setMealRequest] = useState("");
+  const [ingredientsAvailable, setIngredientsAvailable] = useState("");
+  const [recipeNotes, setRecipeNotes] = useState("");
   const [parkingInstructions, setParkingInstructions] = useState("");
   const [gateCode, setGateCode] = useState("");
   const [emergencyName, setEmergencyName] = useState("");
@@ -80,11 +84,13 @@ export default function ChefProfile() {
     }
   }, [id, profile?.id]);
 
-  const { baseRate, extraGuests, guestFee, totalCost, pricingNote } =
-    calculateBookingPrice(serviceType, guestsCount);
+  usePlatformSettings();
+  const familyPlatformFee = usePlatformStore((s) => s.familyPlatformFeeDollars);
 
-  const platformFee = calculatePlatformFee(totalCost);
-  const cookPayout = calculateCookPayout(totalCost);
+  const sessionPricing = calculateSessionPrice(serviceType, guestsCount);
+  const { baseRate, extraGuests, guestFee, sessionTotal, pricingNote, extraFeePerGuest } =
+    sessionPricing;
+  const totalCharged = calculateFamilyTotalCharged(sessionTotal, familyPlatformFee);
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +126,11 @@ export default function ChefProfile() {
       booking_time: bookingTime || undefined,
       booking_end_time: bookingEndTime || undefined,
       guests_count: guestsCount,
-      price: totalCost,
+      price: sessionTotal,
+      meal_request: mealRequest.trim(),
+      ingredients_available: ingredientsAvailable.trim() || undefined,
+      recipe_notes: recipeNotes.trim() || undefined,
+      family_platform_fee_dollars: familyPlatformFee,
       special_instructions: specialInstructions || undefined,
       allergies: allergies || undefined,
       dietary_restrictions: dietaryRestrictions
@@ -159,6 +169,8 @@ export default function ChefProfile() {
       toast.success("Booking request sent!", {
         description: result.message,
       });
+
+      void EmailService.sendBookingEvent(result.booking.id, "booking_requested");
 
       if (profile?.id) {
         await NotificationService.notify(profile.id, {
@@ -562,6 +574,46 @@ export default function ChefProfile() {
 
                       <div>
                         <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          What meal would you like prepared? *
+                        </label>
+                        <textarea
+                          required
+                          value={mealRequest}
+                          onChange={(e) => setMealRequest(e.target.value)}
+                          rows={3}
+                          placeholder="e.g. Spaghetti, taco night, family dinner, weekly meal prep"
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          Ingredients you already have (optional)
+                        </label>
+                        <textarea
+                          value={ingredientsAvailable}
+                          onChange={(e) => setIngredientsAvailable(e.target.value)}
+                          rows={2}
+                          placeholder="e.g. Ground beef, pasta, tomatoes"
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                          Recipe or preparation notes (optional)
+                        </label>
+                        <textarea
+                          value={recipeNotes}
+                          onChange={(e) => setRecipeNotes(e.target.value)}
+                          rows={2}
+                          placeholder="e.g. Grandmother's recipe, less salt, extra spicy"
+                          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
                           Special Instructions
                         </label>
                         <textarea
@@ -636,7 +688,9 @@ export default function ChefProfile() {
                       </div>
                       {extraGuests > 0 && (
                         <div className="flex justify-between text-xs text-[#A8A8A8]">
-                          <span>Extra guests ({extraGuests} &times; $10):</span>
+                          <span>
+                            Guest additions ({extraGuests} &times; ${extraFeePerGuest}):
+                          </span>
                           <span className="font-semibold text-white">
                             +${guestFee}
                           </span>
@@ -644,9 +698,9 @@ export default function ChefProfile() {
                       )}
 
                       <div className="flex justify-between text-xs text-[#A8A8A8]">
-                        <span>Platform fee:</span>
-                        <span className="font-semibold text-[#FF7A59]">
-                          ${platformFee.toFixed(2)}
+                        <span>Family platform fee:</span>
+                        <span className="font-semibold text-white">
+                          ${familyPlatformFee.toFixed(2)}
                         </span>
                       </div>
 
@@ -655,15 +709,15 @@ export default function ChefProfile() {
                           Total Est. Cost:
                         </span>
                         <span className="text-3xl font-bold text-[#FF7A59] font-serif">
-                          ${totalCost}
+                          ${totalCharged.toFixed(2)}
                         </span>
                       </div>
                       <p className="text-[10px] text-[#FF7A59]/80 text-center leading-relaxed font-semibold">
                         {pricingNote}
                       </p>
                       <p className="text-[10px] text-[#A8A8A8] text-center leading-relaxed font-medium">
-                        Groceries are bought separately. Platform service fee is
-                        deducted from the cook payout, not added to your total.
+                        Groceries are bought separately. Cook platform fee is
+                        deducted from the cook payout, not added to your session rate.
                       </p>
                     </div>
 

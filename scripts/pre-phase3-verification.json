@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-06-20T11:38:09.666Z",
+  "productionUrl": "https://servdco-one.vercel.app",
+  "checks": {
+    "health": {
+      "status": "PASS",
+      "httpStatus": 200,
+      "body": {
+        "ok": true,
+        "route": "/api/health",
+        "commit": "a423cd245fdf3b58543ab2629aa26e1af624e473"
+      }
+    },
+    "migrations": {
+      "status": "PASS",
+      "latestMigration": "20250620143000",
+      "columns": {
+        "meal_request": true,
+        "ingredients_available": true,
+        "recipe_notes": true,
+        "family_platform_fee_cents": true
+      },
+      "contactSubject": true
+    },
+    "verificationGating": {
+      "status": "PASS",
+      "unapprovedPublicProfiles": 0,
+      "note": "Unverified cooks must not be public in marketplace"
+    },
+    "familyPlatformFee": {
+      "status": "PASS",
+      "value": 5
+    }
+  }
+}

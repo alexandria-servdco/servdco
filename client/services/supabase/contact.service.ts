@@ -22,13 +22,49 @@ export const ContactSupabaseService = {
       id: row.id,
       name: row.full_name,
       email: row.email,
+      subject: (row as { subject?: string | null }).subject ?? null,
       message: row.message,
       status: row.status,
       created_at: row.created_at,
     }));
   },
 
+  async submitViaApi(params: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch("/api/contact/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    const body = (await res.json()) as { success?: boolean; message?: string; error?: string };
+    if (!res.ok) {
+      throw new SupabaseQueryError(body.error ?? "Failed to send message.");
+    }
+    return {
+      success: true,
+      message: body.message ?? "Thank you for reaching out.",
+    };
+  },
+
   async submit(params: {
+    name: string;
+    email: string;
+    message: string;
+  }): Promise<{ success: boolean; message: string }> {
+    return this.submitViaApi({
+      name: params.name,
+      email: params.email,
+      subject: "General inquiry",
+      message: params.message,
+    });
+  },
+
+  /** @deprecated direct insert — use submitViaApi */
+  async submitLegacy(params: {
     name: string;
     email: string;
     message: string;

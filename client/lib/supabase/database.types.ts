@@ -168,6 +168,10 @@ export type Database = {
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           family_confirmed_at: string | null
+          meal_request: string | null
+          ingredients_available: string | null
+          recipe_notes: string | null
+          family_platform_fee_cents: number
           metadata: Json
           created_at: string
           updated_at: string
@@ -204,6 +208,10 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           family_confirmed_at?: string | null
+          meal_request?: string | null
+          ingredients_available?: string | null
+          recipe_notes?: string | null
+          family_platform_fee_cents?: number | null
           metadata?: Json
           created_at: string | null
           updated_at: string | null
@@ -240,6 +248,10 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           family_confirmed_at?: string | null
+          meal_request?: string | null
+          ingredients_available?: string | null
+          recipe_notes?: string | null
+          family_platform_fee_cents?: number | null
           metadata?: Json
           created_at?: string | null
           updated_at?: string | null
@@ -549,6 +561,7 @@ export type Database = {
           id: string
           full_name: string
           email: string
+          subject: string | null
           message: string
           status: Database["public"]["Enums"]["contact_status"]
           created_at: string
@@ -559,6 +572,7 @@ export type Database = {
           id?: string | null
           full_name: string | null
           email: string | null
+          subject?: string | null
           message: string | null
           status: Database["public"]["Enums"]["contact_status"] | null
           created_at: string | null
@@ -569,6 +583,7 @@ export type Database = {
           id?: string | null
           full_name?: string | null
           email?: string | null
+          subject?: string | null
           message?: string | null
           status?: Database["public"]["Enums"]["contact_status"] | null
           created_at?: string | null

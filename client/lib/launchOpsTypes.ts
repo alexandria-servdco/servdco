@@ -41,8 +41,9 @@ export interface ContactMessage {
   id: string;
   name: string;
   email: string;
+  subject?: string | null;
   message: string;
-  status: "new" | "read" | "archived";
+  status: "new" | "read" | "archived" | "resolved";
   created_at: string;
 }
 
@@ -80,4 +81,5 @@ export interface PlatformSettingsValues {
   platformFeePercentage: number;
   chefPremiumPriceMonthly: number;
   bookingHoldHours: number;
+  familyPlatformFeeDollars: number;
 }

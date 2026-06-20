@@ -7,9 +7,22 @@ export const ContactService = {
     return ContactSupabaseService.list();
   },
 
-  async submit(params: { name: string; email: string; message: string }) {
-    assertSupabaseConfigured();
-    return ContactSupabaseService.submit(params);
+  async submitViaApi(params: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) {
+    return ContactSupabaseService.submitViaApi(params);
+  },
+
+  async submit(params: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) {
+    return ContactSupabaseService.submitViaApi(params);
   },
 
   async updateStatus(id: string, status: "new" | "read" | "archived") {

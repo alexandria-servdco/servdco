@@ -149,6 +149,68 @@ export const DocumentsSupabaseService = {
     return mapRow(data, chefNames);
   },
 
+  async listOrphaned(): Promise<
+    Array<{
+      id: string;
+      chef_name: string;
+      document_type: string;
+      storage_path: string | null;
+      submitted_at: string;
+    }>
+  > {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data, error } = await client
+      .from("chef_documents")
+      .select("id, chef_profile_id, document_type, storage_path, storage_bucket, submitted_at")
+      .is("deleted_at", null)
+      .order("submitted_at", { ascending: false });
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+
+    const rows = data ?? [];
+    const chefNames = await resolveChefNames([
+      ...new Set(rows.map((r) => r.chef_profile_id)),
+    ]);
+
+    const orphaned: Array<{
+      id: string;
+      chef_name: string;
+      document_type: string;
+      storage_path: string | null;
+      submitted_at: string;
+    }> = [];
+
+    for (const row of rows) {
+      if (!row.storage_path?.trim()) {
+        orphaned.push({
+          id: row.id,
+          chef_name: chefNames.get(row.chef_profile_id) ?? "Cook",
+          document_type: row.document_type,
+          storage_path: row.storage_path,
+          submitted_at: row.submitted_at,
+        });
+        continue;
+      }
+      if (row.storage_bucket === "cook-documents") {
+        const { error: storageErr } = await client.storage
+          .from(row.storage_bucket)
+          .createSignedUrl(row.storage_path, 60);
+        if (storageErr) {
+          orphaned.push({
+            id: row.id,
+            chef_name: chefNames.get(row.chef_profile_id) ?? "Cook",
+            document_type: row.document_type,
+            storage_path: row.storage_path,
+            submitted_at: row.submitted_at,
+          });
+        }
+      }
+    }
+    return orphaned;
+  },
+
   async softDelete(id: string): Promise<void> {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");

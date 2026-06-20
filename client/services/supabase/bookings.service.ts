@@ -8,6 +8,8 @@ import {
 } from "@/lib/bookingTypes";
 import type { BookingStatus } from "@shared/booking";
 import { calculatePlatformFee, calculateCookPayout } from "@/utils/platformFee";
+import { calculateSessionPrice, familyFeeToCents } from "@shared/bookingPricing";
+import { PlatformSettingsSupabaseService } from "./platform-settings.service";
 import { bookingCreateSchema, formatZodError } from "@shared/validation";
 import { BookingAddressesSupabaseService } from "./booking-addresses.service";
 import { SupabaseQueryError } from "./fallback";
@@ -125,6 +127,10 @@ function mapRow(
     emergency_contact_name: (row as BookingRow & { emergency_contact_name?: string | null }).emergency_contact_name ?? null,
     emergency_contact_phone: (row as BookingRow & { emergency_contact_phone?: string | null }).emergency_contact_phone ?? null,
     family_confirmed_at: (row as BookingRow & { family_confirmed_at?: string | null }).family_confirmed_at ?? null,
+    meal_request: (row as BookingRow & { meal_request?: string | null }).meal_request ?? null,
+    ingredients_available: (row as BookingRow & { ingredients_available?: string | null }).ingredients_available ?? null,
+    recipe_notes: (row as BookingRow & { recipe_notes?: string | null }).recipe_notes ?? null,
+    family_platform_fee_cents: (row as BookingRow & { family_platform_fee_cents?: number }).family_platform_fee_cents ?? 0,
     payment_id: row.payment_id,
     address: addresses.get(row.id) ?? null,
     contact: familyProfile
@@ -197,6 +203,10 @@ export const BookingsSupabaseService = {
     gate_code?: string;
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
+    meal_request: string;
+    ingredients_available?: string;
+    recipe_notes?: string;
+    family_platform_fee_dollars?: number;
     address: Omit<BookingAddress, "id" | "booking_id">;
   }): Promise<{ success: boolean; booking: UiBooking; message: string }> {
     const client = getSupabaseClient();
@@ -218,6 +228,9 @@ export const BookingsSupabaseService = {
       gate_code: params.gate_code,
       emergency_contact_name: params.emergency_contact_name,
       emergency_contact_phone: params.emergency_contact_phone,
+      meal_request: params.meal_request,
+      ingredients_available: params.ingredients_available,
+      recipe_notes: params.recipe_notes,
       address: params.address,
     });
 
@@ -231,6 +244,20 @@ export const BookingsSupabaseService = {
     if (!familyId) throw new SupabaseQueryError("Authentication required");
 
     const p = parsed.data;
+    const expected = calculateSessionPrice(p.service_type, p.guests_count);
+    if (Math.abs(expected.sessionTotal - p.price) > 0.02) {
+      throw new SupabaseQueryError(
+        "Price mismatch. Please refresh the page and try again.",
+      );
+    }
+
+    let familyFeeDollars = params.family_platform_fee_dollars;
+    if (familyFeeDollars === undefined) {
+      const settings = await PlatformSettingsSupabaseService.getPublicSettings();
+      familyFeeDollars = settings.familyPlatformFeeDollars;
+    }
+    const familyPlatformFeeCents = familyFeeToCents(familyFeeDollars);
+
     const serviceType = normalizeServiceType(p.service_type);
     const priceCents = Math.round(p.price * 100);
     const platformFeeCents = Math.round(calculatePlatformFee(p.price) * 100);
@@ -261,6 +288,10 @@ export const BookingsSupabaseService = {
         gate_code: p.gate_code || null,
         emergency_contact_name: p.emergency_contact_name || null,
         emergency_contact_phone: p.emergency_contact_phone || null,
+        meal_request: p.meal_request,
+        ingredients_available: p.ingredients_available || null,
+        recipe_notes: p.recipe_notes || null,
+        family_platform_fee_cents: familyPlatformFeeCents,
         created_by: familyId,
         created_at: now,
         updated_at: now,

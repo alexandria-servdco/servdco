@@ -5,6 +5,7 @@ import {
   Plus, Minus, HelpCircle, ChevronDown, User, ChefHat, MessageSquare, ArrowRight 
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { VerificationResources } from "@/components/chef/VerificationResources";
 
 const FAQS_FAMILY = [
   {
@@ -28,7 +29,7 @@ const FAQS_FAMILY = [
 const FAQS_CHEF = [
   {
     q: "How do cooks earn on Servd Co?",
-    a: "Cooks earn based on session rates: Breakfast ($40), Dinner ($60), and Meal Prep ($70). Larger bookings add +$10/session guest fees. You keep 100% of your earnings minus standard banking transaction fees, and all tips are 100% yours!"
+    a: "Cooks earn based on session rates: Breakfast ($40), Dinner ($60), and Meal Prep ($70). Breakfast and dinner include up to 4 guests (+$5 per additional guest). Meal prep includes 1 guest (+$10 per additional guest). You keep your session earnings minus the platform fee, and all tips are 100% yours!"
   },
   {
     q: "Who provides the cooking tools and equipment?",
@@ -133,6 +134,12 @@ export default function FAQ() {
               );
             })}
           </div>
+
+          {activeCategory === "chef" && (
+            <div className="mb-12">
+              <VerificationResources />
+            </div>
+          )}
 
           {/* CTA Box */}
           <div className="mt-16 bg-[#161616] rounded-[24px] p-8 border border-white/5 text-center space-y-4">

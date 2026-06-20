@@ -1,18 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ContactService } from "@/services/contact.service";
-import { contactQueryKeys } from "@/services/supabase/contact.service";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ContactSupabaseService, contactQueryKeys } from "@/services/supabase/contact.service";
 
 export function useContactMessages() {
   return useQuery({
     queryKey: contactQueryKeys.list(),
-    queryFn: () => ContactService.listMessages(),
-  });
-}
-
-export function useSubmitContact() {
-  return useMutation({
-    mutationFn: (params: Parameters<typeof ContactService.submit>[0]) =>
-      ContactService.submit(params),
+    queryFn: () => ContactSupabaseService.list(),
   });
 }
 
@@ -25,7 +17,7 @@ export function useUpdateContactStatus() {
     }: {
       id: string;
       status: "new" | "read" | "archived";
-    }) => ContactService.updateStatus(id, status),
+    }) => ContactSupabaseService.updateStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: contactQueryKeys.all });
     },

@@ -68,10 +68,14 @@ export async function createBookingCheckoutSession(
     throw new Error("Chef is not available for bookings.");
   }
 
-  const amountCents = booking.price_cents;
+  const sessionCents = booking.price_cents;
+  const familyFeeCents =
+    (booking as { family_platform_fee_cents?: number }).family_platform_fee_cents ??
+    0;
+  const chargeCents = sessionCents + familyFeeCents;
   const feePct = await getPlatformFeePercentage();
   const { platformFeeCents, cookPayoutCents } = splitPaymentAmounts(
-    amountCents,
+    sessionCents,
     feePct,
   );
 
@@ -109,7 +113,7 @@ export async function createBookingCheckoutSession(
         booking_id: booking.id,
         family_id: booking.family_id,
         chef_profile_id: booking.chef_profile_id,
-        amount_cents: amountCents,
+        amount_cents: chargeCents,
         platform_fee_cents: platformFeeCents,
         cook_payout_cents: cookPayoutCents,
         currency: booking.currency ?? "USD",
@@ -138,7 +142,7 @@ export async function createBookingCheckoutSession(
           quantity: 1,
           price_data: {
             currency: (booking.currency ?? "USD").toLowerCase(),
-            unit_amount: amountCents,
+            unit_amount: chargeCents,
             product_data: {
               name: "Servd Co Booking",
               description: `Booking ${booking.id}`,

@@ -1,16 +1,15 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { applySecurityMiddleware } from "../_lib/securityMiddleware.js";
+import { applySecurityMiddleware } from "../securityMiddleware.js";
 
 const enforceSchema = z.object({
-  scope: z.enum([
-    "messaging",
-    "booking_create",
-    "review_submit",
-  ]),
+  scope: z.enum(["messaging", "booking_create", "review_submit"]),
 });
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleSecurityEnforce(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
   const parsedScope = enforceSchema.safeParse(req.body);
   const scope = parsedScope.success ? parsedScope.data.scope : "messaging";
 
@@ -24,10 +23,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!ctx) return;
 
   if (!parsedScope.success) {
-    return res.status(400).json({ error: "Invalid scope." });
+    res.status(400).json({ error: "Invalid scope." });
+    return;
   }
 
-  return res.status(200).json({
+  res.status(200).json({
     success: true,
     scope: parsedScope.data.scope,
     allowed: true,

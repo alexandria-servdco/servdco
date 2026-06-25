@@ -86,11 +86,11 @@ const middlewareSrc = readSrc("api/_lib/securityMiddleware.ts");
 if (middlewareSrc?.includes("applySecurityMiddleware")) pass("Shared security middleware");
 else fail("Shared security middleware");
 
-const signupRoute = readSrc("api/auth/signup.ts");
+const signupRoute = readSrc("api/_lib/handlers/authSignup.ts");
 if (signupRoute?.includes("turnstile: true")) pass("Signup API Turnstile protected");
 else fail("Signup API Turnstile protected");
 
-const waitlistRoute = readSrc("api/waitlist/submit.ts");
+const waitlistRoute = readSrc("api/_lib/handlers/waitlistSubmit.ts");
 if (waitlistRoute?.includes("rateLimit: \"waitlist\"")) pass("Waitlist API rate limited");
 else fail("Waitlist API rate limited");
 

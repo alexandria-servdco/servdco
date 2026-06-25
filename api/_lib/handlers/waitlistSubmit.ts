@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { applySecurityMiddleware } from "../_lib/securityMiddleware.js";
-import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
+import { applySecurityMiddleware } from "../securityMiddleware.js";
+import { getServiceRoleClient } from "../supabase/serviceRole.js";
+import { resolveRegionId } from "../regionMapping.js";
 
 const waitlistSchema = z.object({
   turnstileToken: z.string().optional(),
@@ -13,9 +14,10 @@ const waitlistSchema = z.object({
   zip: z.string().trim().max(16).optional().default(""),
 });
 
-import { resolveRegionId } from "../_lib/regionMapping.js";
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleWaitlistSubmit(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
   const ctx = await applySecurityMiddleware(req, res, {
     methods: ["POST"],
     route: "/api/waitlist/submit",
@@ -26,9 +28,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const parsed = waitlistSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    res.status(400).json({
       error: parsed.error.errors[0]?.message ?? "Invalid waitlist data.",
     });
+    return;
   }
 
   const data = parsed.data;
@@ -49,7 +52,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (insertError && !insertError.message.toLowerCase().includes("duplicate")) {
     console.error("[waitlist.submit]", insertError);
-    return res.status(500).json({ error: "Could not join waitlist." });
+    res.status(500).json({ error: "Could not join waitlist." });
+    return;
   }
 
   const { data: region } = await client
@@ -71,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (row.role === "chef") chefs += 1;
   }
 
-  return res.status(200).json({
+  res.status(200).json({
     success: true,
     status,
     message:

@@ -1,9 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
-import { applySecurityMiddleware } from "../_lib/securityMiddleware.js";
-import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
-import { getStripeEnv } from "../_lib/stripe/env.js";
+import { applySecurityMiddleware } from "../securityMiddleware.js";
+import { getServiceRoleClient } from "../supabase/serviceRole.js";
+import { getStripeEnv } from "../stripe/env.js";
+import {
+  createPasswordAuthClient,
+  getServiceRoleAuthAdmin,
+  type AuthSessionPayload,
+} from "../supabaseAuthApi.js";
+import { resolveRegionId } from "../regionMapping.js";
 
 const signupSchema = z.object({
   turnstileToken: z.string().optional(),
@@ -20,8 +25,6 @@ const signupSchema = z.object({
   bio: z.string().trim().max(2000).optional(),
 });
 
-import { resolveRegionId } from "../_lib/regionMapping.js";
-
 async function resolveWaitlistStatus(stateName: string): Promise<"active" | "waitlist"> {
   const client = getServiceRoleClient();
   const regionId = resolveRegionId(stateName);
@@ -33,7 +36,10 @@ async function resolveWaitlistStatus(stateName: string): Promise<"active" | "wai
   return data?.is_active ? "active" : "waitlist";
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleAuthSignup(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
   const ctx = await applySecurityMiddleware(req, res, {
     methods: ["POST"],
     route: "/api/auth/signup",
@@ -44,20 +50,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const parsed = signupSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    res.status(400).json({
       error: parsed.error.errors[0]?.message ?? "Invalid signup data.",
     });
+    return;
   }
 
   const data = parsed.data;
   const env = getStripeEnv();
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    return res.status(503).json({ error: "Authentication service unavailable." });
+    res.status(503).json({ error: "Authentication service unavailable." });
+    return;
   }
 
   const admin = getServiceRoleClient();
+  const authAdmin = getServiceRoleAuthAdmin(admin);
 
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
+  const { data: created, error: createError } = await authAdmin.createUser({
     email: data.email,
     password: data.password,
     email_confirm: false,
@@ -77,10 +86,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (createError) {
     const msg = createError.message.toLowerCase();
     if (msg.includes("already") || msg.includes("registered")) {
-      return res.status(409).json({ error: "An account with this email already exists." });
+      res.status(409).json({ error: "An account with this email already exists." });
+      return;
     }
     console.error("[auth.signup]", createError);
-    return res.status(400).json({ error: createError.message });
+    res.status(400).json({ error: createError.message });
+    return;
   }
 
   const userId = created.user?.id;
@@ -107,17 +118,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
-  let session: {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-  } | null = null;
+  let session: AuthSessionPayload | null = null;
 
   if (anonKey) {
-    const anonClient = createClient(env.SUPABASE_URL, anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: signInData } = await anonClient.auth.signInWithPassword({
+    const anonAuth = createPasswordAuthClient(env.SUPABASE_URL, anonKey);
+    const { data: signInData } = await anonAuth.signInWithPassword({
       email: data.email,
       password: data.password,
     });
@@ -130,7 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  return res.status(200).json({
+  res.status(200).json({
     success: true,
     status,
     message:

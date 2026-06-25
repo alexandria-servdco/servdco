@@ -47,6 +47,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/waitlist/submit",
+      "destination": "/api/platform/waitlist"
+    },
+    {
+      "source": "/api/security/enforce",
+      "destination": "/api/platform/enforce"
+    },
+    {
       "source": "/((?!api).*)",
       "destination": "/index.html"
     }

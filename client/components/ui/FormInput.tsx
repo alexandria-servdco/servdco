@@ -44,12 +44,13 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let val = e.target.value;
 
-      // Phone formatting: (555) 123-4567
+      // Phone formatting: (555) 123-4567 — block letters/emails in phone fields
       if (type === "tel") {
+        val = val.replace(/[a-zA-Z@]/g, "");
         const digits = val.replace(/\D/g, "");
         const limited = digits.slice(0, 10);
         let formatted = "";
-        
+
         if (limited.length > 0) {
           formatted = "(" + limited.slice(0, 3);
         }

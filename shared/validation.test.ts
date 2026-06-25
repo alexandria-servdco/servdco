@@ -50,7 +50,24 @@ describe("registration validation", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects invalid ZIP", () => {
+  it("rejects email pasted into phone field", () => {
+    const result = safeParse(familyRegisterCoreSchema, {
+      name: "Jane Doe",
+      email: "jane@example.com",
+      state: "Ohio",
+      city: "Columbus",
+      zip: "43215",
+      phone: "kartik.2327csit1113@kiet.edu",
+    });
+    expect(result.success).toBe(false);
+    if (result.success === false) {
+      expect(result.error.toLowerCase()).toContain("phone");
+      expect(result.error.toLowerCase()).toContain("email");
+      expect(result.fieldErrors.phone).toBeTruthy();
+    }
+  });
+
+  it("rejects invalid ZIP with plain-language message", () => {
     const result = safeParse(familyRegisterCoreSchema, {
       name: "Jane",
       email: "jane@example.com",

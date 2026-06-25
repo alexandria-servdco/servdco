@@ -3,6 +3,7 @@ import { z } from "zod";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { getStripeEnv } from "../stripe/env.js";
+import { phoneSchema, formatZodError } from "../../../shared/validation.js";
 import {
   createPasswordAuthClient,
   getServiceRoleAuthAdmin,
@@ -20,7 +21,7 @@ const signupSchema = z.object({
   state: z.string().trim().min(2).max(64),
   city: z.string().trim().min(2).max(120),
   zip: z.string().trim().regex(/^\d{5}(-\d{4})?$/),
-  phone: z.string().trim().min(7).max(20).optional(),
+  phone: phoneSchema.optional(),
   yearsExperience: z.string().trim().max(40).optional(),
   primaryCuisine: z.string().trim().max(80).optional(),
   bio: z.string().trim().max(2000).optional(),
@@ -52,7 +53,7 @@ export async function handleAuthSignup(
   const parsed = signupSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
-      error: parsed.error.errors[0]?.message ?? "Invalid signup data.",
+      error: formatZodError(parsed.error),
     });
     return;
   }

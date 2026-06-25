@@ -67,6 +67,7 @@ export default function ChefRegistration() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [emailValid, setEmailValid] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
@@ -86,6 +87,16 @@ export default function ChefRegistration() {
     serviceTypes: [] as string[],
   });
 
+  const clearFieldError = (key: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    setError("");
+  };
+
   const handleNext = async () => {
     if (loading) return;
 
@@ -100,12 +111,18 @@ export default function ChefRegistration() {
         phone: formData.phone,
       });
       if (parsed.success === false) {
+        setFieldErrors(parsed.fieldErrors);
         setError(parsed.error);
         return;
       }
+      setFieldErrors({});
 
       if (!emailValid) {
-        setError("Please provide a valid email address.");
+        setError("Email address: Enter a valid email address (for example, name@example.com).");
+        setFieldErrors((prev) => ({
+          ...prev,
+          email: "Enter a valid email address (for example, name@example.com).",
+        }));
         return;
       }
       const usesSupabase = await AuthService.usesSupabaseAuth();
@@ -113,10 +130,15 @@ export default function ChefRegistration() {
         const { checks } = evaluatePassword(formData.password);
         if (!isPasswordStrongEnough(checks)) {
           setError(PASSWORD_REQUIREMENT_HINT);
+          setFieldErrors((prev) => ({ ...prev, password: PASSWORD_REQUIREMENT_HINT }));
           return;
         }
         if (formData.password !== formData.confirmPassword) {
-          setError("Passwords do not match.");
+          setError("Passwords do not match. Re-enter the same password in both fields.");
+          setFieldErrors((prev) => ({
+            ...prev,
+            confirmPassword: "Passwords must match.",
+          }));
           return;
         }
       }
@@ -138,7 +160,7 @@ export default function ChefRegistration() {
         !formData.primaryCuisine ||
         !formData.bio
       ) {
-        setError("Please complete your experience and cuisine details.");
+        setError("Please complete your experience, cuisine, and bio before continuing.");
         return;
       }
     }
@@ -331,39 +353,48 @@ export default function ChefRegistration() {
                       label="Full Name"
                       id="fullName"
                       value={formData.fullName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, fullName: e.target.value })
-                      }
+                      onChange={(e) => {
+                        clearFieldError("name");
+                        setFormData({ ...formData, fullName: e.target.value });
+                      }}
                       icon={<User size={16} />}
                       required
+                      error={fieldErrors.name}
                     />
                     <FormInput
                       type="email"
                       label="Email Address"
                       id="email"
+                      name="email"
                       value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
+                      onChange={(e) => {
+                        clearFieldError("email");
+                        setFormData({ ...formData, email: e.target.value });
+                      }}
                       icon={<Mail size={16} />}
                       required
                       onValidationChange={(isValid) => setEmailValid(isValid)}
                       error={
-                        !emailValid && formData.email.length > 0
-                          ? "Invalid email address format."
-                          : ""
+                        fieldErrors.email ||
+                        (!emailValid && formData.email.length > 0
+                          ? "Enter a valid email address (for example, name@example.com)."
+                          : undefined)
                       }
                     />
                     <FormInput
                       type="tel"
                       label="Phone Number"
                       id="phone"
+                      name="phone"
+                      autoComplete="tel"
                       value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
+                      onChange={(e) => {
+                        clearFieldError("phone");
+                        setFormData({ ...formData, phone: e.target.value });
+                      }}
                       icon={<Phone size={16} />}
                       required
+                      error={fieldErrors.phone}
                     />
                     <FormInput
                       type="password"
@@ -371,11 +402,13 @@ export default function ChefRegistration() {
                       id="password"
                       autoComplete="new-password"
                       value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
+                      onChange={(e) => {
+                        clearFieldError("password");
+                        setFormData({ ...formData, password: e.target.value });
+                      }}
                       icon={<Lock size={16} />}
                       required
+                      error={fieldErrors.password}
                     />
                     <FormInput
                       type="password"
@@ -383,19 +416,21 @@ export default function ChefRegistration() {
                       id="confirmPassword"
                       autoComplete="new-password"
                       value={formData.confirmPassword}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        clearFieldError("confirmPassword");
                         setFormData({
                           ...formData,
                           confirmPassword: e.target.value,
-                        })
-                      }
+                        });
+                      }}
                       icon={<Lock size={16} />}
                       required
                       error={
-                        formData.confirmPassword &&
+                        fieldErrors.confirmPassword ||
+                        (formData.confirmPassword &&
                         formData.password !== formData.confirmPassword
-                          ? "Passwords do not match."
-                          : undefined
+                          ? "Passwords must match."
+                          : undefined)
                       }
                     />
                     <FormInput
@@ -405,18 +440,20 @@ export default function ChefRegistration() {
                       inputMode="numeric"
                       autoComplete="postal-code"
                       value={formData.zip}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        clearFieldError("zip");
                         setFormData({
                           ...formData,
                           zip: e.target.value.replace(/\D/g, "").slice(0, 5),
-                        })
-                      }
+                        });
+                      }}
                       icon={<MapPin size={16} />}
                       required
                       error={
-                        formData.zip && !/^\d{5}$/.test(formData.zip)
-                          ? "Enter a valid 5-digit ZIP."
-                          : undefined
+                        fieldErrors.zip ||
+                        (formData.zip && !/^\d{5}$/.test(formData.zip)
+                          ? "Enter a valid 5-digit ZIP code."
+                          : undefined)
                       }
                     />
                   </div>

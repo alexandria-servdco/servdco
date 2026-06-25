@@ -3,12 +3,59 @@ import { BOOKING_STATUSES } from "./booking";
 
 /** Shared Zod schemas — client forms, API payloads, admin actions. */
 
+/** Maps schema field keys to labels shown in form errors. */
+export const FIELD_LABELS: Record<string, string> = {
+  name: "Full name",
+  email: "Email address",
+  phone: "Phone number",
+  password: "Password",
+  confirmPassword: "Confirm password",
+  state: "State",
+  city: "City",
+  zip: "ZIP code",
+  subject: "Subject",
+  message: "Message",
+  yearsExperience: "Years of experience",
+  primaryCuisine: "Primary cuisine",
+  bio: "Cook bio",
+};
+
 export const emailSchema = z.string().trim().email("Enter a valid email address.");
 
 export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters.")
   .max(128, "Password is too long.");
+
+export const phoneSchema = z
+  .string()
+  .trim()
+  .min(1, "Phone number is required.")
+  .superRefine((value, ctx) => {
+    if (value.includes("@")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "This looks like an email address. Enter your phone number instead (for example, 614-555-0100).",
+      });
+      return;
+    }
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Enter a valid 10-digit US phone number (for example, 614-555-0100).",
+      });
+      return;
+    }
+    if (digits.length > 15) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Phone number is too long. Use a standard 10-digit US number.",
+      });
+    }
+  });
 
 export const loginSchema = z.object({
   email: emailSchema,
@@ -20,12 +67,16 @@ export const passwordResetSchema = z.object({
 });
 
 export const familyRegisterCoreSchema = z.object({
-  name: z.string().trim().min(2, "Name is required.").max(120),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Please enter your full name.")
+    .max(120, "Name is too long — use 120 characters or fewer."),
   email: emailSchema,
-  state: z.string().trim().min(2).max(64),
-  city: z.string().trim().min(2).max(120),
-  zip: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code."),
-  phone: z.string().trim().min(7, "Phone number is required.").max(20),
+  state: z.string().trim().min(2, "Please select your state.").max(64),
+  city: z.string().trim().min(2, "Please select your city.").max(120),
+  zip: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "Enter a valid 5-digit ZIP code."),
+  phone: phoneSchema,
 });
 
 export const familyRegisterSchema = familyRegisterCoreSchema.extend({
@@ -144,14 +195,68 @@ export const stripeRefundSchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 
+/** Turn a Zod issue into plain-language guidance with the field name when possible. */
+export function humanizeZodIssue(issue: z.ZodIssue): string {
+  const fieldKey = issue.path[0]?.toString() ?? "";
+  const label = FIELD_LABELS[fieldKey] ?? (fieldKey ? fieldKey : "This field");
+
+  if (issue.message && !issue.message.startsWith("String must") && !issue.message.startsWith("Invalid")) {
+    if (fieldKey && !issue.message.toLowerCase().includes(label.toLowerCase())) {
+      return `${label}: ${issue.message}`;
+    }
+    return issue.message;
+  }
+
+  switch (issue.code) {
+    case "too_small":
+      if (issue.type === "string") {
+        return `${label}: Please enter at least ${issue.minimum} character${issue.minimum === 1 ? "" : "s"}.`;
+      }
+      break;
+    case "too_big":
+      if (issue.type === "string") {
+        return `${label}: Please use ${issue.maximum} characters or fewer.`;
+      }
+      break;
+    case "invalid_string":
+      if (issue.validation === "email") {
+        return `${label}: Enter a valid email address (for example, name@example.com).`;
+      }
+      break;
+    case "invalid_type":
+      if (issue.received === "undefined" || issue.received === "null") {
+        return `${label}: This field is required.`;
+      }
+      break;
+    case "custom":
+      return issue.message || `${label}: Please check this value.`;
+  }
+
+  return issue.message || `${label}: Please check this value.`;
+}
+
 /** Map Zod errors to a single user-facing string. */
 export function formatZodError(error: z.ZodError): string {
-  return error.errors[0]?.message ?? "Invalid input.";
+  const issue = error.errors[0];
+  if (!issue) return "Please fix the highlighted fields below.";
+  return humanizeZodIssue(issue);
+}
+
+/** Map Zod errors to per-field messages (first error per field). */
+export function formatZodFieldErrors(error: z.ZodError): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const issue of error.errors) {
+    const key = issue.path[0]?.toString();
+    if (key && !out[key]) {
+      out[key] = humanizeZodIssue(issue);
+    }
+  }
+  return out;
 }
 
 export type SafeParseResult<T> =
   | { success: true; data: T }
-  | { success: false; error: string };
+  | { success: false; error: string; fieldErrors: Record<string, string> };
 
 export function safeParse<D>(
   schema: z.ZodSchema<D>,
@@ -159,5 +264,9 @@ export function safeParse<D>(
 ): SafeParseResult<D> {
   const result = schema.safeParse(data);
   if (result.success) return { success: true, data: result.data };
-  return { success: false, error: formatZodError(result.error) };
+  return {
+    success: false,
+    error: formatZodError(result.error),
+    fieldErrors: formatZodFieldErrors(result.error),
+  };
 }

@@ -16,6 +16,11 @@ import {
   getLegacyUser,
   subscribeLegacyAuth,
 } from "@/lib/auth/legacySession";
+import {
+  clearRecoveryPending,
+  isRecoveryPending,
+  markRecoveryPending,
+} from "@/lib/auth/passwordRecovery";
 
 export interface AuthContextValue {
   session: Session | null;
@@ -103,9 +108,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!mounted) return;
       if (event === "PASSWORD_RECOVERY") {
         setPasswordRecovery(true);
+        markRecoveryPending();
+      }
+      if (event === "USER_UPDATED" && isRecoveryPending()) {
+        setPasswordRecovery(false);
+        clearRecoveryPending();
       }
       if (event === "SIGNED_OUT") {
         setPasswordRecovery(false);
+        clearRecoveryPending();
       }
       setSession(nextSession);
       setUser(nextSession?.user ?? null);

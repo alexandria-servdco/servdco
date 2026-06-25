@@ -1,16 +1,20 @@
-import { useMemo, useState } from "react";
-import { Search, X, MapPin, Plus } from "lucide-react";
-import { citiesForState } from "@/lib/us-locations";
+import { useCallback, useMemo, useState, useTransition, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Search, X, MapPin, Plus, Loader2, AlertCircle } from "lucide-react";
+import { resolveStateCode } from "@/lib/us-locations";
 import {
-  citiesAvailableForState,
   formatCommaList,
-  getZipsForCity,
   mergeUniqueZips,
-  mergeZipsForCities,
   normalizeCityName,
   parseCommaList,
+  sanitizeZipInput,
+} from "@shared/geoZip";
+import { GeoZipService } from "@/services/supabase/geo-zip.service";
+import {
+  citiesAvailableForState,
+  getZipsForCity,
+  mergeZipsForCities,
 } from "@/lib/zip-codes-by-city";
-import { resolveStateCode } from "@/lib/us-locations";
 
 export type RegionCityZipEditorProps = {
   stateCode: string;
@@ -20,6 +24,15 @@ export type RegionCityZipEditorProps = {
   onZipCodesChange: (zipCodes: string) => void;
 };
 
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(id);
+  }, [value, delayMs]);
+  return debounced;
+}
+
 export function RegionCityZipEditor({
   stateCode,
   cities,
@@ -28,42 +41,108 @@ export function RegionCityZipEditor({
   onZipCodesChange,
 }: RegionCityZipEditorProps) {
   const [search, setSearch] = useState("");
-  const code = resolveStateCode(stateCode) ?? stateCode.toUpperCase();
+  const [pendingCity, setPendingCity] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const debouncedSearch = useDebouncedValue(search, 250);
+  const code = resolveStateCode(stateCode) ?? stateCode.toUpperCase().slice(0, 2);
 
   const selectedCities = useMemo(() => parseCommaList(cities), [cities]);
   const selectedZips = useMemo(() => parseCommaList(zipCodes), [zipCodes]);
 
-  const availableCities = useMemo(() => {
-    const fromDataset = citiesAvailableForState(code);
-    const fromStateList = citiesForState(code);
-    const set = new Set<string>([...fromDataset, ...fromStateList]);
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [code]);
+  const citySearchQuery = useQuery({
+    queryKey: ["geo-cities", code, debouncedSearch],
+    queryFn: () => GeoZipService.searchCities(code, debouncedSearch, 50),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  const dbCities = citySearchQuery.data ?? [];
+  const useStaticFallback =
+    citySearchQuery.isError ||
+    (citySearchQuery.isSuccess && dbCities.length === 0 && !debouncedSearch);
 
   const filteredCities = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return availableCities;
-    return availableCities.filter((c) => c.toLowerCase().includes(q));
-  }, [availableCities, search]);
+    if (!useStaticFallback && dbCities.length > 0) {
+      return dbCities.map((c) => ({
+        name: c.cityName,
+        zipCount: c.zipCount,
+      }));
+    }
+    const staticList = citiesAvailableForState(code);
+    const q = debouncedSearch.trim().toLowerCase();
+    const list = q
+      ? staticList.filter((c) => c.toLowerCase().includes(q))
+      : staticList;
+    return list.slice(0, 50).map((name) => ({
+      name,
+      zipCount: getZipsForCity(code, name).length,
+    }));
+  }, [useStaticFallback, dbCities, code, debouncedSearch]);
+
+  const resolveZipsForCity = useCallback(
+    async (city: string): Promise<string[]> => {
+      const fromDb = await GeoZipService.getZipsForCities(code, [city]);
+      if (fromDb.length > 0) return fromDb;
+      return getZipsForCity(code, city);
+    },
+    [code],
+  );
 
   const addCity = (city: string) => {
     const normalized = normalizeCityName(city);
-    if (selectedCities.some((c) => c.toLowerCase() === normalized.toLowerCase())) {
+    if (
+      selectedCities.some((c) => c.toLowerCase() === normalized.toLowerCase())
+    ) {
+      setActionError(`${normalized} is already in this region.`);
       return;
     }
+
+    setActionError(null);
+    setPendingCity(normalized);
     const nextCities = [...selectedCities, normalized];
-    const newZips = getZipsForCity(code, normalized);
     onCitiesChange(formatCommaList(nextCities));
-    onZipCodesChange(formatCommaList(mergeUniqueZips(selectedZips, newZips)));
+
+    startTransition(() => {
+      void (async () => {
+        try {
+          const newZips = await resolveZipsForCity(normalized);
+          onZipCodesChange(
+            formatCommaList(mergeUniqueZips(selectedZips, newZips)),
+          );
+        } catch {
+          setActionError(`Could not load ZIP codes for ${normalized}.`);
+        } finally {
+          setPendingCity(null);
+        }
+      })();
+    });
   };
 
   const removeCity = (city: string) => {
+    setActionError(null);
     const nextCities = selectedCities.filter(
       (c) => c.toLowerCase() !== city.toLowerCase(),
     );
-    const zipsFromRemaining = mergeZipsForCities(code, nextCities);
     onCitiesChange(formatCommaList(nextCities));
-    onZipCodesChange(formatCommaList(zipsFromRemaining));
+
+    startTransition(() => {
+      void (async () => {
+        try {
+          const zipsFromDb = await GeoZipService.zipsForRemainingCities(
+            code,
+            nextCities,
+          );
+          const zips =
+            zipsFromDb.length > 0
+              ? zipsFromDb
+              : mergeZipsForCities(code, nextCities);
+          onZipCodesChange(formatCommaList(zips));
+        } catch {
+          onZipCodesChange(formatCommaList(mergeZipsForCities(code, nextCities)));
+        }
+      })();
+    });
   };
 
   const removeZip = (zip: string) => {
@@ -72,10 +151,19 @@ export function RegionCityZipEditor({
     );
   };
 
+  const handleZipManualEdit = (value: string) => {
+    onZipCodesChange(sanitizeZipInput(value));
+  };
+
+  const isLoadingCities = citySearchQuery.isLoading && !useStaticFallback;
+
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2">
+        <label
+          htmlFor="region-city-search"
+          className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2"
+        >
           Add cities (auto-expands ZIP codes)
         </label>
         <div className="relative mb-2">
@@ -85,38 +173,75 @@ export function RegionCityZipEditor({
             aria-hidden="true"
           />
           <input
+            id="region-city-search"
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search cities in this state…"
-            className="w-full pl-9 pr-3 py-2.5 bg-[#111111] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+            className="w-full pl-9 pr-3 py-2.5 bg-[#111111] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] focus-visible:ring-2 focus-visible:ring-[#FF7A59]/40"
             aria-label="Search cities"
+            aria-describedby="region-city-search-hint"
           />
         </div>
-        <div className="max-h-32 overflow-y-auto border border-white/10 rounded-xl bg-[#111111] divide-y divide-white/5">
-          {filteredCities.length === 0 ? (
+        <p id="region-city-search-hint" className="text-[10px] text-[#A8A8A8] mb-2">
+          {useStaticFallback && !citySearchQuery.isLoading
+            ? "Using offline city list — apply geo migration for full database search."
+            : "Fuzzy search powered by production ZIP dataset."}
+        </p>
+
+        {actionError && (
+          <div
+            className="flex items-center gap-2 text-xs text-amber-400 mb-2"
+            role="alert"
+          >
+            <AlertCircle size={14} aria-hidden="true" />
+            {actionError}
+          </div>
+        )}
+
+        <div
+          className="max-h-36 overflow-y-auto border border-white/10 rounded-xl bg-[#111111] divide-y divide-white/5"
+          role="listbox"
+          aria-label="City search results"
+        >
+          {isLoadingCities ? (
+            <p className="text-xs text-[#A8A8A8] p-3 flex items-center gap-2" role="status">
+              <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+              Searching cities…
+            </p>
+          ) : filteredCities.length === 0 ? (
             <p className="text-xs text-[#A8A8A8] p-3">No cities match your search.</p>
           ) : (
-            filteredCities.slice(0, 50).map((city) => {
+            filteredCities.map(({ name, zipCount }) => {
               const isSelected = selectedCities.some(
-                (c) => c.toLowerCase() === city.toLowerCase(),
+                (c) => c.toLowerCase() === name.toLowerCase(),
               );
-              const zipCount = getZipsForCity(code, city).length;
+              const isAdding = pendingCity?.toLowerCase() === name.toLowerCase();
               return (
                 <button
-                  key={city}
+                  key={name}
                   type="button"
-                  disabled={isSelected}
-                  onClick={() => addCity(city)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-left text-xs hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  role="option"
+                  aria-selected={isSelected}
+                  disabled={isSelected || isAdding || isPending}
+                  onClick={() => addCity(name)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-left text-xs hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:bg-white/10"
                 >
                   <span className="flex items-center gap-2 text-white font-medium">
-                    <MapPin size={12} className="text-[#FF7A59]" />
-                    {city}
+                    <MapPin size={12} className="text-[#FF7A59]" aria-hidden="true" />
+                    {name}
                   </span>
                   <span className="text-[#A8A8A8]">
-                    {zipCount > 0 ? `${zipCount} ZIPs` : "No ZIP data"}
-                    {!isSelected && <Plus size={12} className="inline ml-1" />}
+                    {isAdding ? (
+                      <Loader2 size={12} className="inline animate-spin" />
+                    ) : zipCount > 0 ? (
+                      `${zipCount} ZIPs`
+                    ) : (
+                      "No ZIP data"
+                    )}
+                    {!isSelected && !isAdding && (
+                      <Plus size={12} className="inline ml-1" aria-hidden="true" />
+                    )}
                   </span>
                 </button>
               );
@@ -130,20 +255,22 @@ export function RegionCityZipEditor({
           <p className="text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2">
             Selected cities ({selectedCities.length})
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="list" aria-label="Selected cities">
             {selectedCities.map((city) => (
               <span
                 key={city}
+                role="listitem"
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FF7A59]/10 border border-[#FF7A59]/20 text-[11px] font-semibold text-[#FF7A59]"
               >
                 {city}
                 <button
                   type="button"
                   onClick={() => removeCity(city)}
-                  className="hover:text-white"
+                  className="hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
                   aria-label={`Remove ${city}`}
+                  disabled={isPending}
                 >
-                  <X size={12} />
+                  <X size={12} aria-hidden="true" />
                 </button>
               </span>
             ))}
@@ -152,14 +279,18 @@ export function RegionCityZipEditor({
       )}
 
       <div>
-        <label className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2">
+        <label
+          htmlFor="region-zip-codes"
+          className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider mb-2"
+        >
           ZIP codes covered ({selectedZips.length})
         </label>
         <textarea
+          id="region-zip-codes"
           value={zipCodes}
-          onChange={(e) => onZipCodesChange(e.target.value)}
+          onChange={(e) => handleZipManualEdit(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2.5 bg-[#111111] border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-[#FF7A59] resize-y min-h-[72px]"
+          className="w-full px-3 py-2.5 bg-[#111111] border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-[#FF7A59] focus-visible:ring-2 focus-visible:ring-[#FF7A59]/40 resize-y min-h-[72px]"
           placeholder="Auto-populated when you add cities. You can edit manually."
           aria-label="ZIP codes covered"
         />
@@ -170,8 +301,8 @@ export function RegionCityZipEditor({
                 key={zip}
                 type="button"
                 onClick={() => removeZip(zip)}
-                className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#A8A8A8] hover:bg-white/10 font-mono"
-                title="Click to remove"
+                className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#A8A8A8] hover:bg-white/10 font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A59]"
+                aria-label={`Remove ZIP ${zip}`}
               >
                 {zip} ×
               </button>

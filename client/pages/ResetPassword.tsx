@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Lock, ShieldCheck, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
-import { getSupabaseClient } from "@/lib/supabase/client";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
@@ -12,68 +11,17 @@ import {
   evaluatePassword,
   isPasswordStrongEnough,
 } from "@/components/ui/PasswordStrengthMeter";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-type PageState = "loading" | "ready" | "invalid" | "success";
-
-function hasRecoveryHash(): boolean {
-  const hash = window.location.hash;
-  return hash.includes("type=recovery") || hash.includes("access_token=");
-}
+import { usePasswordRecoverySession } from "@/hooks/usePasswordRecoverySession";
+import { clearRecoveryHashFromUrl, clearRecoveryPending } from "@/lib/auth/passwordRecovery";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { supabaseAuthEnabled, passwordRecovery } = useAuth();
-  const [pageState, setPageState] = useState<PageState>("loading");
+  const { pageState, invalidMessage, markSuccess } = usePasswordRecoverySession();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const validateSession = async () => {
-      if (!supabaseAuthEnabled) {
-        if (!cancelled) setPageState("invalid");
-        return;
-      }
-
-      const client = getSupabaseClient();
-      if (!client) {
-        if (!cancelled) setPageState("invalid");
-        return;
-      }
-
-      // Allow Supabase to parse hash tokens from recovery email link
-      if (hasRecoveryHash()) {
-        await new Promise((r) => setTimeout(r, 400));
-      }
-
-      const { data, error: sessionError } = await client.auth.getSession();
-      if (cancelled) return;
-
-      if (sessionError || !data.session) {
-        setPageState("invalid");
-        return;
-      }
-
-      if (passwordRecovery || hasRecoveryHash() || searchParams.get("type") === "recovery") {
-        setPageState("ready");
-        return;
-      }
-
-      // Authenticated but not a recovery flow — send to login
-      setPageState("invalid");
-    };
-
-    void validateSession();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabaseAuthEnabled, passwordRecovery, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,18 +45,31 @@ export default function ResetPassword() {
     setIsSubmitting(true);
     try {
       await AuthService.completePasswordReset(password);
-      setPageState("success");
+      clearRecoveryPending();
+      clearRecoveryHashFromUrl();
+      await AuthService.logout();
+      markSuccess();
       toast.success("Password updated successfully.");
-      window.history.replaceState(null, "", window.location.pathname);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update password.");
+      const message =
+        err instanceof Error ? err.message : "Could not update password.";
+      if (
+        message.toLowerCase().includes("session") ||
+        message.toLowerCase().includes("jwt") ||
+        message.toLowerCase().includes("expired")
+      ) {
+        setError(
+          "Your reset session expired. Request a new password reset link from the login page.",
+        );
+      } else {
+        setError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleGoToLogin = async () => {
-    await AuthService.logout().catch(() => {});
+  const handleGoToLogin = () => {
     navigate("/login?reset=success", { replace: true });
   };
 
@@ -117,7 +78,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-full bg-[#FF7A59]/10 flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck className="text-[#FF7A59]" size={22} />
+            <ShieldCheck className="text-[#FF7A59]" size={22} aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold font-serif text-white mb-2">
             {pageState === "success" ? "Password updated" : "Create new password"}
@@ -137,25 +98,25 @@ export default function ResetPassword() {
           )}
 
           {pageState === "invalid" && (
-            <div className="text-center space-y-4 py-4">
+            <div className="text-center space-y-4 py-4" role="alert">
               <AlertCircle className="mx-auto text-amber-400" size={32} aria-hidden="true" />
               <p className="text-sm text-[#F5F5F5] font-semibold">Link expired or invalid</p>
               <p className="text-xs text-[#A8A8A8] leading-relaxed">
-                Password reset links expire after a short time and can only be used once.
-                Request a new link from the login page.
+                {invalidMessage ??
+                  "Password reset links expire after a short time and can only be used once."}
               </p>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 text-sm font-bold text-[#FF7A59] hover:underline"
+                className="inline-flex items-center gap-2 text-sm font-bold text-[#FF7A59] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A59] rounded"
               >
                 Back to login
-                <ArrowRight size={14} />
+                <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </div>
           )}
 
           {pageState === "success" && (
-            <div className="text-center space-y-5 py-4">
+            <div className="text-center space-y-5 py-4" role="status" aria-live="polite">
               <CheckCircle2 className="mx-auto text-[#2E7D66]" size={36} aria-hidden="true" />
               <p className="text-sm text-[#F5F5F5]">
                 You can now sign in with your new password.
@@ -172,6 +133,7 @@ export default function ResetPassword() {
                 <div
                   className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold"
                   role="alert"
+                  aria-live="assertive"
                 >
                   {error}
                 </div>
@@ -186,6 +148,7 @@ export default function ResetPassword() {
                 onChange={(e) => setPassword(e.target.value)}
                 icon={<Lock size={16} />}
                 required
+                disabled={isSubmitting}
               />
 
               <PasswordStrengthMeter password={password} />
@@ -199,6 +162,7 @@ export default function ResetPassword() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 icon={<Lock size={16} />}
                 required
+                disabled={isSubmitting}
                 error={
                   confirmPassword && password !== confirmPassword
                     ? "Passwords do not match."
@@ -206,7 +170,7 @@ export default function ResetPassword() {
                 }
               />
 
-              <Button type="submit" isLoading={isSubmitting} className="w-full">
+              <Button type="submit" isLoading={isSubmitting} className="w-full" disabled={isSubmitting}>
                 Update password
               </Button>
             </form>

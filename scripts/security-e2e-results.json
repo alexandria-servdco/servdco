@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-25T15:39:55.814Z",
+  "timestamp": "2026-06-25T15:58:24.742Z",
   "baseUrl": "https://servdco-one.vercel.app",
   "passed": 27,
   "failed": 0,
@@ -118,17 +118,17 @@
     {
       "name": "Signup API validates input",
       "status": "PASS",
-      "detail": "HTTP 404"
+      "detail": "HTTP 400"
     },
     {
       "name": "Waitlist API validates input",
       "status": "PASS",
-      "detail": "HTTP 404"
+      "detail": "HTTP 400"
     },
     {
       "name": "Security enforce rejects unauthenticated",
       "status": "PASS",
-      "detail": "HTTP 404"
+      "detail": "HTTP 401"
     },
     {
       "name": "Stripe checkout rejects unauthenticated",

@@ -2,6 +2,7 @@ import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
+import { isRecoveryPending } from "@/lib/auth/passwordRecovery";
 
 function AuthLoadingGate({ children }: { children: React.ReactNode }) {
   const { isLoading, supabaseAuthEnabled } = useAuth();
@@ -40,7 +41,7 @@ export function GuestGuard() {
   const { isAuthenticated, passwordRecovery } = useAuth();
   const { role, isLoading } = useCurrentUserRole();
 
-  if (passwordRecovery) {
+  if (passwordRecovery || isRecoveryPending()) {
     return <Navigate to="/reset-password" replace />;
   }
 
@@ -79,7 +80,7 @@ export function AuthGuard() {
   const { isAuthenticated, passwordRecovery } = useAuth();
   const location = useLocation();
 
-  if (passwordRecovery) {
+  if (passwordRecovery || isRecoveryPending()) {
     return <Navigate to="/reset-password" replace />;
   }
 

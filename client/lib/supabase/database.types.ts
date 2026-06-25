@@ -754,6 +754,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      geo_city_zip_codes: {
+        Row: {
+          id: number;
+          state_code: string;
+          city_name: string;
+          city_normalized: string;
+          zip_code: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          state_code: string;
+          city_name: string;
+          city_normalized: string;
+          zip_code: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          state_code?: string;
+          city_name?: string;
+          city_normalized?: string;
+          zip_code?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       messages: {
         Row: {
           id: string
@@ -1238,6 +1265,14 @@ export type Database = {
       is_chef: { Args: Record<string, never>; Returns: boolean };
       owns_chef_profile: { Args: { p_chef_profile_id: string }; Returns: boolean };
       is_public_chef_profile: { Args: { p_chef_profile_id: string }; Returns: boolean };
+      search_geo_cities: {
+        Args: { p_state_code: string; p_query?: string; p_limit?: number };
+        Returns: { city_name: string; zip_count: number }[];
+      };
+      geo_zips_for_cities: {
+        Args: { p_state_code: string; p_cities: string[] };
+        Returns: string[];
+      };
     };
     Enums: {
       account_status: "active" | "suspended" | "pending";

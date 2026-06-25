@@ -211,7 +211,11 @@ export function mapToUserFacingError(
       });
     case 409:
       return getUserError("CONFLICT", {
+        title: body.title || CATALOG.CONFLICT.title,
         message: body.error || body.message || CATALOG.CONFLICT.message,
+        guidance: body.guidance || CATALOG.CONFLICT.guidance,
+        primaryAction: body.primaryAction || CATALOG.CONFLICT.primaryAction,
+        secondaryAction: body.secondaryAction || CATALOG.CONFLICT.secondaryAction,
       });
     case 429:
       return getUserError(body.code === "RATE_LIMIT_EXCEEDED" ? "AUTH_RATE_LIMITED" : "RATE_LIMITED");
@@ -222,7 +226,13 @@ export function mapToUserFacingError(
     case 500:
     case 502:
     case 504:
-      return getUserError("SERVER_ERROR");
+      return getUserError(isUserErrorCode(body.code) ? body.code : "SERVER_ERROR", {
+        title: body.title,
+        message: body.message || body.error,
+        guidance: body.guidance,
+        primaryAction: body.primaryAction,
+        secondaryAction: body.secondaryAction,
+      });
     default:
       return getUserError("UNKNOWN_ERROR", {
         message: body.error || body.message,

@@ -44,23 +44,25 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let val = e.target.value;
 
-      // Phone formatting: (555) 123-4567 — block letters/emails in phone fields
+      // Phone: US (555) 123-4567 or international +91...
       if (type === "tel") {
-        val = val.replace(/[a-zA-Z@]/g, "");
-        const digits = val.replace(/\D/g, "");
-        const limited = digits.slice(0, 10);
-        let formatted = "";
-
-        if (limited.length > 0) {
-          formatted = "(" + limited.slice(0, 3);
+        if (/[a-zA-Z@]/.test(val)) {
+          val = val.replace(/[a-zA-Z@]/g, "");
         }
-        if (limited.length > 3) {
-          formatted += ") " + limited.slice(3, 6);
+        const trimmed = val.trim();
+        if (trimmed.startsWith("+")) {
+          const digits = trimmed.replace(/[^\d+]/g, "");
+          const plusDigits = "+" + digits.replace(/\D/g, "").slice(0, 15);
+          val = plusDigits;
+        } else {
+          const digits = val.replace(/\D/g, "");
+          const limited = digits.slice(0, 10);
+          let formatted = "";
+          if (limited.length > 0) formatted = "(" + limited.slice(0, 3);
+          if (limited.length > 3) formatted += ") " + limited.slice(3, 6);
+          if (limited.length > 6) formatted += "-" + limited.slice(6, 10);
+          val = formatted;
         }
-        if (limited.length > 6) {
-          formatted += "-" + limited.slice(6, 10);
-        }
-        val = formatted;
         e.target.value = val;
       }
 

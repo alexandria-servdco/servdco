@@ -135,6 +135,7 @@ const supabaseAuth = {
       status: result.status,
       message: result.message,
       needsEmailConfirmation: result.needsEmailConfirmation,
+      confirmationEmailSent: result.confirmationEmailSent,
     };
   },
 

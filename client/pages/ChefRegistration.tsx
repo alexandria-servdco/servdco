@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toUserFacingError, formatUserErrorMessage } from "@/lib/errors";
 import {
   User,
   Mail,
@@ -230,11 +231,7 @@ export default function ChefRegistration() {
         setLoading(false);
         setTurnstileToken(null);
         setTurnstileResetKey((k) => k + 1);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to register. Please try again.",
-        );
+        setError(formatUserErrorMessage(toUserFacingError(err)));
       }
     }
   };

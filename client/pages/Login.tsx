@@ -41,27 +41,46 @@ export default function Login() {
   const [showReset, setShowReset] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("confirmed") === "1") {
+    const next = new URLSearchParams(searchParams);
+    let changed = false;
+
+    if (next.get("confirmed") === "1") {
       setSuccess("Email confirmed. You can sign in now.");
-      searchParams.delete("confirmed");
-      setSearchParams(searchParams, { replace: true });
+      next.delete("confirmed");
+      changed = true;
     }
-    if (searchParams.get("reset") === "success") {
+    if (next.get("reset") === "success") {
       setSuccess("Password updated. Sign in with your new password.");
-      searchParams.delete("reset");
-      setSearchParams(searchParams, { replace: true });
+      next.delete("reset");
+      changed = true;
     }
-    if (searchParams.get("registered") === "1") {
-      const registeredEmail = searchParams.get("email") ?? "";
-      const role = searchParams.get("role");
+    if (next.get("reset") === "1") {
+      setShowReset(true);
+      next.delete("reset");
+      changed = true;
+    }
+    if (next.get("registered") === "1") {
+      const registeredEmail = next.get("email") ?? "";
+      const role = next.get("role");
       setSignupConfirmEmail(registeredEmail);
       setSignupConfirmRole(role === "chef" ? "chef" : "family");
       setShowSignupConfirm(true);
       if (registeredEmail) setEmail(registeredEmail);
-      searchParams.delete("registered");
-      searchParams.delete("email");
-      searchParams.delete("role");
-      setSearchParams(searchParams, { replace: true });
+      next.delete("registered");
+      next.delete("email");
+      next.delete("role");
+      changed = true;
+    } else {
+      const emailParam = next.get("email");
+      if (emailParam) {
+        setEmail(emailParam);
+        next.delete("email");
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
 

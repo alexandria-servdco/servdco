@@ -44,15 +44,14 @@ export const phoneSchema = z
     if (digits.length < 10) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message:
-          "Enter a valid 10-digit US phone number (for example, 614-555-0100).",
+        message: "Enter a valid phone number with at least 10 digits.",
       });
       return;
     }
     if (digits.length > 15) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Phone number is too long. Use a standard 10-digit US number.",
+        message: "Phone number is too long. Use at most 15 digits.",
       });
     }
   });

@@ -12,6 +12,11 @@ import {
 import { resolveRegionId } from "../regionMapping.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
 import { sendUserError } from "../userErrors.js";
+import {
+  isDuplicateSignupError,
+  tryRecoverUnverifiedSignup,
+  type SignupPayload,
+} from "../auth/recoverSignup.js";
 
 const signupSchema = z.object({
   turnstileToken: z.string().optional(),
@@ -43,133 +48,179 @@ export async function handleAuthSignup(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  const ctx = await applySecurityMiddleware(req, res, {
-    methods: ["POST"],
-    route: "/api/auth/signup",
-    rateLimit: "signup",
-    turnstile: true,
-  });
-  if (!ctx) return;
-
-  const parsed = signupSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({
-      error: formatZodError(parsed.error),
+  try {
+    const ctx = await applySecurityMiddleware(req, res, {
+      methods: ["POST"],
+      route: "/api/auth/signup",
+      rateLimit: "signup",
+      turnstile: true,
     });
-    return;
-  }
+    if (!ctx) return;
 
-  const data = parsed.data;
-  const env = getStripeEnv();
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    sendUserError(res, 503, "AUTH_SERVICE_UNAVAILABLE");
-    return;
-  }
-
-  const admin = getServiceRoleClient();
-  const authAdmin = getServiceRoleAuthAdmin(admin);
-
-  const { data: created, error: createError } = await authAdmin.createUser({
-    email: data.email,
-    password: data.password,
-    email_confirm: false,
-    user_metadata: {
-      role: data.role,
-      full_name: data.name,
-      city: data.city,
-      state: data.state,
-      zip: data.zip,
-      phone: data.phone ?? null,
-      years_experience: data.yearsExperience ?? null,
-      primary_cuisine: data.primaryCuisine ?? null,
-      bio: data.bio ?? null,
-    },
-  });
-
-  if (createError) {
-    const msg = createError.message.toLowerCase();
-    if (msg.includes("already") || msg.includes("registered")) {
-      sendUserError(res, 409, "CONFLICT", {
-        title: "An account already exists",
-        message: "An account with this email is already registered.",
-        guidance: "Try signing in, or reset your password if you forgot it.",
-        primaryAction: { label: "Sign in", action: "sign_in" },
-        secondaryAction: { label: "Reset password", action: "reset_password" },
+    const parsed = signupSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendUserError(res, 400, "VALIDATION_ERROR", {
+        message: formatZodError(parsed.error),
       });
       return;
     }
-    console.error("[auth.signup]", createError);
-    sendUserError(res, 400, "VALIDATION_ERROR", {
-      message: "We couldn't create your account with the details provided.",
-      guidance: "Review your information and try again.",
-    });
-    return;
-  }
 
-  const userId = created.user?.id;
-  const status = await resolveWaitlistStatus(data.state);
-
-  if (userId) {
-    const regionId = resolveRegionId(data.state);
-    const now = new Date().toISOString();
-    await admin.from("waitlist_signups").insert({
-      email: data.email,
-      full_name: data.name,
-      role: data.role,
-      state: data.state,
-      city: data.city,
-      zip: data.zip,
-      region_id: regionId,
-      profile_id: userId,
-      created_at: now,
-    }).then(({ error }) => {
-      if (error && !error.message.toLowerCase().includes("duplicate")) {
-        console.warn("[auth.signup] waitlist insert:", error.message);
-      }
-    });
-  }
-
-  const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
-  let session: AuthSessionPayload | null = null;
-  let confirmationEmailSent = false;
-
-  if (anonKey) {
-    const anonAuth = createPasswordAuthClient(env.SUPABASE_URL, anonKey);
-    const { data: signInData } = await anonAuth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
-    if (signInData.session) {
-      session = {
-        access_token: signInData.session.access_token,
-        refresh_token: signInData.session.refresh_token,
-        expires_in: signInData.session.expires_in ?? 3600,
-      };
+    const signup = parsed.data;
+    const signupPayload: SignupPayload = {
+      email: signup.email,
+      password: signup.password,
+      name: signup.name,
+      role: signup.role,
+      state: signup.state,
+      city: signup.city,
+      zip: signup.zip,
+      phone: signup.phone,
+      yearsExperience: signup.yearsExperience,
+      primaryCuisine: signup.primaryCuisine,
+      bio: signup.bio,
+    };
+    const env = getStripeEnv();
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+      sendUserError(res, 503, "AUTH_SERVICE_UNAVAILABLE");
+      return;
     }
-  }
 
-  if (!session) {
-    confirmationEmailSent = await sendSignupConfirmationEmail({
-      authAdmin: authAdmin as unknown as Parameters<
-        typeof sendSignupConfirmationEmail
-      >[0]["authAdmin"],
-      email: data.email,
-      password: data.password,
-      name: data.name,
-      role: data.role,
+    const admin = getServiceRoleClient();
+    const authAdmin = getServiceRoleAuthAdmin(admin);
+    const authAdminForEmail = authAdmin as unknown as Parameters<
+      typeof sendSignupConfirmationEmail
+    >[0]["authAdmin"];
+
+    const { data: created, error: createError } = await authAdmin.createUser({
+      email: signup.email,
+      password: signup.password,
+      email_confirm: false,
+      user_metadata: {
+        role: signup.role,
+        full_name: signup.name,
+        city: signup.city,
+        state: signup.state,
+        zip: signup.zip,
+        phone: signup.phone ?? null,
+        years_experience: signup.yearsExperience ?? null,
+        primary_cuisine: signup.primaryCuisine ?? null,
+        bio: signup.bio ?? null,
+      },
     });
-  }
 
-  res.status(200).json({
-    success: true,
-    status,
-    message:
-      status === "active"
-        ? "Account created successfully."
-        : "Your region is on the waitlist. We will notify you when Servd Co launches.",
-    needsEmailConfirmation: !session,
-    confirmationEmailSent: !session ? confirmationEmailSent : undefined,
-    session,
-    userId,
-  });
+    if (createError) {
+      if (isDuplicateSignupError(createError.message)) {
+        const recovery = await tryRecoverUnverifiedSignup({
+          client: admin,
+          authAdmin: authAdminForEmail,
+          data: signupPayload,
+        });
+
+        if (recovery.recovered) {
+          const status = await resolveWaitlistStatus(signup.state);
+          res.status(200).json({
+            success: true,
+            status,
+            recovered: true,
+            message: recovery.confirmationEmailSent
+              ? "We found your existing account and sent a new confirmation email."
+              : "We found your existing account. Sign in, or use the login page to resend confirmation.",
+            needsEmailConfirmation: true,
+            confirmationEmailSent: recovery.confirmationEmailSent,
+            userId: recovery.userId,
+          });
+          return;
+        }
+
+        sendUserError(res, 409, "CONFLICT", {
+          title: "This email is already registered",
+          message: "An account with this email already exists.",
+          guidance:
+            "Sign in with your password. If you never verified your email, open the login page and choose Resend confirmation email.",
+          primaryAction: { label: "Go to sign in", action: "sign_in" },
+          secondaryAction: { label: "Reset password", action: "reset_password" },
+        });
+        return;
+      }
+
+      console.error("[auth.signup]", createError);
+      sendUserError(res, 400, "VALIDATION_ERROR", {
+        message: "We couldn't create your account with the details provided.",
+        guidance: "Review your information and try again.",
+      });
+      return;
+    }
+
+    const userId = created.user?.id;
+    const status = await resolveWaitlistStatus(signup.state);
+
+    if (userId) {
+      const regionId = resolveRegionId(signup.state);
+      const now = new Date().toISOString();
+      await admin
+        .from("waitlist_signups")
+        .insert({
+          email: signup.email,
+          full_name: signup.name,
+          role: signup.role,
+          state: signup.state,
+          city: signup.city,
+          zip: signup.zip,
+          region_id: regionId,
+          profile_id: userId,
+          created_at: now,
+        })
+        .then(({ error }) => {
+          if (error && !error.message.toLowerCase().includes("duplicate")) {
+            console.warn("[auth.signup] waitlist insert:", error.message);
+          }
+        });
+    }
+
+    const anonKey =
+      process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
+    let session: AuthSessionPayload | null = null;
+    let confirmationEmailSent = false;
+
+    if (anonKey) {
+      const anonAuth = createPasswordAuthClient(env.SUPABASE_URL, anonKey);
+      const { data: signInData } = await anonAuth.signInWithPassword({
+        email: signup.email,
+        password: signup.password,
+      });
+      if (signInData.session) {
+        session = {
+          access_token: signInData.session.access_token,
+          refresh_token: signInData.session.refresh_token,
+          expires_in: signInData.session.expires_in ?? 3600,
+        };
+      }
+    }
+
+    if (!session) {
+      confirmationEmailSent = await sendSignupConfirmationEmail({
+        authAdmin: authAdminForEmail,
+        email: signup.email,
+        password: signup.password,
+        name: signup.name,
+        role: signup.role,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      status,
+      message:
+        status === "active"
+          ? "Account created successfully."
+          : "Your region is on the waitlist. We will notify you when Servd Co launches.",
+      needsEmailConfirmation: !session,
+      confirmationEmailSent: !session ? confirmationEmailSent : undefined,
+      session,
+      userId,
+    });
+  } catch (err) {
+    console.error("[auth.signup]", err instanceof Error ? err.message : err);
+    sendUserError(res, 500, "SERVER_ERROR");
+  }
 }

@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { toUserFacingError } from "@/lib/errors";
+import type { UserFacingError } from "@shared/userErrors";
+import { UserErrorBanner } from "@/components/errors/UserErrorBanner";
 import { Link, useNavigate } from "react-router-dom";
 import { User, Mail, Phone, MapPin, ShieldCheck, ArrowLeft, ArrowRight, HelpCircle, Users, Heart, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,7 +41,7 @@ function ServdLogo({ className }: { className?: string }) {
 export default function FamilyRegistration() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<UserFacingError | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
@@ -64,13 +67,44 @@ export default function FamilyRegistration() {
       delete next[key];
       return next;
     });
-    setError("");
+    setError(null);
+  };
+
+  const handleErrorAction = (action: string) => {
+    if (action === "sign_in") {
+      navigate(`/login?email=${encodeURIComponent(formData.email)}`);
+      return;
+    }
+    if (action === "reset_password") {
+      navigate(
+        `/login?reset=1&email=${encodeURIComponent(formData.email)}`,
+      );
+      return;
+    }
+    if (action === "resend_confirmation") {
+      navigate(`/login?email=${encodeURIComponent(formData.email)}`);
+      return;
+    }
+    if (action === "retry") {
+      setError(null);
+      return;
+    }
+    setError(null);
+  };
+
+  const showValidationError = (message: string, guidance?: string) => {
+    setError({
+      code: "VALIDATION_ERROR",
+      title: "Please check your information",
+      message,
+      guidance: guidance ?? "Fix the highlighted fields below, then try again.",
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    setError("");
+    setError(null);
 
     const parsed = safeParse(familyRegisterCoreSchema, {
       name: formData.fullName,
@@ -82,13 +116,20 @@ export default function FamilyRegistration() {
     });
     if (parsed.success === false) {
       setFieldErrors(parsed.fieldErrors);
-      setError(parsed.error);
+      setError({
+        code: "VALIDATION_ERROR",
+        title: "Please check your information",
+        message: parsed.error,
+        guidance: "Fix the highlighted fields below, then try again.",
+      });
       return;
     }
     setFieldErrors({});
 
     if (!emailValid) {
-      setError("Email address: Enter a valid email address (for example, name@example.com).");
+      showValidationError(
+        "Enter a valid email address (for example, name@example.com).",
+      );
       setFieldErrors((prev) => ({
         ...prev,
         email: "Enter a valid email address (for example, name@example.com).",
@@ -100,12 +141,14 @@ export default function FamilyRegistration() {
     if (usesSupabase) {
       const { checks } = evaluatePassword(formData.password);
       if (!isPasswordStrongEnough(checks)) {
-        setError(PASSWORD_REQUIREMENT_HINT);
+        showValidationError(PASSWORD_REQUIREMENT_HINT);
         setFieldErrors((prev) => ({ ...prev, password: PASSWORD_REQUIREMENT_HINT }));
         return;
       }
       if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match. Re-enter the same password in both fields.");
+        showValidationError(
+          "Passwords do not match. Re-enter the same password in both fields.",
+        );
         setFieldErrors((prev) => ({
           ...prev,
           confirmPassword: "Passwords must match.",
@@ -120,12 +163,15 @@ export default function FamilyRegistration() {
       formData.zip,
     );
     if (locationError) {
-      setError(locationError);
+      showValidationError(locationError);
       return;
     }
 
     if (getEffectiveTurnstileSiteKey() && !turnstileToken) {
-      setError("Please complete the security verification.");
+      showValidationError(
+        "Please complete the security verification.",
+        "Check the box below, then try again.",
+      );
       return;
     }
 
@@ -149,7 +195,7 @@ export default function FamilyRegistration() {
       setLoading(false);
 
       if (result.needsEmailConfirmation) {
-        setError("");
+        setError(null);
         setConfirmationEmailSent(result.confirmationEmailSent !== false);
         setShowConfirmModal(true);
         return;
@@ -166,7 +212,7 @@ export default function FamilyRegistration() {
       setLoading(false);
       setTurnstileToken(null);
       setTurnstileResetKey((k) => k + 1);
-      setError(err instanceof Error ? err.message : "Failed to register. Please try again.");
+      setError(toUserFacingError(err));
     }
   };
 
@@ -191,10 +237,10 @@ export default function FamilyRegistration() {
       {/* Split Layout */}
       <div className="flex-1 flex flex-col lg:flex-row px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full min-h-0 overflow-hidden">
         {/* Form Container */}
-        <div className="flex-1 flex flex-col justify-between max-w-2xl overflow-y-auto lg:overflow-hidden pr-2">
+        <div className="flex-1 flex flex-col max-w-2xl min-h-0 overflow-hidden pr-2">
           
           {/* Header Title */}
-          <div className="mb-4">
+          <div className="mb-4 flex-shrink-0">
             <h1 className="text-3xl lg:text-4xl font-bold text-white font-serif tracking-tight mb-1">
               Join as a Family
             </h1>
@@ -203,15 +249,18 @@ export default function FamilyRegistration() {
             </p>
           </div>
 
-          <form id="family-register-form" onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto lg:overflow-hidden min-h-[300px]">
-            <div className="space-y-4">
+          <form
+            id="family-register-form"
+            onSubmit={handleSubmit}
+            className="flex-1 flex flex-col min-h-0"
+          >
+            <div className="flex-1 overflow-y-auto min-h-0 pb-4">
               {error && (
-                <div className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold animate-fadeIn">
-                  {error}
-                </div>
+                <UserErrorBanner error={error} onAction={handleErrorAction} />
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full Name */}
                 <FormInput
                   type="text"
@@ -324,7 +373,7 @@ export default function FamilyRegistration() {
                       : undefined)
                   }
                 />
-              </div>
+                </div>
 
               <PasswordStrengthMeter password={formData.password} className="px-1" />
 
@@ -354,10 +403,10 @@ export default function FamilyRegistration() {
                 onTokenChange={setTurnstileToken}
                 className="mt-2"
               />
+              </div>
             </div>
 
-            {/* Submit Actions */}
-            <div className="py-4 border-t border-white/5 mt-4 flex items-center justify-between flex-shrink-0">
+            <div className="sticky bottom-0 z-20 py-4 border-t border-white/5 bg-[#111111]/95 backdrop-blur-sm flex items-center justify-between flex-shrink-0">
               <Link
                 to="/register"
                 className="flex items-center gap-1.5 px-5 py-3 bg-white/5 border border-white/10 rounded-3xl text-xs font-bold text-white hover:bg-white/10 transition-colors shadow-sm"

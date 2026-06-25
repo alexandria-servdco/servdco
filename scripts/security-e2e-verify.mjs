@@ -172,6 +172,25 @@ await probe(
   [400, 404],
 );
 
+// Signup must not crash at module load (500 FUNCTION_INVOCATION_FAILED)
+try {
+  const res = await fetch(`${BASE}/api/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role: "family" }),
+  });
+  const text = await res.text();
+  if (text.includes("FUNCTION_INVOCATION_FAILED")) {
+    fail("Signup API serverless bundle", "missing shared/** in vercel.json includeFiles");
+  } else if ([400, 503].includes(res.status)) {
+    pass("Signup API serverless bundle", `HTTP ${res.status}`);
+  } else {
+    fail("Signup API serverless bundle", `unexpected HTTP ${res.status}`);
+  }
+} catch (e) {
+  fail("Signup API serverless bundle", e instanceof Error ? e.message : String(e));
+}
+
 await probe(
   "Waitlist API validates input",
   `${BASE}/api/waitlist/submit`,

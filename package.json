@@ -9,6 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest --run",
+    "test:auth-e2e": "node scripts/auth-e2e-verify.mjs",
+    "test:security-e2e": "node scripts/security-e2e-verify.mjs",
     "analyze": "vite build && node scripts/bundle-report.mjs",
     "seed:dev-chefs": "node supabase/scripts/run-dev-chefs-seed.mjs",
     "format.fix": "prettier --write .",

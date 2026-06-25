@@ -28,20 +28,30 @@ export function evaluatePassword(password: string): {
 }
 
 export function isPasswordStrongEnough(checks: PasswordChecks): boolean {
-  return Object.values(checks).every(Boolean);
+  if (!checks.length) return false;
+  const diversity = [
+    checks.uppercase,
+    checks.lowercase,
+    checks.number,
+    checks.special,
+  ].filter(Boolean).length;
+  return diversity >= 2;
 }
+
+export const PASSWORD_REQUIREMENT_HINT =
+  "Use at least 8 characters with two or more character types (letters, numbers, or symbols).";
 
 type PasswordStrengthMeterProps = {
   password: string;
   className?: string;
 };
 
-const REQUIREMENTS: { key: keyof PasswordChecks; label: string }[] = [
+const REQUIREMENTS: { key: keyof PasswordChecks; label: string; optional?: boolean }[] = [
   { key: "length", label: "At least 8 characters" },
-  { key: "uppercase", label: "Uppercase letter" },
-  { key: "lowercase", label: "Lowercase letter" },
-  { key: "number", label: "Number" },
-  { key: "special", label: "Special character" },
+  { key: "uppercase", label: "Uppercase letter", optional: true },
+  { key: "lowercase", label: "Lowercase letter", optional: true },
+  { key: "number", label: "Number", optional: true },
+  { key: "special", label: "Symbol (optional)", optional: true },
 ];
 
 export function PasswordStrengthMeter({
@@ -49,6 +59,13 @@ export function PasswordStrengthMeter({
   className,
 }: PasswordStrengthMeterProps) {
   const { checks, score, label } = evaluatePassword(password);
+  const diversity = [
+    checks.uppercase,
+    checks.lowercase,
+    checks.number,
+    checks.special,
+  ].filter(Boolean).length;
+  const meetsModerate = isPasswordStrongEnough(checks);
 
   if (!password) return null;
 
@@ -74,18 +91,26 @@ export function PasswordStrengthMeter({
           {label}
         </span>
       </div>
+      <p className="text-[10px] text-[#A8A8A8] leading-relaxed">
+        {meetsModerate
+          ? "Password meets requirements."
+          : PASSWORD_REQUIREMENT_HINT}
+      </p>
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-        {REQUIREMENTS.map(({ key, label: reqLabel }) => {
+        {REQUIREMENTS.map(({ key, label: reqLabel, optional }) => {
           const met = checks[key];
+          const diversityMet = key === "length" ? met : diversity >= 2;
+          const showMet =
+            key === "length" ? met : optional ? diversityMet && met : met;
           return (
             <li
               key={key}
               className={cn(
                 "flex items-center gap-1.5 text-[10px]",
-                met ? "text-emerald-400" : "text-[#A8A8A8]",
+                showMet ? "text-emerald-400" : "text-[#A8A8A8]",
               )}
             >
-              {met ? <Check size={11} /> : <X size={11} className="opacity-50" />}
+              {showMet ? <Check size={11} /> : <X size={11} className="opacity-50" />}
               {reqLabel}
             </li>
           );

@@ -10,6 +10,7 @@ import {
   PasswordStrengthMeter,
   evaluatePassword,
   isPasswordStrongEnough,
+  PASSWORD_REQUIREMENT_HINT,
 } from "@/components/ui/PasswordStrengthMeter";
 import { toast } from "sonner";
 import { usePasswordRecoverySession } from "@/hooks/usePasswordRecoverySession";
@@ -38,7 +39,7 @@ export default function ResetPassword() {
 
     const { checks } = evaluatePassword(password);
     if (!isPasswordStrongEnough(checks)) {
-      setError("Password must meet all strength requirements.");
+      setError(PASSWORD_REQUIREMENT_HINT);
       return;
     }
 

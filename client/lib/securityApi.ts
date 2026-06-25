@@ -68,6 +68,7 @@ export const SecurityApi = {
       status: "active" | "waitlist";
       message: string;
       needsEmailConfirmation?: boolean;
+      confirmationEmailSent?: boolean;
       session?: {
         access_token: string;
         refresh_token: string;
@@ -90,6 +91,7 @@ export const SecurityApi = {
       status: body.status,
       message: body.message,
       needsEmailConfirmation: body.needsEmailConfirmation,
+      confirmationEmailSent: body.confirmationEmailSent,
       userId: body.userId,
     };
   },

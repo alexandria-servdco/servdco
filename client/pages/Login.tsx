@@ -37,6 +37,11 @@ export default function Login() {
   const [showReset, setShowReset] = useState(false);
 
   useEffect(() => {
+    if (searchParams.get("confirmed") === "1") {
+      setSuccess("Email confirmed. You can sign in now.");
+      searchParams.delete("confirmed");
+      setSearchParams(searchParams, { replace: true });
+    }
     if (searchParams.get("reset") === "success") {
       setSuccess("Password updated. Sign in with your new password.");
       searchParams.delete("reset");

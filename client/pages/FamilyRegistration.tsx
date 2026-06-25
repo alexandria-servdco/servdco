@@ -13,6 +13,7 @@ import {
   PasswordStrengthMeter,
   evaluatePassword,
   isPasswordStrongEnough,
+  PASSWORD_REQUIREMENT_HINT,
 } from "@/components/ui/PasswordStrengthMeter";
 import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
@@ -39,6 +40,7 @@ export default function FamilyRegistration() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const [emailValid, setEmailValid] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
@@ -81,7 +83,7 @@ export default function FamilyRegistration() {
     if (usesSupabase) {
       const { checks } = evaluatePassword(formData.password);
       if (!isPasswordStrongEnough(checks)) {
-        setError("Password must meet all strength requirements.");
+        setError(PASSWORD_REQUIREMENT_HINT);
         return;
       }
       if (formData.password !== formData.confirmPassword) {
@@ -126,6 +128,7 @@ export default function FamilyRegistration() {
 
       if (result.needsEmailConfirmation) {
         setError("");
+        setConfirmationEmailSent(result.confirmationEmailSent !== false);
         setShowConfirmModal(true);
         return;
       }
@@ -146,7 +149,7 @@ export default function FamilyRegistration() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans">
+    <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-hidden">
       {/* Navigation */}
       <header className="flex justify-between items-center px-8 py-3 border-b border-white/5 flex-shrink-0">
         <Link to="/">
@@ -164,7 +167,7 @@ export default function FamilyRegistration() {
       </header>
 
       {/* Split Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full min-h-0 overflow-hidden">
         {/* Form Container */}
         <div className="flex-1 flex flex-col justify-between max-w-2xl overflow-y-auto lg:overflow-hidden pr-2">
           
@@ -322,10 +325,10 @@ export default function FamilyRegistration() {
         </div>
 
         {/* Brand Showcase Right side */}
-        <div className="hidden lg:block lg:w-[45%] relative h-full flex-shrink-0">
-          <div className="w-full h-full rounded-2xl overflow-hidden relative border border-white/5 shadow-2xl">
+        <div className="hidden lg:flex lg:w-[45%] relative min-h-0 overflow-hidden flex-shrink-0">
+          <div className="absolute inset-0 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
             <img
-              src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&fit=crop"
+              src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&h=1000&fit=crop"
               alt="Family cooking meal"
               className="w-full h-full object-cover opacity-80"
             />
@@ -369,6 +372,7 @@ export default function FamilyRegistration() {
         }}
         email={formData.email}
         role="family"
+        emailSent={confirmationEmailSent}
       />
     </div>
   );

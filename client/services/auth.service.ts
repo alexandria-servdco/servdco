@@ -35,6 +35,7 @@ export interface RegisterResult {
   message: string;
   localStats?: { families: number; chefs: number };
   needsEmailConfirmation?: boolean;
+  confirmationEmailSent?: boolean;
 }
 
 function mapProfileToAppUser(profile: ProfileRow): AppUser {

@@ -14,6 +14,7 @@ import { validateClientStartup } from "@/lib/env/validateStartup";
 import { initAnalytics } from "@/lib/analytics";
 import { initSentry } from "@/lib/monitoring/sentry";
 import { PageMetaManager } from "@/components/seo/PageMetaManager";
+import { cn } from "@/lib/utils";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -74,16 +75,23 @@ function ScrollToTop() {
 function PageWrapper({
   children,
   routeLabel,
+  viewportLocked,
 }: {
   children: React.ReactNode;
   routeLabel?: string;
+  viewportLocked?: boolean;
 }) {
   return (
     <RouteErrorBoundary label={routeLabel}>
       <div
         id="main-content"
         tabIndex={-1}
-        className="w-full min-h-screen flex flex-col outline-none animate-page-in"
+        className={cn(
+          "w-full flex flex-col outline-none animate-page-in",
+          viewportLocked
+            ? "h-[100dvh] max-h-[100dvh] overflow-hidden"
+            : "min-h-screen",
+        )}
       >
         {children}
       </div>
@@ -256,7 +264,7 @@ const App = () => (
               <Route
                 path="/reset-password"
                 element={
-                  <PageWrapper routeLabel="reset-password">
+                  <PageWrapper routeLabel="reset-password" viewportLocked>
                     <ResetPassword />
                   </PageWrapper>
                 }
@@ -266,7 +274,7 @@ const App = () => (
                 <Route
                   path="/login"
                   element={
-                    <PageWrapper routeLabel="login">
+                    <PageWrapper routeLabel="login" viewportLocked>
                       <Login />
                     </PageWrapper>
                   }
@@ -274,7 +282,7 @@ const App = () => (
                 <Route
                   path="/register"
                   element={
-                    <PageWrapper routeLabel="register">
+                    <PageWrapper routeLabel="register" viewportLocked>
                       <Register />
                     </PageWrapper>
                   }
@@ -282,7 +290,7 @@ const App = () => (
                 <Route
                   path="/register/family"
                   element={
-                    <PageWrapper routeLabel="register-family">
+                    <PageWrapper routeLabel="register-family" viewportLocked>
                       <FamilyRegistration />
                     </PageWrapper>
                   }
@@ -290,7 +298,7 @@ const App = () => (
                 <Route
                   path="/register/chef"
                   element={
-                    <PageWrapper routeLabel="register-chef">
+                    <PageWrapper routeLabel="register-chef" viewportLocked>
                       <ChefRegistration />
                     </PageWrapper>
                   }

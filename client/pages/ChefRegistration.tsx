@@ -29,6 +29,7 @@ import {
   PasswordStrengthMeter,
   evaluatePassword,
   isPasswordStrongEnough,
+  PASSWORD_REQUIREMENT_HINT,
 } from "@/components/ui/PasswordStrengthMeter";
 import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
@@ -64,6 +65,7 @@ export default function ChefRegistration() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const [error, setError] = useState("");
   const [emailValid, setEmailValid] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -110,7 +112,7 @@ export default function ChefRegistration() {
       if (usesSupabase) {
         const { checks } = evaluatePassword(formData.password);
         if (!isPasswordStrongEnough(checks)) {
-          setError("Password must meet all strength requirements.");
+          setError(PASSWORD_REQUIREMENT_HINT);
           return;
         }
         if (formData.password !== formData.confirmPassword) {
@@ -188,6 +190,7 @@ export default function ChefRegistration() {
         setLoading(false);
 
         if (result.needsEmailConfirmation) {
+          setConfirmationEmailSent(result.confirmationEmailSent !== false);
           setShowConfirmModal(true);
           return;
         }
@@ -222,7 +225,7 @@ export default function ChefRegistration() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans">
+    <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-hidden">
       <header className="flex justify-between items-center px-8 py-3 border-b border-white/5 flex-shrink-0">
         <Link to="/">
           <ServdLogo />
@@ -241,8 +244,8 @@ export default function ChefRegistration() {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row px-4 sm:px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full min-h-0">
-        <div className="flex-1 flex flex-col max-w-2xl min-h-0 pr-2">
+      <div className="flex-1 flex flex-col lg:flex-row px-4 sm:px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col max-w-2xl min-h-0 pr-2 overflow-hidden">
           <div className="mb-4">
             <h1 className="text-3xl lg:text-4xl font-bold text-white font-serif tracking-tight mb-1">
               Join as a Cook
@@ -589,10 +592,10 @@ export default function ChefRegistration() {
           </div>
         </div>
 
-        <div className="hidden lg:block lg:w-[45%] relative h-full flex-shrink-0">
-          <div className="w-full h-full rounded-2xl overflow-hidden relative border border-white/5 shadow-2xl">
+        <div className="hidden lg:flex lg:w-[45%] relative min-h-0 overflow-hidden flex-shrink-0">
+          <div className="absolute inset-0 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
             <img
-              src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&fit=crop"
+              src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=800&h=1000&fit=crop"
               alt="Professional cook preparing a meal"
               className="w-full h-full object-cover opacity-80"
             />
@@ -649,6 +652,7 @@ export default function ChefRegistration() {
         }}
         email={formData.email}
         role="chef"
+        emailSent={confirmationEmailSent}
       />
     </div>
   );

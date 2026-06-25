@@ -13,6 +13,7 @@ type SignupConfirmationModalProps = {
   onOpenChange: (open: boolean) => void;
   email: string;
   role?: "family" | "chef";
+  emailSent?: boolean;
 };
 
 export function SignupConfirmationModal({
@@ -20,6 +21,7 @@ export function SignupConfirmationModal({
   onOpenChange,
   email,
   role = "family",
+  emailSent = true,
 }: SignupConfirmationModalProps) {
   const roleLabel = role === "chef" ? "cook" : "family";
 
@@ -36,19 +38,37 @@ export function SignupConfirmationModal({
               Check your inbox
             </DialogTitle>
             <DialogDescription className="text-[#A8A8A8] text-sm leading-relaxed text-center">
-              We sent a confirmation link to
+              {emailSent
+                ? "We sent a confirmation link to"
+                : "Your account was created, but we could not send the confirmation email to"}
             </DialogDescription>
           </DialogHeader>
           <p className="relative mt-2 text-white font-bold text-sm break-all">{email}</p>
           <div className="relative mt-6 space-y-3 text-left bg-white/[0.03] border border-white/5 rounded-2xl p-4">
-            <div className="flex items-start gap-3 text-xs text-[#A8A8A8]">
-              <CheckCircle size={16} className="text-[#2E7D66] shrink-0 mt-0.5" />
-              <span>Click the link in the email to activate your {roleLabel} account.</span>
-            </div>
-            <div className="flex items-start gap-3 text-xs text-[#A8A8A8]">
-              <Sparkles size={16} className="text-[#FF7A59] shrink-0 mt-0.5" />
-              <span>Check spam or promotions if you do not see it within a few minutes.</span>
-            </div>
+            {emailSent ? (
+              <>
+                <div className="flex items-start gap-3 text-xs text-[#A8A8A8]">
+                  <CheckCircle size={16} className="text-[#2E7D66] shrink-0 mt-0.5" />
+                  <span>Click the link in the email to activate your {roleLabel} account.</span>
+                </div>
+                <div className="flex items-start gap-3 text-xs text-[#A8A8A8]">
+                  <Sparkles size={16} className="text-[#FF7A59] shrink-0 mt-0.5" />
+                  <span>Check spam or promotions if you do not see it within a few minutes.</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-start gap-3 text-xs text-[#A8A8A8]">
+                <Sparkles size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                <span>
+                  Try signing in from the login page — you may receive a new confirmation prompt.
+                  If the problem continues, contact{" "}
+                  <a href="mailto:hello@servdco.com" className="text-[#FF7A59] hover:underline">
+                    hello@servdco.com
+                  </a>
+                  .
+                </span>
+              </div>
+            )}
           </div>
           <Button
             className="relative mt-8 w-full text-xs font-bold"

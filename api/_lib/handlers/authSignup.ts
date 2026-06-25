@@ -9,6 +9,7 @@ import {
   type AuthSessionPayload,
 } from "../supabaseAuthApi.js";
 import { resolveRegionId } from "../regionMapping.js";
+import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
 
 const signupSchema = z.object({
   turnstileToken: z.string().optional(),
@@ -119,6 +120,7 @@ export async function handleAuthSignup(
 
   const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
   let session: AuthSessionPayload | null = null;
+  let confirmationEmailSent = false;
 
   if (anonKey) {
     const anonAuth = createPasswordAuthClient(env.SUPABASE_URL, anonKey);
@@ -135,6 +137,18 @@ export async function handleAuthSignup(
     }
   }
 
+  if (!session) {
+    confirmationEmailSent = await sendSignupConfirmationEmail({
+      authAdmin: authAdmin as unknown as Parameters<
+        typeof sendSignupConfirmationEmail
+      >[0]["authAdmin"],
+      email: data.email,
+      password: data.password,
+      name: data.name,
+      role: data.role,
+    });
+  }
+
   res.status(200).json({
     success: true,
     status,
@@ -143,6 +157,7 @@ export async function handleAuthSignup(
         ? "Account created successfully."
         : "Your region is on the waitlist. We will notify you when Servd Co launches.",
     needsEmailConfirmation: !session,
+    confirmationEmailSent: !session ? confirmationEmailSent : undefined,
     session,
     userId,
   });

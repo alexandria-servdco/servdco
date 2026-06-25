@@ -17,6 +17,7 @@ import { PageMetaManager } from "@/components/seo/PageMetaManager";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Register from "./pages/Register";
 import ChefRegistration from "./pages/ChefRegistration";
 import FamilyRegistration from "./pages/FamilyRegistration";
@@ -248,6 +249,15 @@ const App = () => (
                 element={
                   <PageWrapper routeLabel="legal">
                     <LegalHub />
+                  </PageWrapper>
+                }
+              />
+
+              <Route
+                path="/reset-password"
+                element={
+                  <PageWrapper routeLabel="reset-password">
+                    <ResetPassword />
                   </PageWrapper>
                 }
               />

@@ -14,6 +14,8 @@ import {
   evaluatePassword,
   isPasswordStrongEnough,
 } from "@/components/ui/PasswordStrengthMeter";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
+import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -38,6 +40,8 @@ export default function FamilyRegistration() {
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [emailValid, setEmailValid] = useState(true);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -96,6 +100,11 @@ export default function FamilyRegistration() {
       return;
     }
 
+    if (getEffectiveTurnstileSiteKey() && !turnstileToken) {
+      setError("Please complete the security verification.");
+      return;
+    }
+
     setLoading(true);
     trackEvent("signup_started", { role: "family" });
 
@@ -108,7 +117,8 @@ export default function FamilyRegistration() {
         role: "family",
         state: formData.state,
         city: formData.city,
-        zip: formData.zip
+        zip: formData.zip,
+        turnstileToken,
       });
 
       await new Promise((resolve) => setTimeout(resolve, 800));
@@ -129,6 +139,8 @@ export default function FamilyRegistration() {
     } catch (err) {
       console.error(err);
       setLoading(false);
+      setTurnstileToken(null);
+      setTurnstileResetKey((k) => k + 1);
       setError(err instanceof Error ? err.message : "Failed to register. Please try again.");
     }
   };
@@ -166,7 +178,7 @@ export default function FamilyRegistration() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto lg:overflow-hidden min-h-[300px]">
+          <form id="family-register-form" onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto lg:overflow-hidden min-h-[300px]">
             <div className="space-y-4">
               {error && (
                 <div className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold animate-fadeIn">
@@ -278,6 +290,13 @@ export default function FamilyRegistration() {
                   </p>
                 </div>
               </div>
+
+              <TurnstileWidget
+                formId="family-register-form"
+                resetKey={turnstileResetKey}
+                onTokenChange={setTurnstileToken}
+                className="mt-2"
+              />
             </div>
 
             {/* Submit Actions */}

@@ -37,8 +37,12 @@ function RoleLoadingGate({ children }: { children: React.ReactNode }) {
  * while guest users can access login/register pages.
  */
 export function GuestGuard() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, passwordRecovery } = useAuth();
   const { role, isLoading } = useCurrentUserRole();
+
+  if (passwordRecovery) {
+    return <Navigate to="/reset-password" replace />;
+  }
 
   if (isAuthenticated && isLoading) {
     return (
@@ -72,8 +76,12 @@ export function GuestGuard() {
  * and redirects users to the login screen.
  */
 export function AuthGuard() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, passwordRecovery } = useAuth();
   const location = useLocation();
+
+  if (passwordRecovery) {
+    return <Navigate to="/reset-password" replace />;
+  }
 
   return (
     <AuthLoadingGate>

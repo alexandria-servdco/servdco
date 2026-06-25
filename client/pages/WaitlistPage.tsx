@@ -6,6 +6,8 @@ import { api } from "@/lib/api";
 import { waitlistEmailSchema, safeParse } from "@shared/validation";
 import { logger } from "@/lib/logger";
 import { useWaitlistStats } from "@/hooks/useWaitlist";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
+import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
 
 // Logo Component
 function ServdLogo({ className }: { className?: string }) {
@@ -35,6 +37,9 @@ export default function WaitlistPage() {
   
   const [email, setEmail] = useState(emailParam);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const { data: stats = { families: 0, chefs: 0, total: 0 }, isLoading: loading, refetch } =
     useWaitlistStats(state);
 
@@ -43,25 +48,35 @@ export default function WaitlistPage() {
     const parsed = safeParse(waitlistEmailSchema, { email });
     if (!parsed.success) return;
 
+    if (getEffectiveTurnstileSiteKey() && !turnstileToken) {
+      setSubmitError("Please complete the security verification.");
+      return;
+    }
+
     try {
-      // Register in our mock database
       await api.registerUser({
         name: "Waitlist Subscriber",
         email: email,
         role: role as "family" | "chef",
         state: state,
         city: "",
-        zip: ""
+        zip: "",
+        turnstileToken,
       });
 
       setSubmitted(true);
+      setSubmitError("");
       await refetch();
     } catch (err) {
       logger.error("Failed to join waitlist", {
         domain: "waitlist",
         message: err instanceof Error ? err.message : String(err),
       });
-      setSubmitted(true);
+      setTurnstileToken(null);
+      setTurnstileResetKey((k) => k + 1);
+      setSubmitError(
+        err instanceof Error ? err.message : "Could not join waitlist. Please try again.",
+      );
     }
   };
 
@@ -142,7 +157,7 @@ export default function WaitlistPage() {
 
             {/* Email Form */}
             {!submitted ? (
-              <form onSubmit={handleJoinWaitlist} className="space-y-3 w-full">
+              <form id="waitlist-form" onSubmit={handleJoinWaitlist} className="space-y-3 w-full">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#1A1A1A]/40">
                     <Mail size={18} />
@@ -156,6 +171,14 @@ export default function WaitlistPage() {
                     className="w-full pl-11 pr-4 py-3.5 bg-white border border-[#F0E7E2] rounded-xl text-sm text-[#1A1A1A] placeholder:text-[#1A1A1A]/40 focus:outline-none focus:ring-2 focus:ring-[#FF7A59]/20 focus:border-[#FF7A59] transition-all"
                   />
                 </div>
+                {submitError && (
+                  <p className="text-xs text-red-500 font-semibold">{submitError}</p>
+                )}
+                <TurnstileWidget
+                  formId="waitlist-form"
+                  resetKey={turnstileResetKey}
+                  onTokenChange={setTurnstileToken}
+                />
                 <button
                   type="submit"
                   className="w-full py-3.5 bg-[#FF7A59] text-white rounded-xl text-sm font-semibold hover:bg-[#e96a49] hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"

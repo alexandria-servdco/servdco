@@ -1,6 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/types";
 import { SupabaseQueryError } from "./fallback";
+import { SecurityApi } from "@/lib/securityApi";
 
 export type ReviewRow = Tables<"reviews">;
 
@@ -156,6 +157,8 @@ export const ReviewsSupabaseService = {
   }): Promise<UiReview> {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    await SecurityApi.enforceScope("review_submit");
 
     const { data: authData, error: authError } = await client.auth.getUser();
     if (authError) throw new SupabaseQueryError(authError.message, authError);

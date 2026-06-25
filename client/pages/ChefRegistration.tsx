@@ -30,6 +30,8 @@ import {
   evaluatePassword,
   isPasswordStrongEnough,
 } from "@/components/ui/PasswordStrengthMeter";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
+import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -64,6 +66,8 @@ export default function ChefRegistration() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState("");
   const [emailValid, setEmailValid] = useState(true);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -142,6 +146,11 @@ export default function ChefRegistration() {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     } else {
+      if (getEffectiveTurnstileSiteKey() && !turnstileToken) {
+        setError("Please complete the security verification.");
+        return;
+      }
+
       setLoading(true);
       try {
         const result = await AuthService.register({
@@ -156,6 +165,7 @@ export default function ChefRegistration() {
           yearsExperience: formData.yearsExperience,
           primaryCuisine: formData.primaryCuisine,
           bio: formData.bio,
+          turnstileToken,
         });
 
         if (!result.needsEmailConfirmation) {
@@ -193,6 +203,8 @@ export default function ChefRegistration() {
       } catch (err) {
         console.error(err);
         setLoading(false);
+        setTurnstileToken(null);
+        setTurnstileResetKey((k) => k + 1);
         setError(
           err instanceof Error
             ? err.message
@@ -544,6 +556,11 @@ export default function ChefRegistration() {
                     By submitting, you agree to Servd Co verification, background
                     checks, and marketplace terms.
                   </p>
+                  <TurnstileWidget
+                    formId="chef-register-form"
+                    resetKey={turnstileResetKey}
+                    onTokenChange={setTurnstileToken}
+                  />
                 </div>
               )}
             </div>

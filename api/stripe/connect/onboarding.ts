@@ -27,7 +27,7 @@ export default async function handler(
     return;
   }
 
-  if (!enforceRateLimit(req, res, "/api/stripe/connect/onboarding")) {
+  if (!(await enforceRateLimit(req, res, "stripe_default", { route: "/api/stripe/connect/onboarding" }))) {
     return;
   }
 

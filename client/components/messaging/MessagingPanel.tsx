@@ -7,9 +7,11 @@ import { useConversation } from "@/hooks/useConversation";
 import { MessagesSupabaseService } from "@/services/supabase/messages.service";
 import { MessageAttachmentsSupabaseService } from "@/services/supabase/message-attachments.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
-import { Paperclip, Trash2 } from "lucide-react";
+import { Paperclip } from "lucide-react";
 import { toast } from "sonner";
-import { MessageAttachmentList } from "@/components/messaging/MessageAttachmentList";
+import { MessageBubble } from "@/components/messaging/MessageBubble";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 
 interface MessagingPanelProps {
   conversationId: string;
@@ -38,6 +40,9 @@ export function MessagingPanel({
     useMessages(conversationId);
   const sendMessage = useSendMessage(conversationId);
   const markRead = useMarkConversationRead(conversationId);
+  const { userId } = useAuth();
+  const { profile } = useCurrentProfile();
+  const viewerIsFamily = profile?.role === "family";
 
   useRealtimeMessages(conversationId, { markReadOnReceive: true });
 
@@ -158,7 +163,10 @@ export function MessagingPanel({
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-4"
+        role="log"
+        aria-live="polite"
+        aria-label="Message thread"
       >
         {hasNextPage && (
           <button
@@ -183,43 +191,20 @@ export function MessagingPanel({
           </p>
         )}
 
+        <div className="space-y-4">
         {messages.map((msg) => (
-          <div
+          <MessageBubble
             key={msg.id}
-            className={`flex ${msg.is_own ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[80%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
-                msg.is_own
-                  ? "bg-[#FF7A59]/20 text-white border border-[#FF7A59]/30"
-                  : "bg-white/5 text-[#F5F5F5] border border-white/10"
-              }`}
-            >
-              <p>{msg.body}</p>
-              <MessageAttachmentList messageId={msg.id} />
-              <div className="flex items-center justify-between gap-2 mt-1">
-                <p className="text-[9px] text-[#A8A8A8] text-right flex-1">
-                  {new Date(msg.created_at).toLocaleString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </p>
-                {adminView && (
-                  <button
-                    type="button"
-                    onClick={() => handleModeratorDelete(msg.id)}
-                    className="text-red-400 hover:text-red-300"
-                    aria-label="Delete message"
-                  >
-                    <Trash2 size={10} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+            message={msg}
+            currentUserId={userId}
+            familyId={conversation?.family_id}
+            otherParticipantName={conversation?.participant_name}
+            viewerIsFamily={viewerIsFamily}
+            adminView={adminView}
+            onModeratorDelete={adminView ? handleModeratorDelete : undefined}
+          />
         ))}
+        </div>
 
         {typingUserId && (
           <p className="text-[10px] text-[#A8A8A8] italic">Typing...</p>

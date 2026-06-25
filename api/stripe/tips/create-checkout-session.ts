@@ -21,7 +21,7 @@ export default async function handler(
     return;
   }
 
-  if (!enforceRateLimit(req, res, "/api/stripe/tips/create-checkout-session")) {
+  if (!(await enforceRateLimit(req, res, "stripe_default", { route: "/api/stripe/tips/create-checkout-session" }))) {
     return;
   }
 

@@ -34,6 +34,7 @@ export const ContactSupabaseService = {
     email: string;
     subject: string;
     message: string;
+    turnstileToken?: string | null;
   }): Promise<{ success: boolean; message: string }> {
     const res = await fetch("/api/contact/submit", {
       method: "POST",

@@ -5,6 +5,8 @@ import { Mail, Phone, MapPin, CheckCircle, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { contactSchema, safeParse } from "@shared/validation";
 import { trackEvent } from "@/lib/analytics";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
+import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
 
 export default function Contact() {
   const [formState, setFormState] = useState({
@@ -16,6 +18,8 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +29,21 @@ export default function Contact() {
       return;
     }
     const { name, email, subject, message } = parsed.data;
+    if (getEffectiveTurnstileSiteKey() && !turnstileToken) {
+      setError("Please complete the security verification.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      await api.submitContact({ name, email, subject, message });
+      await api.submitContact({ name, email, subject, message, turnstileToken });
       trackEvent("contact_form_submission");
       setSubmitted(true);
       setFormState({ name: "", email: "", subject: "", message: "" });
       setTimeout(() => setSubmitted(false), 4000);
     } catch {
+      setTurnstileToken(null);
+      setTurnstileResetKey((k) => k + 1);
       setError("Failed to send message. Please try again or email hello@servdco.com.");
     } finally {
       setLoading(false);
@@ -122,7 +132,7 @@ export default function Contact() {
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form id="contact-form" onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-bold font-serif text-white">Send us a message</h2>
                     <p className="text-xs text-[#A8A8A8] mt-1.5">Fill out your details below and we will get back to you.</p>
@@ -185,6 +195,11 @@ export default function Contact() {
                   {error && (
                     <p className="text-xs text-red-400 font-semibold">{error}</p>
                   )}
+                  <TurnstileWidget
+                    formId="contact-form"
+                    resetKey={turnstileResetKey}
+                    onTokenChange={setTurnstileToken}
+                  />
                   <button
                     type="submit"
                     disabled={loading}

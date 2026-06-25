@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-06-20T19:10:11.962Z",
+  "timestamp": "2026-06-25T15:24:04.111Z",
   "baseUrl": "https://servdco-one.vercel.app",
-  "passed": 15,
-  "failed": 1,
+  "passed": 27,
+  "failed": 0,
   "warned": 0,
   "results": [
     {
@@ -31,6 +31,41 @@
       "detail": ""
     },
     {
+      "name": "Migration: security_events table",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Rate limit policy registry",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Cloudflare client IP resolution",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Turnstile server verification",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Shared security middleware",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Signup API Turnstile protected",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Waitlist API rate limited",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
       "name": "Email API requires authentication",
       "status": "PASS",
       "detail": ""
@@ -41,12 +76,22 @@
       "detail": ""
     },
     {
+      "name": "Contact form Turnstile protected",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
       "name": "Contact form rate limited",
       "status": "PASS",
       "detail": ""
     },
     {
-      "name": "CSP header configured",
+      "name": "Turnstile UI widget",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "CSP allows Cloudflare Turnstile",
       "status": "PASS",
       "detail": ""
     },
@@ -56,24 +101,34 @@
       "detail": ""
     },
     {
-      "name": "Platform fee sourced from server settings only",
-      "status": "PASS",
-      "detail": ""
-    },
-    {
-      "name": "Booking status transitions validated client-side",
+      "name": "Booking create rate enforced",
       "status": "PASS",
       "detail": ""
     },
     {
       "name": "Email API rejects unauthenticated requests",
-      "status": "FAIL",
-      "detail": "expected 401|403, got 404"
+      "status": "PASS",
+      "detail": "HTTP 401"
     },
     {
       "name": "Contact API validates input",
       "status": "PASS",
       "detail": "HTTP 400"
+    },
+    {
+      "name": "Signup API validates input",
+      "status": "PASS",
+      "detail": "HTTP 404"
+    },
+    {
+      "name": "Waitlist API validates input",
+      "status": "PASS",
+      "detail": "HTTP 404"
+    },
+    {
+      "name": "Security enforce rejects unauthenticated",
+      "status": "PASS",
+      "detail": "HTTP 404"
     },
     {
       "name": "Stripe checkout rejects unauthenticated",

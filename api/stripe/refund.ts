@@ -18,7 +18,7 @@ export default async function handler(
     return;
   }
 
-  if (!enforceRateLimit(req, res, "/api/stripe/refund")) {
+  if (!(await enforceRateLimit(req, res, "stripe_default", { route: "/api/stripe/refund" }))) {
     return;
   }
 

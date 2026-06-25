@@ -61,6 +61,7 @@ export const api = {
     state: string;
     city: string;
     zip: string;
+    turnstileToken?: string | null;
   }): Promise<{
     status: "active" | "waitlist";
     message: string;
@@ -170,6 +171,7 @@ export const api = {
     email: string;
     subject: string;
     message: string;
+    turnstileToken?: string | null;
   }): Promise<{ success: boolean; message: string }> {
     return ContactService.submitViaApi(params);
   },

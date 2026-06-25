@@ -24,9 +24,10 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isConfigured: boolean;
   supabaseAuthEnabled: boolean;
+  /** True when user arrived via password recovery email link */
+  passwordRecovery: boolean;
   error: AuthError | null;
   clearError: () => void;
-  /** Authenticated user id (Supabase session or legacy in-memory user). */
   userId: string | null;
 }
 
@@ -43,6 +44,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured());
   const [error, setError] = useState<AuthError | null>(null);
   const [supabaseAuthEnabled, setSupabaseAuthEnabled] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   const configured = isSupabaseConfigured();
   const clearError = useCallback(() => setError(null), []);
@@ -97,8 +99,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const {
       data: { subscription },
-    } = client.auth.onAuthStateChange((_event, nextSession) => {
+    } = client.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
+      if (event === "PASSWORD_RECOVERY") {
+        setPasswordRecovery(true);
+      }
+      if (event === "SIGNED_OUT") {
+        setPasswordRecovery(false);
+      }
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setError(null);
@@ -127,6 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated,
       isConfigured: configured,
       supabaseAuthEnabled,
+      passwordRecovery,
       error,
       clearError,
       userId,
@@ -138,6 +147,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated,
       configured,
       supabaseAuthEnabled,
+      passwordRecovery,
       error,
       clearError,
       userId,

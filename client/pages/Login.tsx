@@ -37,6 +37,11 @@ export default function Login() {
   const [showReset, setShowReset] = useState(false);
 
   useEffect(() => {
+    if (searchParams.get("reset") === "success") {
+      setSuccess("Password updated. Sign in with your new password.");
+      searchParams.delete("reset");
+      setSearchParams(searchParams, { replace: true });
+    }
     if (searchParams.get("registered") === "1") {
       const registeredEmail = searchParams.get("email") ?? "";
       const role = searchParams.get("role");
@@ -274,22 +279,6 @@ export default function Login() {
               )}
             </div>
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-4">
-            <div className="flex-1 h-px bg-white/5"></div>
-            <span className="text-white/20 text-[10px] font-bold uppercase tracking-wider">or</span>
-            <div className="flex-1 h-px bg-white/5"></div>
-          </div>
-
-          {/* Google Button */}
-          <button className="w-full h-12 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-3xl text-xs font-bold transition-all flex items-center justify-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 8v8m-4-4h8" />
-            </svg>
-            Continue with Google
-          </button>
 
           {import.meta.env.DEV && !supabaseAuthEnabled && (
           <div className="bg-[#161616] border border-white/5 rounded-2xl p-4 mt-6 space-y-3">

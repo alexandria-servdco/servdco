@@ -36,6 +36,7 @@ import {
   UserX,
   Star,
   ShieldAlert,
+  Shield,
   Loader2,
   LogOut,
   MessageSquare,
@@ -89,6 +90,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { ChartCard } from "@/components/admin/ChartCard";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
+import { RegionCityZipEditor } from "@/components/admin/RegionCityZipEditor";
 import { lazy, Suspense } from "react";
 
 const AdminAnalytics = lazy(() => import("@/components/admin/AdminAnalytics").then(m => ({ default: m.AdminAnalytics })));
@@ -106,6 +108,7 @@ const OrphanedDocumentsUtility = lazy(() => import("@/components/admin/OrphanedD
 const MarketInterestRequests = lazy(() => import("@/components/admin/MarketInterestRequests").then(m => ({ default: m.MarketInterestRequests })));
 const AdminMessagingHub = lazy(() => import("@/components/messaging/AdminMessagingHub").then(m => ({ default: m.AdminMessagingHub })));
 const AdminAuditLogs = lazy(() => import("@/components/admin/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
+const SecurityDashboard = lazy(() => import("@/components/admin/SecurityDashboard").then(m => ({ default: m.SecurityDashboard })));
 const DocumentPreviewModal = lazy(() =>
   import("@/components/admin/DocumentPreviewModal").then((m) => ({
     default: m.DocumentPreviewModal,
@@ -162,6 +165,7 @@ const NAV_ITEMS = [
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "audit_logs", label: "Audit Logs", icon: ShieldAlert },
+  { id: "security", label: "Security", icon: Shield },
   { id: "settings", label: "Settings", icon: Sliders },
 ];
 
@@ -1080,6 +1084,7 @@ export default function AdminDashboard({
               {activeNav === "announcements" && "Global Announcements"}
               {activeNav === "analytics" && "Aggregated Metrics"}
               {activeNav === "audit_logs" && "Admin Audit Trail"}
+              {activeNav === "security" && "Security Operations"}
               {activeNav === "settings" && "Platform Settings"}
             </h1>
             <p
@@ -1119,6 +1124,8 @@ export default function AdminDashboard({
                 "Analyze user growth, platform revenue trends, and regional conversions."}
               {activeNav === "audit_logs" &&
                 "Immutable record of every admin action on the platform."}
+              {activeNav === "security" &&
+                "Rate limits, CAPTCHA failures, and blocked request telemetry."}
               {activeNav === "settings" &&
                 "Manage dynamic fee algorithms and platform wide configurations."}
             </p>
@@ -2870,6 +2877,12 @@ export default function AdminDashboard({
 
             {activeNav === "audit_logs" && <AdminAuditLogs />}
 
+            {activeNav === "security" && (
+              <Suspense fallback={<CardSkeleton />}>
+                <SecurityDashboard />
+              </Suspense>
+            )}
+
             {/* ── Tab: PAYOUTS ────────────────────────────────────────────── */}
             {activeNav === "messaging" && <AdminMessagingHub />}
 
@@ -3023,74 +3036,17 @@ export default function AdminDashboard({
                 )}
               </div>
 
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    color: "#F5F5F5",
-                    marginBottom: "6px",
-                  }}
-                >
-                  ZIP Codes Covered (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 43016, 43210, 44101"
-                  value={editingRegion.zip_codes}
-                  onChange={(e) =>
-                    setEditingRegion({
-                      ...editingRegion,
-                      zip_codes: e.target.value,
-                    })
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    background: "#111111",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "10px",
-                    fontSize: "13.5px",
-                    color: "#F5F5F5",
-                    outline: "none",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    color: "#F5F5F5",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Cities Covered (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Columbus, Cleveland"
-                  value={editingRegion.city}
-                  onChange={(e) =>
-                    setEditingRegion({ ...editingRegion, city: e.target.value })
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    background: "#111111",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "10px",
-                    fontSize: "13.5px",
-                    color: "#F5F5F5",
-                    outline: "none",
-                  }}
-                />
-              </div>
+              <RegionCityZipEditor
+                stateCode={editingRegion.id ?? editingRegion.state}
+                cities={editingRegion.city ?? ""}
+                zipCodes={editingRegion.zip_codes ?? ""}
+                onCitiesChange={(city) =>
+                  setEditingRegion({ ...editingRegion, city })
+                }
+                onZipCodesChange={(zip_codes) =>
+                  setEditingRegion({ ...editingRegion, zip_codes })
+                }
+              />
 
               <div
                 style={{

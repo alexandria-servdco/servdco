@@ -3,6 +3,7 @@ import type { MessagesPage, UiMessage } from "@/lib/messagingTypes";
 import { messageBodySchema, formatZodError } from "@shared/validation";
 import { sanitizePlainText } from "@/lib/sanitize";
 import { SupabaseQueryError } from "./fallback";
+import { SecurityApi } from "@/lib/securityApi";
 
 const PAGE_SIZE = 30;
 
@@ -88,6 +89,8 @@ export const MessagesSupabaseService = {
       throw new SupabaseQueryError(formatZodError(parsed.error));
     }
     const trimmed = sanitizePlainText(parsed.data);
+
+    await SecurityApi.enforceScope("messaging");
 
     const { data: authData, error: authError } = await client.auth.getUser();
     if (authError) throw new SupabaseQueryError(authError.message, authError);

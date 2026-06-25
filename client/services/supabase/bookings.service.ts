@@ -13,6 +13,7 @@ import { PlatformSettingsSupabaseService } from "./platform-settings.service";
 import { bookingCreateSchema, formatZodError } from "@shared/validation";
 import { BookingAddressesSupabaseService } from "./booking-addresses.service";
 import { SupabaseQueryError } from "./fallback";
+import { SecurityApi } from "@/lib/securityApi";
 
 export type BookingRow = Tables<"bookings">;
 
@@ -211,6 +212,8 @@ export const BookingsSupabaseService = {
   }): Promise<{ success: boolean; booking: UiBooking; message: string }> {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    await SecurityApi.enforceScope("booking_create");
 
     const parsed = bookingCreateSchema.safeParse({
       cook_id: params.cook_id,

@@ -8,11 +8,10 @@ import {
   setLegacyUser,
   legacyUserToProfileRow,
 } from "@/lib/auth/legacySession";
-import { resolveRegionId } from "@/lib/auth/stateMapping";
 import { isSupabaseAuthEnabled } from "@/services/featureFlags.service";
 import { ProfilesSupabaseService } from "@/services/supabase/profiles.service";
 import { NotificationService } from "@/services/notification.service";
-import { WaitlistService } from "@/services/waitlist.service";
+import { SecurityApi } from "@/lib/securityApi";
 
 export type { AppUser };
 
@@ -28,6 +27,7 @@ export interface RegisterUserParams {
   yearsExperience?: string;
   primaryCuisine?: string;
   bio?: string;
+  turnstileToken?: string | null;
 }
 
 export interface RegisterResult {
@@ -50,35 +50,6 @@ function mapProfileToAppUser(profile: ProfileRow): AppUser {
     status: profile.status,
     profile_completed: profile.profile_completed,
   };
-}
-
-async function fetchProfile(userId: string): Promise<ProfileRow | null> {
-  const client = getSupabaseClient();
-  if (!client) return null;
-
-  const { data, error } = await client
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-async function resolveWaitlistStatus(stateName: string): Promise<"active" | "waitlist"> {
-  const client = getSupabaseClient();
-  if (!client) return "active";
-
-  const regionId = resolveRegionId(stateName);
-  const { data } = await client
-    .from("launch_regions")
-    .select("is_active")
-    .eq("id", regionId)
-    .maybeSingle();
-
-  return data?.is_active ? "active" : "waitlist";
 }
 
 const legacyAuth = {
@@ -153,85 +124,23 @@ const legacyAuth = {
 
 const supabaseAuth = {
   async register(params: RegisterUserParams): Promise<RegisterResult> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase is not configured.");
+    const result = await SecurityApi.signup(params);
 
-    if (params.role !== "family" && params.role !== "chef") {
-      throw new Error("Invalid account type. Admin accounts cannot be self-registered.");
-    }
-
-    if (!params.password || params.password.length < 8) {
-      throw new Error("Password must be at least 8 characters.");
-    }
-
-    const { data, error } = await client.auth.signUp({
-      email: params.email,
-      password: params.password,
-      options: {
-        data: {
-          role: params.role,
-          full_name: params.name,
-          city: params.city,
-          state: params.state,
-          zip: params.zip,
-          phone: params.phone ?? null,
-          years_experience: params.yearsExperience ?? null,
-          primary_cuisine: params.primaryCuisine ?? null,
-          bio: params.bio ?? null,
-        },
-      },
-    });
-
-    if (error) throw new Error(error.message);
-
-    const userId = data.user?.id;
-    const status = await resolveWaitlistStatus(params.state);
-
-    if (userId) {
-      await WaitlistService.register({
-        name: params.name,
-        email: params.email,
-        role: params.role,
-        state: params.state,
-        city: params.city,
-        zip: params.zip,
-        profileId: userId,
-      }).catch(() => {});
-    }
-
-    if (data.session && userId) {
-      await NotificationService.syncUserNotifications(userId).catch(() => {});
+    if (result.userId) {
+      await NotificationService.syncUserNotifications(result.userId).catch(() => {});
     }
 
     return {
-      status,
-      message:
-        status === "active"
-          ? "Account created successfully."
-          : "Your region is on the waitlist. We will notify you when Servd Co launches.",
-      needsEmailConfirmation: !data.session,
+      status: result.status,
+      message: result.message,
+      needsEmailConfirmation: result.needsEmailConfirmation,
     };
   },
 
   async login(email: string, password: string): Promise<AppUser> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase is not configured.");
-
-    if (!password) throw new Error("Password is required.");
-
-    const { data, error } = await client.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw new Error(error.message);
-
-    const profile = await fetchProfile(data.user.id);
-    if (!profile) throw new Error("Profile not found. Please contact support.");
-
-    const appUser = mapProfileToAppUser(profile);
-    await NotificationService.syncUserNotifications(profile.id).catch(() => {});
-    return appUser;
+    const { user } = await SecurityApi.login(email, password);
+    await NotificationService.syncUserNotifications(user.id).catch(() => {});
+    return user;
   },
 
   async logout(): Promise<void> {
@@ -246,11 +155,19 @@ const supabaseAuth = {
     const client = getSupabaseClient();
     if (!client) throw new Error("Supabase is not configured.");
 
-    const redirectTo = `${window.location.origin}/login`;
+    const redirectTo = `${window.location.origin}/reset-password`;
     const { error } = await client.auth.resetPasswordForEmail(email, {
       redirectTo,
     });
 
+    if (error) throw new Error(error.message);
+  },
+
+  async completePasswordReset(newPassword: string): Promise<void> {
+    const client = getSupabaseClient();
+    if (!client) throw new Error("Supabase is not configured.");
+
+    const { error } = await client.auth.updateUser({ password: newPassword });
     if (error) throw new Error(error.message);
   },
 };
@@ -288,6 +205,13 @@ export const AuthService = {
       throw new Error("Password reset requires Supabase authentication.");
     }
     return supabaseAuth.resetPassword(email);
+  },
+
+  async completePasswordReset(newPassword: string): Promise<void> {
+    if (!(await this.usesSupabaseAuth())) {
+      throw new Error("Password reset requires Supabase authentication.");
+    }
+    return supabaseAuth.completePasswordReset(newPassword);
   },
 
   /** @deprecated Use useCurrentProfile() or useAuth().userId */

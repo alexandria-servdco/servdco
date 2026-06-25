@@ -1,4 +1,5 @@
 import { WaitlistSupabaseService } from "@/services/supabase/waitlist.service";
+import { SecurityApi } from "@/lib/securityApi";
 import { assertSupabaseConfigured } from "@/services/supabase/fallback";
 
 export const WaitlistService = {
@@ -15,8 +16,21 @@ export const WaitlistService = {
     city: string;
     zip: string;
     profileId?: string;
+    turnstileToken?: string | null;
   }) {
-    assertSupabaseConfigured();
-    return WaitlistSupabaseService.register(params);
+    if (params.profileId) {
+      assertSupabaseConfigured();
+      return WaitlistSupabaseService.register(params);
+    }
+
+    return SecurityApi.submitWaitlist({
+      turnstileToken: params.turnstileToken,
+      name: params.name,
+      email: params.email,
+      role: params.role,
+      state: params.state,
+      city: params.city,
+      zip: params.zip,
+    });
   },
 };

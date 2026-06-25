@@ -60,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!enforceRateLimit(req, res, "emails/booking-event", { maxRequests: 20 })) {
+  if (!(await enforceRateLimit(req, res, "email_event", { route: "/api/emails/booking-event" }))) {
     return;
   }
 

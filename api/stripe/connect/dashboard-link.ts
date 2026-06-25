@@ -19,7 +19,7 @@ export default async function handler(
     return;
   }
 
-  if (!enforceRateLimit(req, res, "/api/stripe/connect/dashboard-link")) {
+  if (!(await enforceRateLimit(req, res, "stripe_default", { route: "/api/stripe/connect/dashboard-link" }))) {
     return;
   }
 

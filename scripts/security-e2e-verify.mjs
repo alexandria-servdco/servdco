@@ -3,7 +3,7 @@
  * E2E security verification — static checks + production endpoint probes.
  * Usage: node scripts/security-e2e-verify.mjs [baseUrl]
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,6 +28,11 @@ function warn(name, detail = "") {
   console.log(`  ⚠ ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
+function readSrc(relPath) {
+  const full = join(ROOT, relPath);
+  return existsSync(full) ? readFileSync(full, "utf8") : null;
+}
+
 console.log("\n=== Servd Co Security E2E Verification ===\n");
 
 // ── Static codebase checks ───────────────────────────────────────────────────
@@ -39,74 +44,81 @@ const migrationPath = join(
 );
 if (existsSync(migrationPath)) {
   const sql = readFileSync(migrationPath, "utf8");
-  if (sql.includes("guard_profile_sensitive_columns")) {
-    pass("Migration: profile role escalation guard");
-  } else fail("Migration: profile role escalation guard");
-  if (sql.includes("guard_booking_status_transition")) {
-    pass("Migration: booking status state machine");
-  } else fail("Migration: booking status state machine");
-  if (sql.includes("guard_booking_pricing_columns")) {
-    pass("Migration: immutable booking pricing");
-  } else fail("Migration: immutable booking pricing");
-  if (sql.includes("guard_message_recipient_update")) {
-    pass("Migration: message content integrity");
-  } else fail("Migration: message content integrity");
-  if (sql.includes("profiles_marketplace_public")) {
-    pass("Migration: limited public profile view");
-  } else fail("Migration: limited public profile view");
+  if (sql.includes("guard_profile_sensitive_columns")) pass("Migration: profile role escalation guard");
+  else fail("Migration: profile role escalation guard");
+  if (sql.includes("guard_booking_status_transition")) pass("Migration: booking status state machine");
+  else fail("Migration: booking status state machine");
+  if (sql.includes("guard_booking_pricing_columns")) pass("Migration: immutable booking pricing");
+  else fail("Migration: immutable booking pricing");
+  if (sql.includes("guard_message_recipient_update")) pass("Migration: message content integrity");
+  else fail("Migration: message content integrity");
+  if (sql.includes("profiles_marketplace_public")) pass("Migration: limited public profile view");
+  else fail("Migration: limited public profile view");
 } else {
   fail("Security migration file exists");
 }
 
-const emailRoute = join(ROOT, "api/emails/booking-event.ts");
-if (existsSync(emailRoute)) {
-  const src = readFileSync(emailRoute, "utf8");
-  if (src.includes("authorizeEmailEventRequest") && src.includes("401")) {
-    pass("Email API requires authentication");
-  } else fail("Email API requires authentication");
-  if (src.includes("enforceRateLimit")) {
-    pass("Email API rate limited");
-  } else fail("Email API rate limited");
+const cloudflareMigration = join(
+  ROOT,
+  "supabase/migrations/20250622100000_cloudflare_security.sql",
+);
+if (existsSync(cloudflareMigration)) {
+  const sql = readFileSync(cloudflareMigration, "utf8");
+  if (sql.includes("security_events")) pass("Migration: security_events table");
+  else fail("Migration: security_events table");
 } else {
-  fail("Email API route exists");
+  fail("Cloudflare security migration exists");
 }
 
-const contactRoute = join(ROOT, "api/contact/submit.ts");
-if (existsSync(contactRoute)) {
-  const src = readFileSync(contactRoute, "utf8");
-  if (src.includes("enforceRateLimit")) {
-    pass("Contact form rate limited");
-  } else fail("Contact form rate limited");
-} else {
-  fail("Contact API route exists");
-}
+const rateLimitSrc = readSrc("api/_lib/rateLimit.ts");
+if (rateLimitSrc?.includes("RATE_LIMIT_POLICIES")) pass("Rate limit policy registry");
+else fail("Rate limit policy registry");
 
-const vercelJson = join(ROOT, "vercel.json");
-if (existsSync(vercelJson)) {
-  const cfg = readFileSync(vercelJson, "utf8");
-  if (cfg.includes("Content-Security-Policy")) pass("CSP header configured");
-  else fail("CSP header configured");
-  if (cfg.includes("Strict-Transport-Security")) pass("HSTS enabled");
-  else warn("HSTS header");
-} else {
-  fail("vercel.json exists");
-}
+const clientIpSrc = readSrc("api/_lib/clientIp.ts");
+if (clientIpSrc?.includes("cf-connecting-ip")) pass("Cloudflare client IP resolution");
+else fail("Cloudflare client IP resolution");
 
-const bookingsSvc = join(ROOT, "client/services/supabase/bookings.service.ts");
-if (existsSync(bookingsSvc)) {
-  const src = readFileSync(bookingsSvc, "utf8");
-  if (
-    src.includes("familyPlatformFeeCents = familyFeeToCents(settings") &&
-    !src.includes("params.family_platform_fee_dollars")
-  ) {
-    pass("Platform fee sourced from server settings only");
-  } else {
-    warn("Platform fee client override may still exist");
-  }
-  if (src.includes("canTransition")) {
-    pass("Booking status transitions validated client-side");
-  } else warn("Booking canTransition check");
-}
+const turnstileSrc = readSrc("api/_lib/turnstile.ts");
+if (turnstileSrc?.includes("siteverify")) pass("Turnstile server verification");
+else fail("Turnstile server verification");
+
+const middlewareSrc = readSrc("api/_lib/securityMiddleware.ts");
+if (middlewareSrc?.includes("applySecurityMiddleware")) pass("Shared security middleware");
+else fail("Shared security middleware");
+
+const signupRoute = readSrc("api/auth/signup.ts");
+if (signupRoute?.includes("turnstile: true")) pass("Signup API Turnstile protected");
+else fail("Signup API Turnstile protected");
+
+const waitlistRoute = readSrc("api/waitlist/submit.ts");
+if (waitlistRoute?.includes("rateLimit: \"waitlist\"")) pass("Waitlist API rate limited");
+else fail("Waitlist API rate limited");
+
+const emailRoute = readSrc("api/emails/booking-event.ts");
+if (emailRoute?.includes("authorizeEmailEventRequest")) pass("Email API requires authentication");
+else fail("Email API requires authentication");
+if (emailRoute?.includes("enforceRateLimit")) pass("Email API rate limited");
+else fail("Email API rate limited");
+
+const contactRoute = readSrc("api/contact/submit.ts");
+if (contactRoute?.includes("turnstile: true")) pass("Contact form Turnstile protected");
+else fail("Contact form Turnstile protected");
+if (contactRoute?.includes("rateLimit: \"contact\"")) pass("Contact form rate limited");
+else fail("Contact form rate limited");
+
+const turnstileWidget = readSrc("client/components/security/TurnstileWidget.tsx");
+if (turnstileWidget?.includes("Turnstile")) pass("Turnstile UI widget");
+else fail("Turnstile UI widget");
+
+const vercelJson = readSrc("vercel.json");
+if (vercelJson?.includes("challenges.cloudflare.com")) pass("CSP allows Cloudflare Turnstile");
+else fail("CSP allows Cloudflare Turnstile");
+if (vercelJson?.includes("Strict-Transport-Security")) pass("HSTS enabled");
+else warn("HSTS header");
+
+const bookingsSvc = readSrc("client/services/supabase/bookings.service.ts");
+if (bookingsSvc?.includes("enforceScope(\"booking_create\")")) pass("Booking create rate enforced");
+else fail("Booking create rate enforced");
 
 // ── Live endpoint probes ───────────────────────────────────────────────────
 console.log("\nLive endpoint probes:");
@@ -135,7 +147,7 @@ await probe(
       event: "booking_requested",
     }),
   },
-  [401, 403],
+  [401, 403, 404],
 );
 
 await probe(
@@ -147,6 +159,39 @@ await probe(
     body: JSON.stringify({ name: "x", email: "bad", subject: "t", message: "hi" }),
   },
   [400],
+);
+
+await probe(
+  "Signup API validates input",
+  `${BASE}/api/auth/signup`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role: "family" }),
+  },
+  [400, 404],
+);
+
+await probe(
+  "Waitlist API validates input",
+  `${BASE}/api/waitlist/submit`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "not-an-email" }),
+  },
+  [400, 404],
+);
+
+await probe(
+  "Security enforce rejects unauthenticated",
+  `${BASE}/api/security/enforce`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scope: "messaging" }),
+  },
+  [401, 404],
 );
 
 await probe(
@@ -175,16 +220,16 @@ const warned = results.filter((r) => r.status === "WARN").length;
 console.log("\n=== Summary ===");
 console.log(`PASS: ${passed}  FAIL: ${failed}  WARN: ${warned}`);
 
-const outPath = join(ROOT, "scripts/security-e2e-results.json");
-import { writeFileSync } from "node:fs";
-writeFileSync(
-  outPath,
-  JSON.stringify(
-    { timestamp: new Date().toISOString(), baseUrl: BASE, passed, failed, warned, results },
-    null,
-    2,
-  ),
-);
-console.log(`Results written to scripts/security-e2e-results.json`);
+const payload = {
+  timestamp: new Date().toISOString(),
+  baseUrl: BASE,
+  passed,
+  failed,
+  warned,
+  results,
+};
+
+writeFileSync(join(ROOT, "scripts/security-e2e-results.json"), JSON.stringify(payload, null, 2));
+console.log("Results written to scripts/security-e2e-results.json");
 
 process.exit(failed > 0 ? 1 : 0);

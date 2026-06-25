@@ -1,16 +1,29 @@
+import {
+  mapThrownError,
+  mapToUserFacingError,
+  formatUserErrorMessage,
+  isUserFacingError,
+  type UserFacingError,
+} from "@shared/userErrors";
 import { SupabaseQueryError } from "@/services/supabase/fallback";
+import { SecurityApiError } from "@/lib/securityApi";
 
-/** Surfaces the most useful message from API / Supabase / Zod failures. */
-export function extractErrorMessage(err: unknown, fallback: string): string {
+export type { UserFacingError };
+export { mapThrownError, mapToUserFacingError, formatUserErrorMessage, isUserFacingError };
+
+/** Surfaces a production-quality message from any failure. */
+export function toUserFacingError(err: unknown): UserFacingError {
+  if (err instanceof SecurityApiError) return err.userFacing;
+  if (isUserFacingError(err)) return err;
   if (err instanceof SupabaseQueryError) {
-    return err.message || fallback;
+    return mapThrownError(new Error(err.message));
   }
-  if (err instanceof Error && err.message.trim()) {
-    return err.message;
-  }
-  if (typeof err === "object" && err !== null && "message" in err) {
-    const msg = (err as { message?: unknown }).message;
-    if (typeof msg === "string" && msg.trim()) return msg;
-  }
-  return fallback;
+  return mapThrownError(err);
+}
+
+/** @deprecated Prefer toUserFacingError + formatUserErrorMessage */
+export function extractErrorMessage(err: unknown, fallback: string): string {
+  const facing = toUserFacingError(err);
+  const text = formatUserErrorMessage(facing);
+  return text || fallback;
 }

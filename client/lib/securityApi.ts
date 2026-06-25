@@ -1,6 +1,11 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { RegisterUserParams, RegisterResult } from "@/services/auth.service";
 import type { AppUser } from "@/lib/auth/types";
+import {
+  mapThrownError,
+  mapToUserFacingError,
+  type UserFacingError,
+} from "@shared/userErrors";
 
 async function readBearerToken(): Promise<string | null> {
   const client = getSupabaseClient();
@@ -14,12 +19,14 @@ export type SecurityEnforceScope = "messaging" | "booking_create" | "review_subm
 export class SecurityApiError extends Error {
   code?: string;
   status: number;
+  userFacing: UserFacingError;
 
-  constructor(message: string, status: number, code?: string) {
-    super(message);
+  constructor(userFacing: UserFacingError, status: number) {
+    super(userFacing.message);
     this.name = "SecurityApiError";
+    this.userFacing = userFacing;
+    this.code = userFacing.code;
     this.status = status;
-    this.code = code;
   }
 }
 
@@ -27,12 +34,17 @@ async function parseError(res: Response): Promise<SecurityApiError> {
   const body = (await res.json().catch(() => ({}))) as {
     error?: string;
     code?: string;
+    title?: string;
+    message?: string;
+    guidance?: string;
   };
-  return new SecurityApiError(
-    body.error ?? "Request failed.",
-    res.status,
-    body.code,
-  );
+  const userFacing = mapToUserFacingError(res.status, body);
+  return new SecurityApiError(userFacing, res.status);
+}
+
+async function parseFetchError(err: unknown): Promise<SecurityApiError> {
+  const userFacing = mapThrownError(err);
+  return new SecurityApiError(userFacing, 0);
 }
 
 export const SecurityApi = {
@@ -43,24 +55,29 @@ export const SecurityApi = {
       userId?: string;
     }
   > {
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        turnstileToken: params.turnstileToken ?? undefined,
-        role: params.role,
-        name: params.name,
-        email: params.email,
-        password: params.password,
-        state: params.state,
-        city: params.city,
-        zip: params.zip,
-        phone: params.phone,
-        yearsExperience: params.yearsExperience,
-        primaryCuisine: params.primaryCuisine,
-        bio: params.bio,
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          turnstileToken: params.turnstileToken ?? undefined,
+          role: params.role,
+          name: params.name,
+          email: params.email,
+          password: params.password,
+          state: params.state,
+          city: params.city,
+          zip: params.zip,
+          phone: params.phone,
+          yearsExperience: params.yearsExperience,
+          primaryCuisine: params.primaryCuisine,
+          bio: params.bio,
+        }),
+      });
+    } catch (err) {
+      throw await parseFetchError(err);
+    }
 
     if (!res.ok) throw await parseError(res);
 
@@ -80,10 +97,13 @@ export const SecurityApi = {
     if (body.session) {
       const client = getSupabaseClient();
       if (client) {
-        await client.auth.setSession({
+        const { error } = await client.auth.setSession({
           access_token: body.session.access_token,
           refresh_token: body.session.refresh_token,
         });
+        if (error) {
+          throw new SecurityApiError(mapThrownError(error), 500);
+        }
       }
     }
 
@@ -97,11 +117,16 @@ export const SecurityApi = {
   },
 
   async login(email: string, password: string): Promise<{ user: AppUser }> {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch (err) {
+      throw await parseFetchError(err);
+    }
 
     if (!res.ok) throw await parseError(res);
 
@@ -111,43 +136,45 @@ export const SecurityApi = {
         refresh_token: string;
         expires_in: number;
       };
-      user: { id: string; email?: string };
+      user: AppUser;
     };
 
     const client = getSupabaseClient();
-    if (!client) throw new SecurityApiError("Supabase not configured.", 503);
+    if (!client) {
+      throw new SecurityApiError(
+        mapToUserFacingError(503, { code: "AUTH_SERVICE_UNAVAILABLE" }),
+        503,
+      );
+    }
 
     const { error } = await client.auth.setSession({
       access_token: body.session.access_token,
       refresh_token: body.session.refresh_token,
     });
-    if (error) throw new SecurityApiError(error.message, 500);
-
-    const { data: profile } = await client
-      .from("profiles")
-      .select("*")
-      .eq("id", body.user.id)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (!profile) {
-      throw new SecurityApiError("Profile not found.", 404);
+    if (error) {
+      throw new SecurityApiError(mapThrownError(error), 500);
     }
 
-    return {
-      user: {
-        id: profile.id,
-        name: profile.full_name ?? profile.email,
-        email: profile.email,
-        role: profile.role,
-        state: profile.state ?? undefined,
-        city: profile.city ?? undefined,
-        zip: profile.zip ?? undefined,
-        phone: profile.phone ?? undefined,
-        status: profile.status,
-        profile_completed: profile.profile_completed,
-      },
-    };
+    return { user: body.user };
+  },
+
+  async resendConfirmation(
+    email: string,
+    turnstileToken?: string | null,
+  ): Promise<{ message: string; emailSent?: boolean }> {
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/resend-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, turnstileToken }),
+      });
+    } catch (err) {
+      throw await parseFetchError(err);
+    }
+
+    if (!res.ok) throw await parseError(res);
+    return res.json();
   },
 
   async submitWaitlist(params: {
@@ -163,11 +190,16 @@ export const SecurityApi = {
     message: string;
     localStats: { families: number; chefs: number };
   }> {
-    const res = await fetch("/api/waitlist/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/waitlist/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+    } catch (err) {
+      throw await parseFetchError(err);
+    }
     if (!res.ok) throw await parseError(res);
     return res.json();
   },
@@ -175,17 +207,25 @@ export const SecurityApi = {
   async enforceScope(scope: SecurityEnforceScope): Promise<void> {
     const token = await readBearerToken();
     if (!token) {
-      throw new SecurityApiError("Authentication required.", 401);
+      throw new SecurityApiError(
+        mapToUserFacingError(401, { code: "AUTH_SESSION_EXPIRED" }),
+        401,
+      );
     }
 
-    const res = await fetch("/api/security/enforce", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ scope }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/security/enforce", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ scope }),
+      });
+    } catch (err) {
+      throw await parseFetchError(err);
+    }
 
     if (!res.ok) throw await parseError(res);
   },

@@ -11,8 +11,8 @@ interface ErrorFallbackProps {
 
 /** User-friendly error state — matches ServdCo brand tokens. */
 export function ErrorFallback({
-  title = "Something went wrong",
-  message = "We hit an unexpected error. You can try again or return home.",
+  title = "Something unexpected happened",
+  message = "We've logged this issue automatically. Please try again in a moment.",
   onRetry,
   showHome = true,
 }: ErrorFallbackProps) {

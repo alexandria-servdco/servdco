@@ -154,22 +154,38 @@ const supabaseAuth = {
 
   async resetPassword(email: string): Promise<void> {
     const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase is not configured.");
+    if (!client) {
+      throw new Error("Sign-in is temporarily unavailable. Please try again in a few minutes.");
+    }
 
     const redirectTo = `${window.location.origin}/reset-password`;
     const { error } = await client.auth.resetPasswordForEmail(email, {
       redirectTo,
     });
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      const lower = error.message.toLowerCase();
+      if (lower.includes("rate limit")) {
+        throw new Error("Too many reset requests. Please wait a few minutes and try again.");
+      }
+      throw new Error(
+        "We couldn't send a reset email right now. Check your email address and try again in a moment.",
+      );
+    }
   },
 
   async completePasswordReset(newPassword: string): Promise<void> {
     const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase is not configured.");
+    if (!client) {
+      throw new Error("Sign-in is temporarily unavailable. Please try again in a few minutes.");
+    }
 
     const { error } = await client.auth.updateUser({ password: newPassword });
-    if (error) throw new Error(error.message);
+    if (error) {
+      throw new Error(
+        "We couldn't update your password. Your reset link may have expired — request a new one from the login page.",
+      );
+    }
   },
 };
 

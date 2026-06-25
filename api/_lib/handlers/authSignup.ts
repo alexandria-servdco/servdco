@@ -11,6 +11,7 @@ import {
 } from "../supabaseAuthApi.js";
 import { resolveRegionId } from "../regionMapping.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
+import { sendUserError } from "../userErrors.js";
 
 const signupSchema = z.object({
   turnstileToken: z.string().optional(),
@@ -61,7 +62,7 @@ export async function handleAuthSignup(
   const data = parsed.data;
   const env = getStripeEnv();
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    res.status(503).json({ error: "Authentication service unavailable." });
+    sendUserError(res, 503, "AUTH_SERVICE_UNAVAILABLE");
     return;
   }
 
@@ -88,11 +89,20 @@ export async function handleAuthSignup(
   if (createError) {
     const msg = createError.message.toLowerCase();
     if (msg.includes("already") || msg.includes("registered")) {
-      res.status(409).json({ error: "An account with this email already exists." });
+      sendUserError(res, 409, "CONFLICT", {
+        title: "An account already exists",
+        message: "An account with this email is already registered.",
+        guidance: "Try signing in, or reset your password if you forgot it.",
+        primaryAction: { label: "Sign in", action: "sign_in" },
+        secondaryAction: { label: "Reset password", action: "reset_password" },
+      });
       return;
     }
     console.error("[auth.signup]", createError);
-    res.status(400).json({ error: createError.message });
+    sendUserError(res, 400, "VALIDATION_ERROR", {
+      message: "We couldn't create your account with the details provided.",
+      guidance: "Review your information and try again.",
+    });
     return;
   }
 

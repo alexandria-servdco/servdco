@@ -1,69 +1,100 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { z } from "zod";
+import { loginSchema, formatZodError } from "../../../shared/validation.js";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 import { getStripeEnv } from "../stripe/env.js";
 import { createPasswordAuthClient } from "../supabaseAuthApi.js";
-
-const loginSchema = z.object({
-  email: z.string().trim().email(),
-  password: z.string().min(1).max(128),
-});
+import { ensureUserProfile } from "../auth/ensureProfile.js";
+import { mapSupabaseAuthError, sendUserError } from "../userErrors.js";
+import { getServiceRoleClient } from "../supabase/serviceRole.js";
 
 export async function handleAuthLogin(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  const ctx = await applySecurityMiddleware(req, res, {
-    methods: ["POST"],
-    route: "/api/auth/login",
-    rateLimit: "login",
-  });
-  if (!ctx) return;
-
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({
-      error: parsed.error.errors[0]?.message ?? "Invalid credentials.",
+  try {
+    const ctx = await applySecurityMiddleware(req, res, {
+      methods: ["POST"],
+      route: "/api/auth/login",
+      rateLimit: "login",
     });
-    return;
-  }
+    if (!ctx) return;
 
-  const env = getStripeEnv();
-  const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
-  if (!env.SUPABASE_URL || !anonKey) {
-    res.status(503).json({ error: "Authentication service unavailable." });
-    return;
-  }
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendUserError(res, 400, "VALIDATION_ERROR", {
+        message: formatZodError(parsed.error),
+      });
+      return;
+    }
 
-  const auth = createPasswordAuthClient(env.SUPABASE_URL, anonKey);
-  const { data, error } = await auth.signInWithPassword({
-    email: parsed.data.email,
-    password: parsed.data.password,
-  });
+    const env = getStripeEnv();
+    const anonKey =
+      process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
+    if (!env.SUPABASE_URL || !anonKey) {
+      sendUserError(res, 503, "AUTH_SERVICE_UNAVAILABLE");
+      return;
+    }
 
-  if (error) {
-    res.status(401).json({ error: "Invalid email or password." });
-    return;
-  }
-
-  if (!data.session) {
-    res.status(401).json({
-      error: "Please confirm your email before signing in.",
-      code: "EMAIL_NOT_CONFIRMED",
+    const auth = createPasswordAuthClient(env.SUPABASE_URL, anonKey);
+    const { data, error } = await auth.signInWithPassword({
+      email: parsed.data.email,
+      password: parsed.data.password,
     });
-    return;
-  }
 
-  res.status(200).json({
-    success: true,
-    session: {
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-      expires_in: data.session.expires_in ?? 3600,
-    },
-    user: {
-      id: data.user?.id,
-      email: data.user?.email,
-    },
-  });
+    if (error) {
+      sendUserError(res, 401, mapSupabaseAuthError(error.message));
+      return;
+    }
+
+    if (!data.session || !data.user?.id) {
+      sendUserError(res, 401, "AUTH_EMAIL_NOT_CONFIRMED");
+      return;
+    }
+
+    const profile = await ensureUserProfile({
+      id: data.user.id,
+      email: data.user.email,
+      user_metadata: await loadUserMetadata(data.user.id),
+    });
+
+    if (!profile) {
+      sendUserError(res, 500, "AUTH_PROFILE_INCOMPLETE");
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      session: {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_in: data.session.expires_in ?? 3600,
+      },
+      user: {
+        id: profile.id,
+        email: profile.email,
+        name: profile.full_name ?? profile.email,
+        role: profile.role,
+        state: profile.state ?? undefined,
+        city: profile.city ?? undefined,
+        zip: profile.zip ?? undefined,
+        phone: profile.phone ?? undefined,
+        status: profile.status,
+        profile_completed: profile.profile_completed,
+      },
+    });
+  } catch (err) {
+    console.error("[auth.login]", err instanceof Error ? err.message : err);
+    sendUserError(res, 500, "SERVER_ERROR");
+  }
+}
+
+async function loadUserMetadata(userId: string): Promise<Record<string, unknown>> {
+  try {
+    const client = getServiceRoleClient();
+    const { data, error } = await client.auth.admin.getUserById(userId);
+    if (error || !data.user) return {};
+    return (data.user.user_metadata ?? {}) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
 }

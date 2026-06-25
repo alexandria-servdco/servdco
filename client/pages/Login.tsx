@@ -2,10 +2,14 @@ import { useState, useEffect } from "react";
 import { Mail, Lock, Heart, Users, ChefHat, ShieldAlert } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationModal";
+import { UserErrorBanner } from "@/components/errors/UserErrorBanner";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { AuthService } from "@/services/auth.service";
+import { SecurityApi } from "@/lib/securityApi";
 import { useAuth } from "@/hooks/useAuth";
+import { toUserFacingError } from "@/lib/errors";
+import type { UserFacingError } from "@shared/userErrors";
 import {
   loginSchema,
   passwordResetSchema,
@@ -32,7 +36,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailValid, setEmailValid] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<UserFacingError | null>(null);
   const [success, setSuccess] = useState("");
   const [showReset, setShowReset] = useState(false);
 
@@ -66,21 +70,63 @@ export default function Login() {
     const schema = showReset ? passwordResetSchema : loginSchema;
     const parsed = safeParse(schema, { email, password });
     if (parsed.success === false) {
-      setError(parsed.error);
+      setError({
+        code: "VALIDATION_ERROR",
+        title: "Please check your information",
+        message: parsed.error,
+        guidance: "Fix the highlighted issue and try again.",
+      });
       return;
     }
 
     setIsLoading(true);
-    setError("");
+    setError(null);
     setSuccess("");
     try {
       const user = await AuthService.login(email, password);
       navigateForRole(navigate, user.role);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      setError(toUserFacingError(err));
       console.error(err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleErrorAction = async (action: string) => {
+    if (action === "reset_password") {
+      setShowReset(true);
+      setError(null);
+      return;
+    }
+    if (action === "resend_confirmation") {
+      if (!email.trim()) {
+        setError({
+          code: "VALIDATION_ERROR",
+          title: "Enter your email first",
+          message: "Add the email you used to sign up, then request a new confirmation link.",
+        });
+        return;
+      }
+      setIsLoading(true);
+      setError(null);
+      setSuccess("");
+      try {
+        const result = await SecurityApi.resendConfirmation(email);
+        setSuccess(result.message);
+      } catch (err) {
+        setError(toUserFacingError(err));
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+    if (action === "retry") {
+      setError(null);
+      return;
+    }
+    if (action === "go_home") {
+      navigate("/");
     }
   };
 
@@ -88,20 +134,25 @@ export default function Login() {
     e.preventDefault();
     const parsed = safeParse(passwordResetSchema, { email });
     if (parsed.success === false) {
-      setError(parsed.error);
+      setError({
+        code: "VALIDATION_ERROR",
+        title: "Enter a valid email",
+        message: parsed.error,
+      });
       return;
     }
 
     setIsLoading(true);
-    setError("");
+    setError(null);
     setSuccess("");
     try {
       await AuthService.resetPassword(email);
-      setSuccess("Password reset email sent. Check your inbox.");
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to send reset email.",
+      setSuccess(
+        "If an account exists for this email, we've sent password reset instructions. Check your inbox and spam folder.",
       );
+      setShowReset(false);
+    } catch (err) {
+      setError(toUserFacingError(err));
     } finally {
       setIsLoading(false);
     }
@@ -109,12 +160,12 @@ export default function Login() {
 
   const handleDevLogin = async (role: "family" | "chef" | "admin") => {
     setIsLoading(true);
-    setError("");
+    setError(null);
     try {
       const user = await AuthService.devLogin(role);
       navigateForRole(navigate, user.role);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Dev login unavailable.");
+      setError(toUserFacingError(err));
     } finally {
       setIsLoading(false);
     }
@@ -207,9 +258,7 @@ export default function Login() {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold">
-              {error}
-            </div>
+            <UserErrorBanner error={error} onAction={handleErrorAction} />
           )}
           {success && (
             <div className="p-3 bg-green-950/20 border border-green-500/20 rounded-xl text-xs text-green-400 font-semibold">
@@ -241,7 +290,7 @@ export default function Login() {
                     type="button"
                     onClick={() => {
                       setShowReset(true);
-                      setError("");
+                      setError(null);
                       setSuccess("");
                     }}
                     className="text-[#FF7A59] text-[11px] font-bold hover:underline"
@@ -274,7 +323,7 @@ export default function Login() {
                   type="button"
                   onClick={() => {
                     setShowReset(false);
-                    setError("");
+                    setError(null);
                     setSuccess("");
                   }}
                   className="w-full text-xs text-[#A8A8A8] font-bold hover:text-white transition-colors"

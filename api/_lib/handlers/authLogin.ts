@@ -54,7 +54,9 @@ export async function handleAuthLogin(
     const profile = await ensureUserProfile({
       id: data.user.id,
       email: data.user.email,
-      user_metadata: await loadUserMetadata(data.user.id),
+      user_metadata:
+        data.user.user_metadata ??
+        (await loadUserMetadata(data.user.id)),
     });
 
     if (!profile) {

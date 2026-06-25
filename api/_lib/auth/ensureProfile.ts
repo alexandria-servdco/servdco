@@ -8,7 +8,17 @@ type AuthUserLike = {
 
 /** Ensures a profiles row exists after admin signup or trigger recovery. */
 export async function ensureUserProfile(user: AuthUserLike) {
-  const client = getServiceRoleClient();
+  let client;
+  try {
+    client = getServiceRoleClient();
+  } catch (err) {
+    console.error(
+      "[auth.ensureProfile] service role unavailable:",
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
+
   const { data: existing } = await client
     .from("profiles")
     .select("*")

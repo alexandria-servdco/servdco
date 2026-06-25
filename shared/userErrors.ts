@@ -165,7 +165,20 @@ const CATALOG: Record<UserErrorCode, UserFacingError> = {
 
 export function getUserError(code: UserErrorCode, overrides?: Partial<UserFacingError>): UserFacingError {
   const base = CATALOG[code] ?? CATALOG.UNKNOWN_ERROR;
-  return { ...base, ...overrides, code: overrides?.code ?? base.code };
+  if (!overrides) return { ...base };
+  return {
+    ...base,
+    ...(overrides.title !== undefined ? { title: overrides.title } : {}),
+    ...(overrides.message !== undefined ? { message: overrides.message } : {}),
+    ...(overrides.guidance !== undefined ? { guidance: overrides.guidance } : {}),
+    ...(overrides.primaryAction !== undefined
+      ? { primaryAction: overrides.primaryAction }
+      : {}),
+    ...(overrides.secondaryAction !== undefined
+      ? { secondaryAction: overrides.secondaryAction }
+      : {}),
+    code: overrides.code ?? base.code,
+  };
 }
 
 function isUserErrorCode(value: string | undefined): value is UserErrorCode {
@@ -226,12 +239,12 @@ export function mapToUserFacingError(
     case 500:
     case 502:
     case 504:
-      return getUserError(isUserErrorCode(body.code) ? body.code : "SERVER_ERROR", {
-        title: body.title,
-        message: body.message || body.error,
-        guidance: body.guidance,
-        primaryAction: body.primaryAction,
-        secondaryAction: body.secondaryAction,
+      return getUserError("SERVER_ERROR", {
+        title: body.title || CATALOG.SERVER_ERROR.title,
+        message: body.message || body.error || CATALOG.SERVER_ERROR.message,
+        guidance: body.guidance || CATALOG.SERVER_ERROR.guidance,
+        primaryAction: body.primaryAction || CATALOG.SERVER_ERROR.primaryAction,
+        secondaryAction: body.secondaryAction || CATALOG.SERVER_ERROR.secondaryAction,
       });
     default:
       return getUserError("UNKNOWN_ERROR", {

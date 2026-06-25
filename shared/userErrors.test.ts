@@ -24,4 +24,10 @@ describe("userErrors", () => {
     const err = getUserError("SERVER_ERROR");
     expect(err.message.toLowerCase()).not.toContain("request failed");
   });
+
+  it("keeps catalog text when 500 body fields are missing", () => {
+    const err = mapToUserFacingError(500, {});
+    expect(err.title).toBe("Something unexpected happened");
+    expect(err.message).toContain("logged this issue");
+  });
 });

@@ -9,7 +9,11 @@ export type AuthSessionPayload = {
 type SignInResult = {
   data: {
     session: AuthSessionPayload | null;
-    user: { id: string; email?: string } | null;
+    user: {
+      id: string;
+      email?: string;
+      user_metadata?: Record<string, unknown>;
+    } | null;
   };
   error: { message: string } | null;
 };

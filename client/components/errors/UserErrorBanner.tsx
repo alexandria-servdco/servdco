@@ -10,6 +10,11 @@ type UserErrorBannerProps = {
 };
 
 export function UserErrorBanner({ error, onAction, className = "" }: UserErrorBannerProps) {
+  const title = error.title?.trim() || "Something went wrong";
+  const message =
+    error.message?.trim() ||
+    "We couldn't complete your request. Please try again in a moment.";
+
   return (
     <div
       role="alert"
@@ -19,8 +24,8 @@ export function UserErrorBanner({ error, onAction, className = "" }: UserErrorBa
       <div className="flex gap-3">
         <AlertCircle className="text-red-400 shrink-0 mt-0.5" size={18} aria-hidden />
         <div className="space-y-2 min-w-0">
-          <p className="text-sm font-bold text-white">{error.title}</p>
-          <p className="text-xs text-red-200/90 leading-relaxed">{error.message}</p>
+          <p className="text-sm font-bold text-white">{title}</p>
+          <p className="text-xs text-red-200/90 leading-relaxed">{message}</p>
           {error.guidance && (
             <p className="text-[11px] text-[#A8A8A8] leading-relaxed">{error.guidance}</p>
           )}

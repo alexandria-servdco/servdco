@@ -3,8 +3,6 @@ import { z } from "zod";
 import { emailSchema, formatZodError } from "../../../shared/validation.js";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 import { getStripeEnv } from "../stripe/env.js";
-import { getServiceRoleClient } from "../supabase/serviceRole.js";
-import { getServiceRoleAuthAdmin } from "../supabaseAuthApi.js";
 import { sendAccountConfirmationEmail } from "../email/signupConfirmation.js";
 import { sendUserError } from "../userErrors.js";
 
@@ -43,14 +41,9 @@ export async function handleAuthResendConfirmation(
       return;
     }
 
-    const client = getServiceRoleClient();
-    const authAdmin = getServiceRoleAuthAdmin(client);
     const email = parsed.data.email.trim().toLowerCase();
 
     const sent = await sendAccountConfirmationEmail({
-      authAdmin: authAdmin as unknown as Parameters<
-        typeof sendAccountConfirmationEmail
-      >[0]["authAdmin"],
       email,
     });
 

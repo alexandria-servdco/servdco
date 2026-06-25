@@ -3,8 +3,6 @@ import { ensureUserProfile } from "./ensureProfile.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
 import { getServiceRoleAuthAdmin } from "../supabaseAuthApi.js";
 
-type AuthAdmin = Parameters<typeof sendSignupConfirmationEmail>[0]["authAdmin"];
-
 export type SignupPayload = {
   email: string;
   password: string;
@@ -32,7 +30,6 @@ export function isDuplicateSignupError(message: string): boolean {
 /** If email belongs to an unverified account, refresh credentials and resend confirmation. */
 export async function tryRecoverUnverifiedSignup(params: {
   client: SupabaseClient;
-  authAdmin: AuthAdmin;
   data: SignupPayload;
 }): Promise<{ recovered: boolean; confirmationEmailSent: boolean; userId?: string }> {
   const email = params.data.email.trim().toLowerCase();
@@ -102,7 +99,6 @@ export async function tryRecoverUnverifiedSignup(params: {
     .eq("id", existing.id);
 
   const confirmationEmailSent = await sendSignupConfirmationEmail({
-    authAdmin: params.authAdmin,
     email: params.data.email,
     password: params.data.password,
     name: params.data.name,

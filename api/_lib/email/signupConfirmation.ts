@@ -1,16 +1,5 @@
 import { sendResendEmail } from "./resend.js";
-
-type GenerateLinkAdmin = {
-  generateLink: (params: {
-    type: "signup" | "magiclink";
-    email: string;
-    password?: string;
-    options?: { redirectTo?: string };
-  }) => Promise<{
-    data: { properties?: { action_link?: string } } | null;
-    error: { message: string } | null;
-  }>;
-};
+import { generateAuthLink } from "../supabase/generateAuthLink.js";
 
 function resolveSiteUrl(): string {
   const raw =
@@ -24,7 +13,6 @@ function resolveSiteUrl(): string {
 
 /** Sends a signup confirmation link via Resend after admin user creation. */
 export async function sendSignupConfirmationEmail(params: {
-  authAdmin: GenerateLinkAdmin;
   email: string;
   password: string;
   name: string;
@@ -34,32 +22,27 @@ export async function sendSignupConfirmationEmail(params: {
   const redirectTo = `${siteUrl}/login?confirmed=1`;
   const roleLabel = params.role === "chef" ? "cook" : "family";
 
-  const { data: linkData, error: linkError } = await params.authAdmin.generateLink({
+  let link = await generateAuthLink({
     type: "signup",
     email: params.email,
     password: params.password,
-    options: { redirectTo },
+    redirectTo,
   });
 
-  let actionLink = linkData?.properties?.action_link;
-
-  if (!actionLink) {
-    const { data: magicData, error: magicError } = await params.authAdmin.generateLink({
+  if (!link.actionLink) {
+    link = await generateAuthLink({
       type: "magiclink",
       email: params.email,
-      options: { redirectTo },
+      redirectTo,
     });
-    if (magicError) {
-      console.error("[auth.signup] confirmation link:", linkError?.message ?? magicError.message);
-      return false;
-    }
-    actionLink = magicData?.properties?.action_link;
   }
 
-  if (!actionLink) {
-    console.error("[auth.signup] confirmation link: missing action_link");
+  if (!link.actionLink) {
+    console.error("[auth.signup] confirmation link:", link.error ?? "missing action_link");
     return false;
   }
+
+  const actionLink = link.actionLink;
 
   const sent = await sendResendEmail({
     to: params.email,
@@ -82,7 +65,6 @@ export async function sendSignupConfirmationEmail(params: {
 
 /** Resend a confirmation link for an existing unverified account. */
 export async function sendAccountConfirmationEmail(params: {
-  authAdmin: GenerateLinkAdmin;
   email: string;
   name?: string;
 }): Promise<boolean> {
@@ -90,15 +72,14 @@ export async function sendAccountConfirmationEmail(params: {
   const redirectTo = `${siteUrl}/login?confirmed=1`;
   const displayName = params.name?.trim() || "there";
 
-  const { data: magicData, error: magicError } = await params.authAdmin.generateLink({
+  const link = await generateAuthLink({
     type: "magiclink",
     email: params.email,
-    options: { redirectTo },
+    redirectTo,
   });
 
-  const actionLink = magicData?.properties?.action_link;
-  if (magicError || !actionLink) {
-    console.error("[auth.confirmation] link:", magicError?.message ?? "missing action_link");
+  if (!link.actionLink) {
+    console.error("[auth.confirmation] link:", link.error ?? "missing action_link");
     return false;
   }
 
@@ -108,8 +89,8 @@ export async function sendAccountConfirmationEmail(params: {
     html: `
       <p>Hi ${displayName},</p>
       <p>Please confirm your email address to activate your Servd Co account:</p>
-      <p><a href="${actionLink}" style="display:inline-block;padding:12px 24px;background:#FF7A59;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Confirm my email</a></p>
-      <p>Or copy this link into your browser:<br/><a href="${actionLink}">${actionLink}</a></p>
+      <p><a href="${link.actionLink}" style="display:inline-block;padding:12px 24px;background:#FF7A59;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Confirm my email</a></p>
+      <p>Or copy this link into your browser:<br/><a href="${link.actionLink}">${link.actionLink}</a></p>
       <p>If you did not create this account, you can ignore this email.</p>
       <p>— Servd Co</p>
     `,

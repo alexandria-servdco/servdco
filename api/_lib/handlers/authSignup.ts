@@ -12,6 +12,7 @@ import {
 import { resolveRegionId } from "../regionMapping.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
 import { sendUserError } from "../userErrors.js";
+import { ensureUserProfile } from "../auth/ensureProfile.js";
 import {
   isDuplicateSignupError,
   tryRecoverUnverifiedSignup,
@@ -34,14 +35,57 @@ const signupSchema = z.object({
 });
 
 async function resolveWaitlistStatus(stateName: string): Promise<"active" | "waitlist"> {
-  const client = getServiceRoleClient();
-  const regionId = resolveRegionId(stateName);
-  const { data } = await client
-    .from("launch_regions")
-    .select("is_active")
-    .eq("id", regionId)
-    .maybeSingle();
-  return data?.is_active ? "active" : "waitlist";
+  try {
+    const client = getServiceRoleClient();
+    const regionId = resolveRegionId(stateName);
+    const { data } = await client
+      .from("launch_regions")
+      .select("is_active")
+      .eq("id", regionId)
+      .maybeSingle();
+    return data?.is_active ? "active" : "waitlist";
+  } catch (err) {
+    console.warn(
+      "[auth.signup] waitlist status:",
+      err instanceof Error ? err.message : err,
+    );
+    return "waitlist";
+  }
+}
+
+function mapSignupCreateError(message: string): {
+  code: "VALIDATION_ERROR" | "CONFLICT";
+  message: string;
+  guidance?: string;
+} {
+  const lower = message.toLowerCase();
+  if (isDuplicateSignupError(message)) {
+    return {
+      code: "CONFLICT",
+      message: "An account with this email already exists.",
+      guidance:
+        "Sign in with your password, or use the login page to resend a confirmation email.",
+    };
+  }
+  if (lower.includes("password")) {
+    return {
+      code: "VALIDATION_ERROR",
+      message: "Choose a stronger password and try again.",
+      guidance: "Use at least 8 characters with letters and numbers.",
+    };
+  }
+  if (lower.includes("database") || lower.includes("saving new user")) {
+    return {
+      code: "VALIDATION_ERROR",
+      message: "We couldn't finish creating your account.",
+      guidance: "Please try again in a moment. If this continues, contact support.",
+    };
+  }
+  return {
+    code: "VALIDATION_ERROR",
+    message: "We couldn't create your account with the details provided.",
+    guidance: "Review your information and try again.",
+  };
 }
 
 export async function handleAuthSignup(
@@ -87,9 +131,6 @@ export async function handleAuthSignup(
 
     const admin = getServiceRoleClient();
     const authAdmin = getServiceRoleAuthAdmin(admin);
-    const authAdminForEmail = authAdmin as unknown as Parameters<
-      typeof sendSignupConfirmationEmail
-    >[0]["authAdmin"];
 
     const { data: created, error: createError } = await authAdmin.createUser({
       email: signup.email,
@@ -112,7 +153,6 @@ export async function handleAuthSignup(
       if (isDuplicateSignupError(createError.message)) {
         const recovery = await tryRecoverUnverifiedSignup({
           client: admin,
-          authAdmin: authAdminForEmail,
           data: signupPayload,
         });
 
@@ -144,14 +184,44 @@ export async function handleAuthSignup(
       }
 
       console.error("[auth.signup]", createError);
+      const mapped = mapSignupCreateError(createError.message);
+      if (mapped.code === "CONFLICT") {
+        sendUserError(res, 409, "CONFLICT", {
+          title: "This email is already registered",
+          message: mapped.message,
+          guidance: mapped.guidance,
+          primaryAction: { label: "Go to sign in", action: "sign_in" },
+          secondaryAction: { label: "Reset password", action: "reset_password" },
+        });
+        return;
+      }
       sendUserError(res, 400, "VALIDATION_ERROR", {
-        message: "We couldn't create your account with the details provided.",
-        guidance: "Review your information and try again.",
+        message: mapped.message,
+        guidance: mapped.guidance,
       });
       return;
     }
 
     const userId = created.user?.id;
+
+    if (userId) {
+      await ensureUserProfile({
+        id: userId,
+        email: signup.email,
+        user_metadata: {
+          role: signup.role,
+          full_name: signup.name,
+          city: signup.city,
+          state: signup.state,
+          zip: signup.zip,
+          phone: signup.phone ?? null,
+          years_experience: signup.yearsExperience ?? null,
+          primary_cuisine: signup.primaryCuisine ?? null,
+          bio: signup.bio ?? null,
+        },
+      });
+    }
+
     const status = await resolveWaitlistStatus(signup.state);
 
     if (userId) {
@@ -199,7 +269,6 @@ export async function handleAuthSignup(
 
     if (!session) {
       confirmationEmailSent = await sendSignupConfirmationEmail({
-        authAdmin: authAdminForEmail,
         email: signup.email,
         password: signup.password,
         name: signup.name,

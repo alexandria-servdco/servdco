@@ -50,15 +50,26 @@ export function assertStripeConfigured(): void {
   }
 }
 
+/** Stripe CLI override is disabled on Vercel production even if LOCAL is set. */
+function isStripeWebhookLocalOverrideEnabled(): boolean {
+  return process.env.VERCEL_ENV !== "production";
+}
+
+/** Effective webhook secret: local CLI override wins over dashboard secret (non-production only). */
 export function getStripeWebhookSecret(): string | undefined {
   const local = process.env.STRIPE_WEBHOOK_SECRET_LOCAL?.trim();
-  if (local) return local;
+  if (local && isStripeWebhookLocalOverrideEnabled()) return local;
   const env = getStripeEnv();
   return env.STRIPE_WEBHOOK_SECRET?.trim();
 }
 
 export function getStripeWebhookSecretSource(): "local" | "production" | "none" {
-  if (process.env.STRIPE_WEBHOOK_SECRET_LOCAL?.trim()) return "local";
+  if (
+    process.env.STRIPE_WEBHOOK_SECRET_LOCAL?.trim() &&
+    isStripeWebhookLocalOverrideEnabled()
+  ) {
+    return "local";
+  }
   const env = getStripeEnv();
   if (env.STRIPE_WEBHOOK_SECRET?.trim()) return "production";
   return "none";

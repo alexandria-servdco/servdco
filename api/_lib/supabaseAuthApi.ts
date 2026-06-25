@@ -26,6 +26,13 @@ type AdminCreateUserResult = {
   error: { message: string } | null;
 };
 
+type AuthUserSummary = {
+  id: string;
+  email?: string | null;
+  email_confirmed_at?: string | null;
+  user_metadata?: Record<string, unknown>;
+};
+
 type ServiceRoleAuthClient = {
   admin: {
     createUser: (params: {
@@ -34,6 +41,24 @@ type ServiceRoleAuthClient = {
       email_confirm: boolean;
       user_metadata?: Record<string, unknown>;
     }) => Promise<AdminCreateUserResult>;
+    listUsers: (params: {
+      page: number;
+      perPage: number;
+    }) => Promise<{
+      data: { users: AuthUserSummary[] } | null;
+      error: { message: string } | null;
+    }>;
+    updateUserById: (
+      userId: string,
+      params: {
+        password?: string;
+        user_metadata?: Record<string, unknown>;
+      },
+    ) => Promise<{ error: { message: string } | null }>;
+    getUserById: (userId: string) => Promise<{
+      data: { user: AuthUserSummary | null };
+      error: { message: string } | null;
+    }>;
   };
 };
 

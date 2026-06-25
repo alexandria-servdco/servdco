@@ -1,6 +1,7 @@
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ensureUserProfile } from "./ensureProfile.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
+import { getServiceRoleAuthAdmin } from "../supabaseAuthApi.js";
 
 type AuthAdmin = Parameters<typeof sendSignupConfirmationEmail>[0]["authAdmin"];
 
@@ -35,7 +36,8 @@ export async function tryRecoverUnverifiedSignup(params: {
   data: SignupPayload;
 }): Promise<{ recovered: boolean; confirmationEmailSent: boolean; userId?: string }> {
   const email = params.data.email.trim().toLowerCase();
-  const { data: listed, error } = await params.client.auth.admin.listUsers({
+  const serviceAuthAdmin = getServiceRoleAuthAdmin(params.client);
+  const { data: listed, error } = await serviceAuthAdmin.listUsers({
     page: 1,
     perPage: 200,
   });
@@ -45,8 +47,7 @@ export async function tryRecoverUnverifiedSignup(params: {
     return { recovered: false, confirmationEmailSent: false };
   }
 
-  const users = listed.users as User[];
-  const existing = users.find(
+  const existing = listed.users.find(
     (user) => user.email?.toLowerCase() === email,
   );
 
@@ -70,7 +71,7 @@ export async function tryRecoverUnverifiedSignup(params: {
     bio: params.data.bio ?? null,
   };
 
-  const { error: updateError } = await params.client.auth.admin.updateUserById(
+  const { error: updateError } = await serviceAuthAdmin.updateUserById(
     existing.id,
     {
       password: params.data.password,

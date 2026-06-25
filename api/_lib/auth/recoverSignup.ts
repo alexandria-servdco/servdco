@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ensureUserProfile } from "./ensureProfile.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
-import { getServiceRoleAuthAdmin } from "../supabaseAuthApi.js";
+import {
+  findAuthUserByEmail,
+  updateAuthUser,
+  type AuthUserSummary,
+} from "../supabase/authAdminRest.js";
 
 export type SignupPayload = {
   email: string;
@@ -33,20 +37,12 @@ export async function tryRecoverUnverifiedSignup(params: {
   data: SignupPayload;
 }): Promise<{ recovered: boolean; confirmationEmailSent: boolean; userId?: string }> {
   const email = params.data.email.trim().toLowerCase();
-  const serviceAuthAdmin = getServiceRoleAuthAdmin(params.client);
-  const { data: listed, error } = await serviceAuthAdmin.listUsers({
-    page: 1,
-    perPage: 200,
-  });
+  const { user: existing, error } = await findAuthUserByEmail(email);
 
-  if (error || !listed?.users) {
-    console.error("[auth.signup] listUsers:", error?.message ?? "no users");
+  if (error) {
+    console.error("[auth.signup] findUser:", error);
     return { recovered: false, confirmationEmailSent: false };
   }
-
-  const existing = listed.users.find(
-    (user) => user.email?.toLowerCase() === email,
-  );
 
   if (!existing) {
     return { recovered: false, confirmationEmailSent: false };
@@ -68,16 +64,13 @@ export async function tryRecoverUnverifiedSignup(params: {
     bio: params.data.bio ?? null,
   };
 
-  const { error: updateError } = await serviceAuthAdmin.updateUserById(
-    existing.id,
-    {
-      password: params.data.password,
-      user_metadata: metadata,
-    },
-  );
+  const { error: updateError } = await updateAuthUser(existing.id, {
+    password: params.data.password,
+    user_metadata: metadata,
+  });
 
   if (updateError) {
-    console.error("[auth.signup] updateUserById:", updateError.message);
+    console.error("[auth.signup] updateUserById:", updateError);
     return { recovered: false, confirmationEmailSent: false, userId: existing.id };
   }
 

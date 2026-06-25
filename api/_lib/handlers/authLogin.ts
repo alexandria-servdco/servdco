@@ -2,10 +2,10 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { loginSchema, formatZodError } from "../../../shared/validation.js";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 import { getStripeEnv } from "../stripe/env.js";
-import { createPasswordAuthClient, getServiceRoleAuthAdmin } from "../supabaseAuthApi.js";
+import { createPasswordAuthClient } from "../supabaseAuthApi.js";
+import { getAuthUserById } from "../supabase/authAdminRest.js";
 import { ensureUserProfile } from "../auth/ensureProfile.js";
 import { mapSupabaseAuthError, sendUserError } from "../userErrors.js";
-import { getServiceRoleClient } from "../supabase/serviceRole.js";
 
 export async function handleAuthLogin(
   req: VercelRequest,
@@ -92,10 +92,9 @@ export async function handleAuthLogin(
 
 async function loadUserMetadata(userId: string): Promise<Record<string, unknown>> {
   try {
-    const client = getServiceRoleClient();
-    const { data, error } = await getServiceRoleAuthAdmin(client).getUserById(userId);
-    if (error || !data.user) return {};
-    return (data.user.user_metadata ?? {}) as Record<string, unknown>;
+    const { user, error } = await getAuthUserById(userId);
+    if (error || !user) return {};
+    return (user.user_metadata ?? {}) as Record<string, unknown>;
   } catch {
     return {};
   }

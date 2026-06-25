@@ -1,5 +1,5 @@
 import { sendResendEmail } from "./resend.js";
-import { generateAuthLink } from "../supabase/generateAuthLink.js";
+import { generateAuthLink } from "../supabase/authAdminRest.js";
 
 function resolveSiteUrl(): string {
   const raw =

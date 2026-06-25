@@ -6,9 +6,9 @@ import { getStripeEnv } from "../stripe/env.js";
 import { phoneSchema, formatZodError } from "../../../shared/validation.js";
 import {
   createPasswordAuthClient,
-  getServiceRoleAuthAdmin,
   type AuthSessionPayload,
 } from "../supabaseAuthApi.js";
+import { createAuthUser } from "../supabase/authAdminRest.js";
 import { resolveRegionId } from "../regionMapping.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
 import { sendUserError } from "../userErrors.js";
@@ -130,9 +130,8 @@ export async function handleAuthSignup(
     }
 
     const admin = getServiceRoleClient();
-    const authAdmin = getServiceRoleAuthAdmin(admin);
 
-    const { data: created, error: createError } = await authAdmin.createUser({
+    const { user: createdUser, error: createErrorMessage } = await createAuthUser({
       email: signup.email,
       password: signup.password,
       email_confirm: false,
@@ -149,7 +148,8 @@ export async function handleAuthSignup(
       },
     });
 
-    if (createError) {
+    if (createErrorMessage) {
+      const createError = { message: createErrorMessage };
       if (isDuplicateSignupError(createError.message)) {
         const recovery = await tryRecoverUnverifiedSignup({
           client: admin,
@@ -202,7 +202,7 @@ export async function handleAuthSignup(
       return;
     }
 
-    const userId = created.user?.id;
+    const userId = createdUser?.id;
 
     if (userId) {
       await ensureUserProfile({
@@ -252,18 +252,25 @@ export async function handleAuthSignup(
     let session: AuthSessionPayload | null = null;
     let confirmationEmailSent = false;
 
-    if (anonKey) {
-      const anonAuth = createPasswordAuthClient(env.SUPABASE_URL, anonKey);
-      const { data: signInData } = await anonAuth.signInWithPassword({
-        email: signup.email,
-        password: signup.password,
-      });
-      if (signInData.session) {
-        session = {
-          access_token: signInData.session.access_token,
-          refresh_token: signInData.session.refresh_token,
-          expires_in: signInData.session.expires_in ?? 3600,
-        };
+    if (anonKey && env.SUPABASE_URL) {
+      try {
+        const anonAuth = createPasswordAuthClient(env.SUPABASE_URL, anonKey);
+        const { data: signInData } = await anonAuth.signInWithPassword({
+          email: signup.email,
+          password: signup.password,
+        });
+        if (signInData.session) {
+          session = {
+            access_token: signInData.session.access_token,
+            refresh_token: signInData.session.refresh_token,
+            expires_in: signInData.session.expires_in ?? 3600,
+          };
+        }
+      } catch (signInErr) {
+        console.warn(
+          "[auth.signup] post-create sign-in:",
+          signInErr instanceof Error ? signInErr.message : signInErr,
+        );
       }
     }
 
@@ -289,7 +296,10 @@ export async function handleAuthSignup(
       userId,
     });
   } catch (err) {
-    console.error("[auth.signup]", err instanceof Error ? err.message : err);
+    console.error(
+      "[auth.signup]",
+      err instanceof Error ? `${err.message}\n${err.stack ?? ""}` : err,
+    );
     sendUserError(res, 500, "SERVER_ERROR");
   }
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
-import { GlobalBannerStrip } from "@/components/GlobalBannerStrip";
 import Footer from "@/components/Footer";
 import { api } from "@/lib/api";
 import {
@@ -123,10 +122,9 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans overflow-x-hidden selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <Navbar />
-      <GlobalBannerStrip />
 
       {/* ── 1. PREMIUM DARK HERO SECTION ───────────────────────────────────── */}
-      <section className="relative min-h-[640px] lg:min-h-[720px] flex items-center pt-[85px] pb-24 overflow-hidden bg-[#111111]">
+      <section className="relative min-h-[640px] lg:min-h-[720px] flex items-center pt-[var(--site-header-offset,85px)] pb-24 overflow-hidden bg-[#111111]">
         {/* Warm lighting glow in center */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#FF7A59]/5 blur-[130px] pointer-events-none z-0" />
 

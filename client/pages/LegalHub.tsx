@@ -38,7 +38,7 @@ export default function LegalHub() {
   return (
     <div className="min-h-screen bg-[#111113] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59] relative">
       <Navbar />
-      <div className="h-[85px]" />
+      <div className="site-header-spacer" aria-hidden="true" />
 
       {/* Decorative ambient flares */}
       <div className="absolute top-[10%] left-1/4 w-[400px] h-[400px] bg-[#FF7A59]/2 rounded-full blur-[140px] pointer-events-none z-0" />

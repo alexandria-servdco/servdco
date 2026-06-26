@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthService } from "@/services/auth.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { GlobalBannerStrip } from "@/components/GlobalBannerStrip";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
 
@@ -22,6 +23,7 @@ export default function Navbar() {
   const [scrollingUp, setScrollingUp] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const lastScrollY = useRef(0);
+  const headerRef = useRef<HTMLElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -42,6 +44,27 @@ export default function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const syncOffset = () => {
+      document.documentElement.style.setProperty(
+        "--site-header-offset",
+        `${el.offsetHeight}px`,
+      );
+      document.documentElement.style.setProperty(
+        "--site-nav-height",
+        scrolled ? "70px" : "85px",
+      );
+    };
+
+    syncOffset();
+    const observer = new ResizeObserver(syncOffset);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [scrolled]);
 
   const navLinks = [
     { label: "How It Works", path: "/how-it-works" },
@@ -71,14 +94,19 @@ export default function Navbar() {
 
   return (
     <>
-      <nav
-        className={cn(
-          "fixed top-0 left-0 right-0 z-[100] w-full transition-all duration-300 ease-in-out",
-          scrolled
-            ? "h-[70px] bg-[#0B0B0D]/96 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border-b border-white/[0.06]"
-            : "h-[85px] bg-transparent border-b border-transparent",
-        )}
+      <header
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-[100] w-full"
       >
+        <GlobalBannerStrip variant="site" />
+        <nav
+          className={cn(
+            "w-full transition-all duration-300 ease-in-out",
+            scrolled
+              ? "h-[70px] bg-[#0B0B0D]/96 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border-b border-white/[0.06]"
+              : "h-[85px] bg-transparent border-b border-transparent",
+          )}
+        >
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-full flex items-center justify-between gap-6">
           {/* ── LOGO ─────────────────────────────────────────────────────── */}
           <Link
@@ -271,7 +299,8 @@ export default function Navbar() {
             </button>
           </div>
         </div>
-      </nav>
+        </nav>
+      </header>
 
       {/* ── MOBILE DRAWER ───────────────────────────────────────────────── */}
       <AnimatePresence>
@@ -295,7 +324,11 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className="fixed top-0 right-0 bottom-0 z-[99] w-[82%] max-w-[340px] bg-[#111113]/98 border-l border-white/[0.06] backdrop-blur-2xl rounded-l-[28px] flex flex-col shadow-2xl lg:hidden safe-area-pt safe-area-pb"
+              className="fixed right-0 bottom-0 z-[99] w-[82%] max-w-[340px] bg-[#111113]/98 border-l border-white/[0.06] backdrop-blur-2xl rounded-l-[28px] flex flex-col shadow-2xl lg:hidden safe-area-pb"
+              style={{
+                top: "var(--site-header-offset, 85px)",
+                height: "calc(100dvh - var(--site-header-offset, 85px))",
+              }}
             >
               {/* Drawer header */}
               <div className="flex justify-between items-center px-7 py-5 border-b border-white/[0.06]">

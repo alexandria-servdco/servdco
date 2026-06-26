@@ -260,7 +260,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <GlobalBannerStrip />
+        <GlobalBannerStrip variant="embedded" />
 
         {/* Profile Completion banner */}
         {profileProgress < 100 && (

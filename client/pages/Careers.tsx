@@ -24,7 +24,7 @@ export default function Careers() {
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <Navbar />
-      <div className="h-[85px]" />
+      <div className="site-header-spacer" aria-hidden="true" />
 
       <section className="py-16 lg:py-24 bg-[#111111] relative overflow-hidden">
         <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-[#FF7A59]/3 rounded-full blur-[120px] pointer-events-none" />

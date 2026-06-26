@@ -48,7 +48,7 @@ export default function LegalLayout({
 
       {/* Primary Sticky Header Navigation */}
       <Navbar />
-      <div className="h-[85px]" />
+      <div className="site-header-spacer" aria-hidden="true" />
 
       {/* Background radial lighting flare */}
       <div className="absolute top-0 right-1/4 w-[450px] h-[450px] bg-[#FF7A59]/3 rounded-full blur-[140px] pointer-events-none z-0" />

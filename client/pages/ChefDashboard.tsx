@@ -739,7 +739,7 @@ export default function ChefDashboard() {
           </div>
         </div>
 
-        <GlobalBannerStrip />
+        <GlobalBannerStrip variant="embedded" />
 
         {/* Post-signup verification onboarding */}
         {(showOnboardingBanner || needsVerification) && (

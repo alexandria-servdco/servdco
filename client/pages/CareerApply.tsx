@@ -8,7 +8,7 @@ export default function CareerApply() {
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <Navbar />
-      <div className="h-[85px]" />
+      <div className="site-header-spacer" aria-hidden="true" />
 
       <main className="max-w-3xl mx-auto px-6 lg:px-8 py-16 lg:py-24">
         <Link

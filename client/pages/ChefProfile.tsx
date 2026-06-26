@@ -224,7 +224,7 @@ export default function ChefProfile() {
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <Navbar />
-      <div className="h-[85px]" />
+      <div className="site-header-spacer" aria-hidden="true" />
 
       {/* Main Section */}
       <section className="py-12 lg:py-20 bg-[#111111]">

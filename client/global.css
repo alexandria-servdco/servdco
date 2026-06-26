@@ -11,6 +11,9 @@
    * A different format will require also updating the theme in tailwind.config.ts.
   */
   :root {
+    --site-header-offset: 85px;
+    --site-banner-height: 0px;
+    --site-nav-height: 85px;
     --background: 0 0% 7%; /* #111111 Primary Dark */
     --foreground: 0 0% 96%; /* #F5F5F5 Light Text */
 
@@ -106,6 +109,11 @@
 }
 
 @layer utilities {
+  .site-header-spacer {
+    height: var(--site-header-offset, 85px);
+    flex-shrink: 0;
+  }
+
   .fade-in {
     animation: fadeIn 0.6s ease-in-out;
   }

@@ -7,7 +7,7 @@ export default function About() {
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <Navbar />
-      <div className="h-[85px]" />
+      <div className="site-header-spacer" aria-hidden="true" />
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-28 overflow-hidden bg-[#111111]">

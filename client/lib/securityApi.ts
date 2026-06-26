@@ -229,4 +229,89 @@ export const SecurityApi = {
 
     if (!res.ok) throw await parseError(res);
   },
+
+  async syncLaunchAccess(): Promise<import("@shared/launchControl").RegionResolveResult> {
+    const token = await readBearerToken();
+    if (!token) {
+      throw new SecurityApiError(
+        mapToUserFacingError(401, { code: "AUTH_SESSION_EXPIRED" }),
+        401,
+      );
+    }
+
+    let res: Response;
+    try {
+      res = await fetch("/api/launch/sync-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+    } catch (err) {
+      throw await parseFetchError(err);
+    }
+
+    if (!res.ok) throw await parseError(res);
+    const body = (await res.json()) as import("@shared/launchControl").RegionResolveResult & {
+      success: boolean;
+    };
+    const { success: _s, ...result } = body;
+    return result;
+  },
+
+  async resolveLaunchRegion(params: {
+    state: string;
+    city?: string;
+    zip?: string;
+    role?: "family" | "chef";
+  }): Promise<import("@shared/launchControl").RegionResolveResult> {
+    let res: Response;
+    try {
+      res = await fetch("/api/launch/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+    } catch (err) {
+      throw await parseFetchError(err);
+    }
+    if (!res.ok) throw await parseError(res);
+    const body = (await res.json()) as import("@shared/launchControl").RegionResolveResult & {
+      success: boolean;
+    };
+    const { success: _s, ...result } = body;
+    return result;
+  },
+
+  async applyRegionLifecycle(params: {
+    regionId: string;
+    status?: string;
+    maintenance_mode?: boolean;
+    maintenance_message?: string | null;
+    pause_reason?: string | null;
+    allow_bookings?: boolean;
+    allow_payments?: boolean;
+  }): Promise<{ activatedUsers: number }> {
+    const token = await readBearerToken();
+    if (!token) {
+      throw new SecurityApiError(
+        mapToUserFacingError(401, { code: "AUTH_SESSION_EXPIRED" }),
+        401,
+      );
+    }
+
+    const res = await fetch("/api/launch/lifecycle", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw await parseError(res);
+    const body = (await res.json()) as { activatedUsers: number };
+    return { activatedUsers: body.activatedUsers ?? 0 };
+  },
 };

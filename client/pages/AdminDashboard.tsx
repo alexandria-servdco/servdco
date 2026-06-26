@@ -447,6 +447,21 @@ export default function AdminDashboard({
   const handleSaveModal = async (updatedData: any) => {
     try {
       await api.updateRegionSettings(updatedData.id, updatedData);
+      const status = updatedData.is_active
+        ? "active"
+        : updatedData.is_waitlist
+          ? "waitlist"
+          : "coming_soon";
+      const { SecurityApi } = await import("@/lib/securityApi");
+      await SecurityApi.applyRegionLifecycle({
+        regionId: updatedData.id,
+        status,
+        maintenance_mode: updatedData.maintenance_mode,
+        maintenance_message: updatedData.maintenance_message ?? null,
+        pause_reason: updatedData.pause_reason ?? null,
+        allow_bookings: updatedData.allow_bookings,
+        allow_payments: updatedData.allow_payments,
+      });
       await reloadData();
       setEditingRegion(null);
     } catch (err) {

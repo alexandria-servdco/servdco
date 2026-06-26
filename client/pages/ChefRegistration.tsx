@@ -222,9 +222,7 @@ export default function ChefRegistration() {
           trackEvent("signup_completed", { role: "chef" });
           navigate("/chef-dashboard?onboarding=verification");
         } else {
-          navigate(
-            `/waitlist?role=chef&state=${encodeURIComponent(formData.state)}&email=${encodeURIComponent(formData.email)}`,
-          );
+          navigate("/waitlist-dashboard");
         }
       } catch (err) {
         console.error(err);

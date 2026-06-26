@@ -10,6 +10,8 @@ import {
 } from "../supabaseAuthApi.js";
 import { createAuthUser } from "../supabase/authAdminRest.js";
 import { resolveRegionId } from "../regionMapping.js";
+import { resolveUserRegion } from "../launch/regionResolve.js";
+import { upsertUserRegionAccess } from "../launch/userRegionAccess.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
 import { sendUserError } from "../userErrors.js";
 import { ensureUserProfile } from "../auth/ensureProfile.js";
@@ -34,23 +36,42 @@ const signupSchema = z.object({
   bio: z.string().trim().max(2000).optional(),
 });
 
-async function resolveWaitlistStatus(stateName: string): Promise<"active" | "waitlist"> {
-  try {
-    const client = getServiceRoleClient();
-    const regionId = resolveRegionId(stateName);
-    const { data } = await client
-      .from("launch_regions")
-      .select("is_active")
-      .eq("id", regionId)
-      .maybeSingle();
-    return data?.is_active ? "active" : "waitlist";
-  } catch (err) {
-    console.warn(
-      "[auth.signup] waitlist status:",
-      err instanceof Error ? err.message : err,
-    );
-    return "waitlist";
-  }
+async function evaluateSignupAccess(
+  signup: z.infer<typeof signupSchema>,
+): Promise<{
+  allowed: boolean;
+  status: "active" | "waitlist";
+  message: string;
+  resolved: Awaited<ReturnType<typeof resolveUserRegion>>;
+}> {
+  const resolved = await resolveUserRegion({
+    state: signup.state,
+    city: signup.city,
+    zip: signup.zip,
+    role: signup.role,
+  });
+
+  const signupPerm =
+    signup.role === "chef"
+      ? resolved.permissions.cook_signup
+      : resolved.permissions.family_signup;
+
+  const allowed =
+    signupPerm ||
+    resolved.permissions.waitlist_join ||
+    resolved.effectiveStatus === "waitlist" ||
+    resolved.effectiveStatus === "coming_soon";
+
+  const status: "active" | "waitlist" = resolved.canAccessDashboard
+    ? "active"
+    : "waitlist";
+
+  return {
+    allowed,
+    status,
+    message: resolved.message,
+    resolved,
+  };
 }
 
 function mapSignupCreateError(message: string): {
@@ -110,6 +131,20 @@ export async function handleAuthSignup(
     }
 
     const signup = parsed.data;
+
+    const access = await evaluateSignupAccess(signup);
+    if (!access.allowed) {
+      sendUserError(res, 403, "AUTHORIZATION_DENIED", {
+        title: "Sign-ups not available",
+        message: access.message,
+        guidance:
+          access.resolved.permissions.interest_request
+            ? "You can submit an interest request to help us prioritize your city."
+            : "Check back soon or contact support for updates.",
+      });
+      return;
+    }
+
     const signupPayload: SignupPayload = {
       email: signup.email,
       password: signup.password,
@@ -157,10 +192,10 @@ export async function handleAuthSignup(
         });
 
         if (recovery.recovered) {
-          const status = await resolveWaitlistStatus(signup.state);
+          const access = await evaluateSignupAccess(signup);
           res.status(200).json({
             success: true,
-            status,
+            status: access.status,
             recovered: true,
             message: recovery.confirmationEmailSent
               ? "We found your existing account and sent a new confirmation email."
@@ -168,6 +203,10 @@ export async function handleAuthSignup(
             needsEmailConfirmation: true,
             confirmationEmailSent: recovery.confirmationEmailSent,
             userId: recovery.userId,
+            region: {
+              effectiveStatus: access.resolved.effectiveStatus,
+              reason: access.resolved.reason,
+            },
           });
           return;
         }
@@ -222,9 +261,20 @@ export async function handleAuthSignup(
       });
     }
 
-    const status = await resolveWaitlistStatus(signup.state);
+    const status = access.status;
 
     if (userId) {
+      await upsertUserRegionAccess(
+        userId,
+        {
+          state: signup.state,
+          city: signup.city,
+          zip: signup.zip,
+          role: signup.role,
+        },
+        "signup",
+      );
+
       const regionId = resolveRegionId(signup.state);
       const now = new Date().toISOString();
       await admin
@@ -289,11 +339,17 @@ export async function handleAuthSignup(
       message:
         status === "active"
           ? "Account created successfully."
-          : "Your region is on the waitlist. We will notify you when Servd Co launches.",
+          : access.message,
       needsEmailConfirmation: !session,
       confirmationEmailSent: !session ? confirmationEmailSent : undefined,
       session,
       userId,
+      region: {
+        effectiveStatus: access.resolved.effectiveStatus,
+        reason: access.resolved.reason,
+        canAccessDashboard: access.resolved.canAccessDashboard,
+        geographyAllowed: access.resolved.geographyAllowed,
+      },
     });
   } catch (err) {
     console.error(

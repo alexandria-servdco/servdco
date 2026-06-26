@@ -23,6 +23,8 @@ import Register from "./pages/Register";
 import ChefRegistration from "./pages/ChefRegistration";
 import FamilyRegistration from "./pages/FamilyRegistration";
 import WaitlistPage from "./pages/WaitlistPage";
+import WaitlistDashboard from "./pages/WaitlistDashboard";
+import MaintenancePage from "./pages/MaintenancePage";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Careers from "./pages/Careers";
@@ -39,6 +41,7 @@ import Terms from "./pages/Terms";
 import CookiePolicy from "./pages/CookiePolicy";
 import LegalHub from "./pages/LegalHub";
 import { GuestGuard, AuthGuard, RoleGuard, AdminGuard } from "./components/Guards";
+import { LaunchRegionGuard } from "./components/LaunchRegionGuard";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import { PlatformSettingsHydrator } from "./components/PlatformSettingsHydrator";
 
@@ -247,6 +250,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/maintenance"
+                element={
+                  <PageWrapper routeLabel="maintenance">
+                    <MaintenancePage />
+                  </PageWrapper>
+                }
+              />
+              <Route
                 path="/privacy-policy"
                 element={
                   <PageWrapper routeLabel="privacy">
@@ -324,34 +335,47 @@ const App = () => (
               </Route>
 
               <Route element={<AuthGuard />}>
+                <Route
+                  path="/waitlist-dashboard"
+                  element={
+                    <LazyRoute label="waitlist-dashboard">
+                      <WaitlistDashboard />
+                    </LazyRoute>
+                  }
+                />
+
                 <Route element={<RoleGuard allowedRoles={["family"]} />}>
-                  <Route
-                    path="/dashboard/*"
-                    element={
-                      <LazyRoute label="family-dashboard">
-                        <Dashboard />
-                      </LazyRoute>
-                    }
-                  />
-                  <Route
-                    path="/family-dashboard/*"
-                    element={
-                      <LazyRoute label="family-dashboard">
-                        <Dashboard />
-                      </LazyRoute>
-                    }
-                  />
+                  <Route element={<LaunchRegionGuard />}>
+                    <Route
+                      path="/dashboard/*"
+                      element={
+                        <LazyRoute label="family-dashboard">
+                          <Dashboard />
+                        </LazyRoute>
+                      }
+                    />
+                    <Route
+                      path="/family-dashboard/*"
+                      element={
+                        <LazyRoute label="family-dashboard">
+                          <Dashboard />
+                        </LazyRoute>
+                      }
+                    />
+                  </Route>
                 </Route>
 
                 <Route element={<RoleGuard allowedRoles={["chef"]} />}>
-                  <Route
-                    path="/chef-dashboard/*"
-                    element={
-                      <LazyRoute label="chef-dashboard">
-                        <ChefDashboard />
-                      </LazyRoute>
-                    }
-                  />
+                  <Route element={<LaunchRegionGuard />}>
+                    <Route
+                      path="/chef-dashboard/*"
+                      element={
+                        <LazyRoute label="chef-dashboard">
+                          <ChefDashboard />
+                        </LazyRoute>
+                      }
+                    />
+                  </Route>
                 </Route>
 
                 <Route element={<AdminGuard />}>

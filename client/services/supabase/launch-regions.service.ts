@@ -45,8 +45,28 @@ export const LaunchRegionsSupabaseService = {
       state: updates.state,
       city: updates.city,
       zip_codes: updates.zip_codes,
+      status: updates.status,
       is_active: updates.is_active,
       is_waitlist: updates.is_waitlist,
+      allow_new_family_signup: updates.allow_new_family_signup,
+      allow_new_cook_signup: updates.allow_new_cook_signup,
+      allow_bookings: updates.allow_bookings,
+      allow_payments: updates.allow_payments,
+      allow_messages: updates.allow_messages,
+      allow_reviews: updates.allow_reviews,
+      allow_waitlist: updates.allow_waitlist,
+      allow_interest_requests: updates.allow_interest_requests,
+      maintenance_mode: updates.maintenance_mode,
+      maintenance_message: updates.maintenance_message,
+      launch_date: updates.launch_date,
+      beta_limit_chefs: updates.beta_limit_chefs,
+      beta_limit_families: updates.beta_limit_families,
+      max_active_bookings: updates.max_active_bookings,
+      allow_recurring_bookings: updates.allow_recurring_bookings,
+      feature_flags: updates.feature_flags,
+      pause_reason: updates.pause_reason,
+      pause_until: updates.pause_until,
+      pause_banner_message: updates.pause_banner_message,
       min_chefs: updates.min_chefs,
       min_families: updates.min_families,
       auto_launch: updates.auto_launch,
@@ -59,7 +79,7 @@ export const LaunchRegionsSupabaseService = {
 
     const { data, error } = await client
       .from("launch_regions")
-      .update(payload)
+      .update(payload as never)
       .eq("id", id)
       .select("*")
       .single();

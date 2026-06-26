@@ -205,7 +205,7 @@ export default function FamilyRegistration() {
         trackEvent("signup_completed", { role: "family" });
         navigate("/dashboard");
       } else {
-        navigate(`/waitlist?role=family&state=${encodeURIComponent(formData.state)}&email=${encodeURIComponent(formData.email)}`);
+        navigate("/waitlist-dashboard");
       }
     } catch (err) {
       console.error(err);

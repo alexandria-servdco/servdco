@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-06-26T15:59:59.373Z",
-  "totalAppliedInDb": 40,
+  "timestamp": "2026-06-26T17:20:10.020Z",
+  "totalAppliedInDb": 41,
   "appliedThisRun": [
     {
-      "version": "20250628100000",
-      "file": "20250628100000_fix_career_applications_rls.sql"
+      "version": "20250629120000",
+      "file": "20250629120000_launch_control_production.sql"
     }
   ],
-  "skippedCount": 39,
+  "skippedCount": 40,
   "failed": [],
   "latestVersions": [
-    "20250620180000",
     "20250621180000",
     "20250622100000",
     "20250623100000",
     "20250623100001",
     "20250625100000",
     "20250627100000",
-    "20250628100000"
+    "20250628100000",
+    "20250629120000"
   ]
 }

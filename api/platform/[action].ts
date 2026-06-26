@@ -3,12 +3,24 @@ import { handleWaitlistSubmit } from "../_lib/handlers/waitlistSubmit.js";
 import { handleSecurityEnforce } from "../_lib/handlers/securityEnforce.js";
 import { handlePlatformAnnouncements } from "../_lib/handlers/platformAnnouncements.js";
 import { handleCareersApplicationNotify } from "../_lib/handlers/careersApplicationNotify.js";
+import {
+  handleLaunchResolve,
+  handleLaunchSyncUser,
+} from "../_lib/handlers/launchResolve.js";
+import {
+  handleLaunchLifecycle,
+  handleLaunchAutoCheck,
+} from "../_lib/handlers/launchLifecycle.js";
 
 const ACTIONS = {
   waitlist: handleWaitlistSubmit,
   enforce: handleSecurityEnforce,
   announcements: handlePlatformAnnouncements,
   "careers-application-notify": handleCareersApplicationNotify,
+  "launch-resolve": handleLaunchResolve,
+  "launch-sync-user": handleLaunchSyncUser,
+  "launch-lifecycle": handleLaunchLifecycle,
+  "launch-auto-check": handleLaunchAutoCheck,
 } as const;
 
 type PlatformAction = keyof typeof ACTIONS;

@@ -12,6 +12,10 @@
     {
       "path": "/api/stripe/transfers/process",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/launch/auto-check",
+      "schedule": "0 */6 * * *"
     }
   ],
   "headers": [
@@ -57,6 +61,22 @@
     {
       "source": "/api/security/enforce",
       "destination": "/api/platform/enforce"
+    },
+    {
+      "source": "/api/launch/resolve",
+      "destination": "/api/platform/launch-resolve"
+    },
+    {
+      "source": "/api/launch/sync-user",
+      "destination": "/api/platform/launch-sync-user"
+    },
+    {
+      "source": "/api/launch/lifecycle",
+      "destination": "/api/platform/launch-lifecycle"
+    },
+    {
+      "source": "/api/launch/auto-check",
+      "destination": "/api/platform/launch-auto-check"
     },
     {
       "source": "/((?!api).*)",

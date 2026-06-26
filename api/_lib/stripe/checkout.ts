@@ -3,6 +3,7 @@ import { getStripe } from "./server.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { getPlatformFeePercentage, splitPaymentAmounts } from "./fees.js";
 import { stripeIdempotencyKey } from "./helpers.js";
+import { resolveProfileRegion } from "../launch/regionResolve.js";
 
 export const checkoutSessionRequestSchema = z.object({
   bookingId: z.string().uuid(),
@@ -32,6 +33,18 @@ export async function createBookingCheckoutSession(
 
   if (booking.family_id !== input.familyId) {
     throw new Error("Booking does not belong to the authenticated family.");
+  }
+
+  const regionAccess = await resolveProfileRegion(input.familyId);
+  if (
+    !regionAccess?.permissions.payment_create ||
+    regionAccess.effectiveStatus === "paused" ||
+    regionAccess.effectiveStatus === "maintenance"
+  ) {
+    throw new Error(
+      regionAccess?.message ??
+        "Payments are not available in your region at this time.",
+    );
   }
 
   if (booking.status === "confirmed" || booking.status === "completed") {

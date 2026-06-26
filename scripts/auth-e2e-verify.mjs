@@ -37,6 +37,35 @@ async function postJson(path, body) {
 
 console.log(`\n=== Auth E2E — ${BASE} ===\n`);
 
+// Static: auth API must not import shared/ (Vercel serverless bundle crash)
+{
+  const { readFileSync, readdirSync, statSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const authDir = join(ROOT, "api", "_lib");
+  const files = [];
+  function walk(dir) {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (name.endsWith(".ts")) files.push(p);
+    }
+  }
+  walk(authDir);
+  const offenders = files.filter((f) => {
+    const src = readFileSync(f, "utf8");
+    return /from ['\"].*\/shared\//.test(src);
+  });
+  if (offenders.length === 0) {
+    record("Auth API bundle (no shared/ imports)", "PASS");
+  } else {
+    record(
+      "Auth API bundle (no shared/ imports)",
+      "FAIL",
+      offenders.map((f) => f.replace(ROOT, "")).join(", "),
+    );
+  }
+}
+
 // Health / deploy
 try {
   const health = await fetch(`${BASE}/api/health`).then((r) => r.json());

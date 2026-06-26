@@ -3,7 +3,7 @@ import { z } from "zod";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { getStripeEnv } from "../stripe/env.js";
-import { phoneSchema, formatZodError } from "../../../shared/validation.js";
+import { phoneSchema, formatZodError } from "../authValidation.js";
 import {
   createPasswordAuthClient,
   type AuthSessionPayload,

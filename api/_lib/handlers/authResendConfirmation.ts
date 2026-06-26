@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { emailSchema, formatZodError } from "../../../shared/validation.js";
+import { emailSchema, formatZodError } from "../authValidation.js";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 import { getStripeEnv } from "../stripe/env.js";
 import { sendAccountConfirmationEmail } from "../email/signupConfirmation.js";

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { loginSchema, formatZodError } from "../../../shared/validation.js";
+import { loginSchema, formatZodError } from "../authValidation.js";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 import { getStripeEnv } from "../stripe/env.js";
 import { createPasswordAuthClient } from "../supabaseAuthApi.js";

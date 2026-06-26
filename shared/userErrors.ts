@@ -13,6 +13,7 @@ export type UserErrorCode =
   | "RATE_LIMITED"
   | "NETWORK_OFFLINE"
   | "CAPTCHA_FAILED"
+  | "REGION_ACCESS_DENIED"
   | "SERVER_ERROR"
   | "UNKNOWN_ERROR";
 
@@ -146,6 +147,15 @@ const CATALOG: Record<UserErrorCode, UserFacingError> = {
     guidance: "Please complete the security check and try again.",
     primaryAction: { label: "Try again", action: "retry" },
   },
+  REGION_ACCESS_DENIED: {
+    code: "REGION_ACCESS_DENIED",
+    title: "Bookings aren't open in your area yet",
+    message: "Servd Co has not launched bookings in your market yet.",
+    guidance:
+      "You can join the waitlist and we'll notify you when cooking sessions are available near you.",
+    primaryAction: { label: "View waitlist", action: "go_home" },
+    secondaryAction: { label: "Contact support", action: "contact_support" },
+  },
   SERVER_ERROR: {
     code: "SERVER_ERROR",
     title: "Something unexpected happened",
@@ -217,7 +227,24 @@ export function mapToUserFacingError(
         message: body.error || body.message || CATALOG.VALIDATION_ERROR.message,
       });
     case 403:
-      return getUserError("AUTHORIZATION_DENIED");
+      if (
+        body.code === "REGION_ACCESS_DENIED" ||
+        body.code === "REGION_NOT_CONFIGURED"
+      ) {
+        return getUserError("REGION_ACCESS_DENIED", {
+          title: body.title || CATALOG.REGION_ACCESS_DENIED.title,
+          message:
+            body.message || body.error || CATALOG.REGION_ACCESS_DENIED.message,
+          guidance: body.guidance || CATALOG.REGION_ACCESS_DENIED.guidance,
+          primaryAction:
+            body.primaryAction || CATALOG.REGION_ACCESS_DENIED.primaryAction,
+          secondaryAction:
+            body.secondaryAction || CATALOG.REGION_ACCESS_DENIED.secondaryAction,
+        });
+      }
+      return getUserError("AUTHORIZATION_DENIED", {
+        message: body.error || body.message,
+      });
     case 404:
       return getUserError("NOT_FOUND", {
         message: body.error || body.message || CATALOG.NOT_FOUND.message,
@@ -274,6 +301,29 @@ export function mapThrownError(err: unknown): UserFacingError {
   }
   if (message.includes("profile not found") || message.includes("profile isn't ready")) {
     return getUserError("AUTH_PROFILE_INCOMPLETE");
+  }
+  if (
+    message.includes("row-level security") ||
+    message.includes("violates row-level") ||
+    message.includes("permission denied")
+  ) {
+    return getUserError("REGION_ACCESS_DENIED");
+  }
+  if (message.includes("price mismatch")) {
+    return getUserError("VALIDATION_ERROR", {
+      message: err instanceof Error ? err.message : CATALOG.VALIDATION_ERROR.message,
+    });
+  }
+  if (
+    err instanceof Error &&
+    err.message.length >= 8 &&
+    err.message.length <= 280 &&
+    /^[A-Za-z]/.test(err.message) &&
+    !message.includes("pgrst") &&
+    !message.includes("jwt") &&
+    !message.includes("failed to fetch")
+  ) {
+    return getUserError("VALIDATION_ERROR", { message: err.message });
   }
   if (message.includes("clock") || message.includes("issued in the future")) {
     return getUserError("SERVER_ERROR", {

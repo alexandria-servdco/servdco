@@ -28,6 +28,7 @@ import { calculateSessionPrice, calculateFamilyTotalCharged } from "@/lib/bookin
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { EmailService } from "@/services/email.service";
+import { useLaunchAccess } from "@/hooks/useLaunchAccess";
 import { trackEvent } from "@/lib/analytics";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { normalizeAvatarUrl } from "@/lib/avatar";
@@ -48,6 +49,8 @@ export default function ChefProfile() {
   const createBooking = useCreateBooking();
   const { profile } = useCurrentProfile();
   const { isAuthenticated } = useAuth();
+  const { data: launchAccess, isLoading: launchAccessLoading } = useLaunchAccess(isAuthenticated);
+  const canRequestBooking = launchAccess?.permissions.booking_create === true;
   const [bookingError, setBookingError] = useState("");
 
   // Booking widget state
@@ -78,7 +81,8 @@ export default function ChefProfile() {
   useEffect(() => {
     if (profile?.city) setCity(profile.city);
     if (profile?.state) setState(profile.state);
-  }, [profile?.city, profile?.state]);
+    if (profile?.zip) setZip(profile.zip);
+  }, [profile?.city, profile?.state, profile?.zip]);
 
   useEffect(() => {
     if (id && isUuid(id)) {
@@ -108,6 +112,13 @@ export default function ChefProfile() {
     if (profile?.role && profile.role !== "family") {
       const msg =
         "Only family accounts can request bookings. Sign in with a family profile.";
+      setBookingError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (launchAccess && !launchAccess.permissions.booking_create) {
+      const msg = launchAccess.message;
       setBookingError(msg);
       toast.error(msg);
       return;
@@ -727,6 +738,20 @@ export default function ChefProfile() {
                       </p>
                     </div>
 
+                    {launchAccess && !canRequestBooking && (
+                      <div className="p-4 mb-2 rounded-xl border border-[#FF7A59]/30 bg-[#FF7A59]/10 text-center space-y-2">
+                        <p className="text-xs text-white font-semibold leading-relaxed">
+                          {launchAccess.message}
+                        </p>
+                        <Link
+                          to="/waitlist-dashboard"
+                          className="inline-block text-[11px] font-bold text-[#FF7A59] hover:underline"
+                        >
+                          View waitlist status →
+                        </Link>
+                      </div>
+                    )}
+
                     {bookingError && (
                       <p className="text-xs text-red-400 font-medium text-center">
                         {bookingError}
@@ -735,7 +760,7 @@ export default function ChefProfile() {
 
                     <button
                       type="submit"
-                      disabled={createBooking.isPending}
+                      disabled={createBooking.isPending || launchAccessLoading || !canRequestBooking}
                       className="w-full py-4 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-60 text-white font-bold rounded-xl text-xs hover:scale-[1.01] transition-all shadow-md flex items-center justify-center gap-2 group"
                     >
                       {createBooking.isPending ? (

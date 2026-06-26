@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -17,6 +17,18 @@ import {
 import { calculateCookPayout } from "@/utils/platformFee";
 
 export default function ForChefs() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash === "#calculator") {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("calculator")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [location.hash]);
+
   // Calculator State
   const [breakfastSessions, setBreakfastSessions] = useState(2);
   const [dinnerSessions, setDinnerSessions] = useState(3);

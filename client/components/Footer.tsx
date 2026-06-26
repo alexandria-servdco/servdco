@@ -301,8 +301,8 @@ export default function Footer() {
                 { label: "How It Works", path: "/how-it-works" },
                 { label: "Pricing", path: "/pricing" },
                 { label: "FAQ", path: "/faq" },
-                { label: "Safety", path: "/how-it-works" },
-                { label: "Family Dashboard", path: "/dashboard" },
+                { label: "Join as Family", path: "/register/family" },
+                { label: "Family Dashboard", path: "/family-dashboard" },
               ].map((link) => (
                 <li key={link.label}>
                   <Link
@@ -324,9 +324,7 @@ export default function Footer() {
             <ul className="space-y-3 pl-3.5">
               {[
                 { label: "Apply To Cook", path: "/register/chef" },
-                { label: "Income Calculator", path: "/for-chefs" },
-                { label: "Cook Community", path: "/for-chefs" },
-                { label: "Resources", path: "#" },
+                { label: "Income Calculator", path: "/for-chefs#calculator" },
                 { label: "Requirements", path: "/for-chefs" },
                 { label: "Cook Dashboard", path: "/chef-dashboard" },
               ].map((link) => (

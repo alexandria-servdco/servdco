@@ -13,6 +13,7 @@ import { formatBookingDisplayDate } from "@/lib/formatDate";
 import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
 import { useUnreadMessageCount } from "@/hooks/useConversations";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { GlobalBannerStrip } from "@/components/GlobalBannerStrip";
 import { useBookings } from "@/hooks/useBookings";
 import { BookingOperationalPanel } from "@/components/booking/BookingOperationalPanel";
 import { BookingStatusFilterBar } from "@/components/booking/BookingStatusFilterBar";
@@ -249,6 +250,8 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        <GlobalBannerStrip />
 
         {/* Profile Completion banner */}
         {profileProgress < 100 && (

@@ -349,14 +349,10 @@ export function VerificationCenter({
         }}
       >
         <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "18px",
-          }}
+          className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
+          style={{ marginBottom: "18px" }}
         >
-          <div>
+          <div className="min-w-0 flex-1">
             <h3
               style={{
                 fontSize: "16px",
@@ -379,6 +375,7 @@ export function VerificationCenter({
             </p>
           </div>
           <button
+            className="shrink-0 self-start sm:self-center whitespace-nowrap"
             style={{
               padding: "8px 16px",
               borderRadius: "8px",

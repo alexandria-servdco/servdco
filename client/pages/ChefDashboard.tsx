@@ -80,6 +80,7 @@ import {
 } from "@/services/supabase/chefs.service";
 import { availabilityQueryKeys } from "@/services/supabase/availability.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { GlobalBannerStrip } from "@/components/GlobalBannerStrip";
 import { DashboardMobileNav } from "@/components/ui/DashboardMobileNav";
 import { DashboardMobileMenu } from "@/components/ui/DashboardMobileMenu";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -724,6 +725,8 @@ export default function ChefDashboard() {
             </Link>
           </div>
         </div>
+
+        <GlobalBannerStrip />
 
         {/* Post-signup verification onboarding */}
         {(showOnboardingBanner || needsVerification) && (

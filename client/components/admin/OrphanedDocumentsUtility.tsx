@@ -49,8 +49,8 @@ export function OrphanedDocumentsUtility({
 
   return (
     <div className="velvet-card p-6 space-y-4 border border-white/5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h3 className="text-sm font-bold text-white font-serif">
             Cleanup Orphaned Documents
           </h3>
@@ -63,7 +63,7 @@ export function OrphanedDocumentsUtility({
           type="button"
           onClick={scan}
           disabled={loading}
-          className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-white disabled:opacity-60"
+          className="shrink-0 self-start sm:self-center whitespace-nowrap px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-white disabled:opacity-60"
         >
           {loading ? "Scanning..." : "Scan"}
         </button>

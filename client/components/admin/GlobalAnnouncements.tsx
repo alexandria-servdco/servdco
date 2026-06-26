@@ -3,6 +3,7 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlatformSettingsSupabaseService } from "@/services/supabase/platform-settings.service";
 import type { GlobalAnnouncement } from "@/lib/launchOpsTypes";
+import { globalAnnouncementsQueryKey } from "@/hooks/useGlobalAnnouncements";
 
 export function GlobalAnnouncements() {
   const queryClient = useQueryClient();
@@ -18,6 +19,7 @@ export function GlobalAnnouncements() {
       PlatformSettingsSupabaseService.saveAnnouncements(items),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform_settings", "announcements"] });
+      queryClient.invalidateQueries({ queryKey: globalAnnouncementsQueryKey });
       setDraft({ title: "", body: "" });
     },
   });
@@ -53,13 +55,16 @@ export function GlobalAnnouncements() {
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          flexDirection: "column",
+          gap: "4px",
         }}
       >
         <h2 style={{ fontSize: "16px", fontWeight: "600", color: "#FFF", margin: 0 }}>
           Global Banners
         </h2>
+        <p style={{ fontSize: "12px", color: "#A8A8A8", margin: 0 }}>
+          Active banners appear at the top of the homepage, family dashboard, and cook dashboard.
+        </p>
       </div>
 
       <div
@@ -144,10 +149,8 @@ export function GlobalAnnouncements() {
           {announcements.map((item, index) => (
             <div
               key={item.id}
+              className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3"
               style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
                 borderBottom:
                   index < announcements.length - 1
                     ? "1px solid rgba(255,255,255,0.06)"
@@ -156,8 +159,8 @@ export function GlobalAnnouncements() {
                 marginBottom: index < announcements.length - 1 ? "16px" : 0,
               }}
             >
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-1.5">
                   <button
                     type="button"
                     onClick={() => toggleActive(item.id)}
@@ -177,15 +180,16 @@ export function GlobalAnnouncements() {
                   >
                     {item.active ? "Active" : "Inactive"}
                   </button>
-                  <h3 style={{ fontSize: "15px", fontWeight: "500", color: "#FFF", margin: 0 }}>
+                  <h3 style={{ fontSize: "15px", fontWeight: "500", color: "#FFF", margin: 0, minWidth: 0 }}>
                     {item.title}
                   </h3>
                 </div>
-                <p style={{ fontSize: "13px", color: "#A8A8A8", margin: 0 }}>{item.body}</p>
+                <p style={{ fontSize: "13px", color: "#A8A8A8", margin: 0, wordBreak: "break-word" }}>{item.body}</p>
               </div>
               <button
                 type="button"
                 onClick={() => removeBanner(item.id)}
+                className="shrink-0 self-start sm:self-center"
                 style={{
                   background: "transparent",
                   border: "none",

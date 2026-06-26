@@ -32,6 +32,7 @@ export function AdminAnalytics({ regions }: AdminAnalyticsProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div
+        className="admin-stats-mobile-2 grid grid-cols-2 lg:grid-cols-3 gap-3"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
@@ -96,6 +97,7 @@ export function AdminAnalytics({ regions }: AdminAnalyticsProps) {
       </div>
 
       <div
+        className="admin-stack-mobile grid grid-cols-1 lg:grid-cols-2 gap-5"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -192,6 +194,7 @@ export function AdminAnalytics({ regions }: AdminAnalyticsProps) {
       </div>
 
       <div
+        className="admin-stack-mobile grid grid-cols-1 lg:grid-cols-[1.3fr_1.7fr] gap-5"
         style={{
           display: "grid",
           gridTemplateColumns: "1.3fr 1.7fr",

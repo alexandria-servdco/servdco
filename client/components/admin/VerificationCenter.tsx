@@ -30,6 +30,7 @@ export function VerificationCenter({
     >
       {/* Document pending summaries */}
       <div
+        className="admin-stats-mobile-2 grid grid-cols-2 lg:grid-cols-4 gap-4"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -155,7 +156,7 @@ export function VerificationCenter({
         >
           Documents Review Queue
         </h3>
-        <div style={{ overflowX: "auto" }}>
+        <div className="admin-table-shell servd-scrollbar" style={{ overflowX: "auto" }}>
           <table
             style={{ width: "100%", borderCollapse: "collapse" }}
           >
@@ -396,7 +397,7 @@ export function VerificationCenter({
           </button>
         </div>
 
-        <div style={{ overflowX: "auto" }}>
+        <div className="admin-table-shell servd-scrollbar" style={{ overflowX: "auto" }}>
           <table
             style={{ width: "100%", borderCollapse: "collapse" }}
           >

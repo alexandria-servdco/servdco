@@ -75,6 +75,7 @@ export function PayoutControl() {
       {stripeEnabled && (
         <>
           <div
+            className="admin-stats-mobile-2 grid grid-cols-2 lg:grid-cols-3 gap-4"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
@@ -124,6 +125,7 @@ export function PayoutControl() {
               borderRadius: "12px",
               overflowX: "auto",
             }}
+            className="admin-table-shell servd-scrollbar"
           >
             {paymentsLoading ? (
               <div style={{ display: "flex", justifyContent: "center", padding: "32px" }}>
@@ -244,6 +246,7 @@ export function PayoutControl() {
               borderRadius: "12px",
               overflowX: "auto",
             }}
+            className="admin-table-shell servd-scrollbar"
           >
             {transfersLoading ? (
               <div style={{ display: "flex", justifyContent: "center", padding: "32px" }}>
@@ -322,6 +325,7 @@ export function PayoutControl() {
               borderRadius: "12px",
               overflowX: "auto",
             }}
+            className="admin-table-shell servd-scrollbar"
           >
             {tipsLoading ? (
               <div style={{ display: "flex", justifyContent: "center", padding: "32px" }}>
@@ -390,6 +394,7 @@ export function PayoutControl() {
               borderRadius: "12px",
               overflowX: "auto",
             }}
+            className="admin-table-shell servd-scrollbar"
           >
             {subsLoading ? (
               <div style={{ display: "flex", justifyContent: "center", padding: "32px" }}>

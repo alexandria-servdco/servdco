@@ -62,6 +62,7 @@ export function MarketInterestRequests({
   return (
     <>
     <div
+      className="admin-stack-mobile grid grid-cols-1 lg:grid-cols-[1.2fr_2.8fr] gap-6"
       style={{
         display: "grid",
         gridTemplateColumns: "1.2fr 2.8fr",
@@ -244,7 +245,7 @@ export function MarketInterestRequests({
           </div>
         </div>
 
-        <div style={{ overflowX: "auto" }}>
+        <div className="admin-table-shell servd-scrollbar" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>

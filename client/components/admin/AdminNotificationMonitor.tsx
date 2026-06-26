@@ -33,6 +33,7 @@ export function AdminNotificationMonitor() {
             No notifications recorded yet.
           </p>
         ) : (
+          <div className="admin-table-shell servd-scrollbar">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
@@ -77,6 +78,7 @@ export function AdminNotificationMonitor() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

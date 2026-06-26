@@ -1039,14 +1039,14 @@ export default function AdminDashboard({
       >
         {/* Header */}
         <div
-          className="sticky top-0 z-[100] flex items-center justify-between gap-3 px-4 py-4 sm:px-6 md:px-8 border-b border-white/5 safe-area-pt"
+          className="admin-header-bar sticky top-0 z-[100] flex items-center justify-between gap-3 px-4 py-4 sm:px-6 md:px-8 border-b border-white/5 safe-area-pt"
           style={{
             background: "rgba(17,17,17,0.85)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
           }}
         >
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="admin-header-title-block flex items-center gap-3 min-w-0 flex-1">
             <AdminMobileNav
               items={NAV_ITEMS}
               activeId={activeNav}
@@ -1068,7 +1068,7 @@ export default function AdminDashboard({
                 margin: 0,
                 letterSpacing: "-0.03em",
               }}
-              className="text-lg sm:text-xl md:text-[22px] truncate"
+              className="text-lg sm:text-xl md:text-[22px] md:truncate"
             >
               {activeNav === "dashboard" && "SaaS Overview"}
               {activeNav === "launch_control" && "Launch Regions Control"}
@@ -1132,7 +1132,7 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="admin-header-actions flex items-center gap-2 sm:gap-3 shrink-0">
             <NotificationBell />
             {/* Direct Export for tables */}
             {["interest_requests", "users", "chefs", "bookings"].includes(
@@ -1165,7 +1165,7 @@ export default function AdminDashboard({
                 }}
               >
                 <Download size={14} />
-                Export CSV
+                <span className="admin-btn-label">Export CSV</span>
               </button>
             )}
 
@@ -1205,7 +1205,7 @@ export default function AdminDashboard({
                 }}
               >
                 <Plus size={15} />
-                Add Launch State
+                <span className="admin-btn-label">Add Launch State</span>
               </button>
             )}
 
@@ -1245,6 +1245,7 @@ export default function AdminDashboard({
               <>
                 {/* Analytics Cards */}
                 <div
+                  className="admin-stats-mobile-2 grid gap-3 sm:gap-4"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
@@ -1303,6 +1304,7 @@ export default function AdminDashboard({
 
                 {/* Split charts block */}
                 <div
+                  className="admin-stack-mobile grid grid-cols-1 lg:grid-cols-[1.8fr_1.2fr] gap-5"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1.8fr 1.2fr",
@@ -1488,7 +1490,7 @@ export default function AdminDashboard({
                               background: item.color,
                             }}
                           />
-                          <span style={{ fontSize: "12px", color: "#A8A8A8" }}>
+                          <span style={{ fontSize: "12px", color: "#A8A8A8", whiteSpace: "nowrap" }}>
                             {item.label} ({item.count})
                           </span>
                         </div>
@@ -1499,6 +1501,7 @@ export default function AdminDashboard({
 
                 {/* Split list block: Activity Feed & Recent Signups */}
                 <div
+                  className="admin-stack-mobile grid grid-cols-1 lg:grid-cols-[1.7fr_1.3fr] gap-5"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1.7fr 1.3fr",
@@ -1557,10 +1560,13 @@ export default function AdminDashboard({
                           />
                           <div style={{ flex: 1 }}>
                             <div
+                              className="admin-activity-row"
                               style={{
                                 display: "flex",
                                 justifyContent: "space-between",
-                                alignItems: "baseline",
+                                alignItems: "flex-start",
+                                gap: "8px",
+                                minWidth: 0,
                               }}
                             >
                               <p
@@ -1569,11 +1575,14 @@ export default function AdminDashboard({
                                   fontWeight: "600",
                                   color: "#F5F5F5",
                                   margin: 0,
+                                  minWidth: 0,
+                                  wordBreak: "break-word",
                                 }}
                               >
                                 {act.title}
                               </p>
                               <span
+                                className="admin-activity-time"
                                 style={{ fontSize: "11px", color: "#A8A8A8" }}
                               >
                                 {act.timestamp}
@@ -1627,35 +1636,36 @@ export default function AdminDashboard({
                       {recentSignupsList.map((usr) => (
                         <div
                           key={usr.id}
+                          className="admin-signup-row"
                           style={{
                             display: "flex",
                             alignItems: "center",
                             gap: "12px",
                             paddingBottom: "8px",
                             borderBottom: "1px solid rgba(255,255,255,0.04)",
+                            minWidth: 0,
                           }}
                         >
                           <UserAvatar
                             name={usr.name}
                             imageUrl={usr.avatar}
                             size="sm"
-                            className="w-9 h-9"
+                            className="w-9 h-9 shrink-0"
                           />
-                          <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="admin-signup-meta" style={{ flex: 1, minWidth: 0 }}>
                             <p
+                              className="admin-signup-name"
                               style={{
                                 fontSize: "13px",
                                 fontWeight: "600",
                                 color: "#F5F5F5",
                                 margin: 0,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
                               }}
                             >
                               {usr.name}
                             </p>
                             <p
+                              className="admin-signup-email"
                               style={{
                                 fontSize: "11.5px",
                                 color: "#A8A8A8",
@@ -1674,7 +1684,10 @@ export default function AdminDashboard({
                               </span>
                             </p>
                           </div>
-                          <span style={{ fontSize: "11px", color: "#A8A8A8" }}>
+                          <span
+                            className="shrink-0 whitespace-nowrap"
+                            style={{ fontSize: "11px", color: "#A8A8A8" }}
+                          >
                             {usr.created_at
                               ? new Date(usr.created_at).toLocaleDateString()
                               : "—"}
@@ -2557,10 +2570,8 @@ export default function AdminDashboard({
                   }}
                 >
                   <div
+                    className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
                       marginBottom: "18px",
                     }}
                   >
@@ -2582,6 +2593,7 @@ export default function AdminDashboard({
                       }}
                     >
                       <div
+                        className="flex-1 min-w-0 w-full sm:w-auto"
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -2598,20 +2610,20 @@ export default function AdminDashboard({
                           placeholder="Search state/city..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full sm:w-40 min-w-0"
                           style={{
                             background: "transparent",
                             border: "none",
                             outline: "none",
                             fontSize: "12px",
                             color: "#F5F5F5",
-                            width: "160px",
                           }}
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ overflowX: "auto" }}>
+                  <div style={{ overflowX: "auto" }} className="admin-table-shell servd-scrollbar">
                     <table
                       style={{ width: "100%", borderCollapse: "collapse" }}
                     >
@@ -3045,6 +3057,7 @@ export default function AdminDashboard({
               />
 
               <div
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",

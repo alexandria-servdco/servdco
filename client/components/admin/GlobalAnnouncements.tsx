@@ -161,6 +161,7 @@ export function GlobalAnnouncements() {
                   <button
                     type="button"
                     onClick={() => toggleActive(item.id)}
+                    className="shrink-0 whitespace-nowrap"
                     style={{
                       fontSize: "11px",
                       fontWeight: "600",
@@ -168,7 +169,7 @@ export function GlobalAnnouncements() {
                       background: item.active
                         ? "rgba(52, 211, 153, 0.1)"
                         : "rgba(255, 255, 255, 0.1)",
-                      padding: "2px 8px",
+                      padding: "4px 10px",
                       borderRadius: "100px",
                       border: "none",
                       cursor: "pointer",

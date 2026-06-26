@@ -26,7 +26,7 @@ export function AdminAuditLogs() {
 
   return (
     <div className="bg-[#1A1A1A] rounded-3xl border border-white/8 overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className="admin-table-shell servd-scrollbar overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-white/5 text-[#A8A8A8] uppercase tracking-wider">

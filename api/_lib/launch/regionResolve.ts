@@ -5,7 +5,7 @@ import {
   resolveRegionAccess,
   type RegionResolveInput,
   type RegionResolveResult,
-} from "../../../shared/launchControl.js";
+} from "./launchControl.js";
 
 export type { RegionResolveInput, RegionResolveResult };
 

@@ -1,29 +1,30 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { handleAuthLogin } from "../_lib/handlers/authLogin.js";
-import { handleAuthSignup } from "../_lib/handlers/authSignup.js";
-import { handleAuthResendConfirmation } from "../_lib/handlers/authResendConfirmation.js";
-
-const ACTIONS = {
-  login: handleAuthLogin,
-  signup: handleAuthSignup,
-  "resend-confirmation": handleAuthResendConfirmation,
-} as const;
-
-type AuthAction = keyof typeof ACTIONS;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const action = String(req.query.action ?? "") as AuthAction;
-  const routeHandler = ACTIONS[action];
-
-  if (!routeHandler) {
-    return res.status(404).json({
-      error: "This auth action is not available.",
-      code: "NOT_FOUND",
-    });
-  }
+  const action = String(req.query.action ?? "");
 
   try {
-    return await routeHandler(req, res);
+    switch (action) {
+      case "login": {
+        const { handleAuthLogin } = await import("../_lib/handlers/authLogin.js");
+        return handleAuthLogin(req, res);
+      }
+      case "signup": {
+        const { handleAuthSignup } = await import("../_lib/handlers/authSignup.js");
+        return handleAuthSignup(req, res);
+      }
+      case "resend-confirmation": {
+        const { handleAuthResendConfirmation } = await import(
+          "../_lib/handlers/authResendConfirmation.js"
+        );
+        return handleAuthResendConfirmation(req, res);
+      }
+      default:
+        return res.status(404).json({
+          error: "This auth action is not available.",
+          code: "NOT_FOUND",
+        });
+    }
   } catch (err) {
     console.error(`[auth.${action}]`, err instanceof Error ? err.message : err);
     return res.status(500).json({
@@ -31,7 +32,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       code: "SERVER_ERROR",
       title: "Something unexpected happened",
       message: "We've logged this issue automatically.",
-      guidance: "Please try again in a moment. If the problem continues, contact support.",
+      guidance:
+        "Please try again in a moment. If the problem continues, contact support.",
     });
   }
 }

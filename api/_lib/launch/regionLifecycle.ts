@@ -1,6 +1,6 @@
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
-import { enumToLegacyFlags } from "../../../shared/launchControl.js";
-import type { LaunchRegionStatus } from "../../../shared/launchControl.js";
+import { enumToLegacyFlags } from "./launchControl.js";
+import type { LaunchRegionStatus } from "./launchControl.js";
 import { activateUsersInRegion } from "./userRegionAccess.js";
 
 export type RegionLifecycleUpdate = {

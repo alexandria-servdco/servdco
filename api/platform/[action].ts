@@ -1,37 +1,51 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { handleWaitlistSubmit } from "../_lib/handlers/waitlistSubmit.js";
-import { handleSecurityEnforce } from "../_lib/handlers/securityEnforce.js";
-import { handlePlatformAnnouncements } from "../_lib/handlers/platformAnnouncements.js";
-import { handleCareersApplicationNotify } from "../_lib/handlers/careersApplicationNotify.js";
-import {
-  handleLaunchResolve,
-  handleLaunchSyncUser,
-} from "../_lib/handlers/launchResolve.js";
-import {
-  handleLaunchLifecycle,
-  handleLaunchAutoCheck,
-} from "../_lib/handlers/launchLifecycle.js";
-
-const ACTIONS = {
-  waitlist: handleWaitlistSubmit,
-  enforce: handleSecurityEnforce,
-  announcements: handlePlatformAnnouncements,
-  "careers-application-notify": handleCareersApplicationNotify,
-  "launch-resolve": handleLaunchResolve,
-  "launch-sync-user": handleLaunchSyncUser,
-  "launch-lifecycle": handleLaunchLifecycle,
-  "launch-auto-check": handleLaunchAutoCheck,
-} as const;
-
-type PlatformAction = keyof typeof ACTIONS;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const action = String(req.query.action ?? "") as PlatformAction;
-  const routeHandler = ACTIONS[action];
+  const action = String(req.query.action ?? "");
 
-  if (!routeHandler) {
-    return res.status(404).json({ error: "Unknown platform action." });
+  try {
+    switch (action) {
+      case "waitlist": {
+        const { handleWaitlistSubmit } = await import("../_lib/handlers/waitlistSubmit.js");
+        return handleWaitlistSubmit(req, res);
+      }
+      case "enforce": {
+        const { handleSecurityEnforce } = await import("../_lib/handlers/securityEnforce.js");
+        return handleSecurityEnforce(req, res);
+      }
+      case "announcements": {
+        const { handlePlatformAnnouncements } = await import(
+          "../_lib/handlers/platformAnnouncements.js"
+        );
+        return handlePlatformAnnouncements(req, res);
+      }
+      case "careers-application-notify": {
+        const { handleCareersApplicationNotify } = await import(
+          "../_lib/handlers/careersApplicationNotify.js"
+        );
+        return handleCareersApplicationNotify(req, res);
+      }
+      case "launch-resolve": {
+        const { handleLaunchResolve } = await import("../_lib/handlers/launchResolve.js");
+        return handleLaunchResolve(req, res);
+      }
+      case "launch-sync-user": {
+        const { handleLaunchSyncUser } = await import("../_lib/handlers/launchResolve.js");
+        return handleLaunchSyncUser(req, res);
+      }
+      case "launch-lifecycle": {
+        const { handleLaunchLifecycle } = await import("../_lib/handlers/launchLifecycle.js");
+        return handleLaunchLifecycle(req, res);
+      }
+      case "launch-auto-check": {
+        const { handleLaunchAutoCheck } = await import("../_lib/handlers/launchLifecycle.js");
+        return handleLaunchAutoCheck(req, res);
+      }
+      default:
+        return res.status(404).json({ error: "Unknown platform action." });
+    }
+  } catch (err) {
+    console.error(`[platform.${action}]`, err instanceof Error ? err.message : err);
+    return res.status(500).json({ error: "Platform action failed." });
   }
-
-  return routeHandler(req, res);
 }

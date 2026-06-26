@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
-import { permissionForScope } from "../../../shared/launchControl.js";
+import { permissionForScope } from "../launch/launchControl.js";
 import { refreshUserRegionAccess } from "../launch/userRegionAccess.js";
 
 const enforceSchema = z.object({

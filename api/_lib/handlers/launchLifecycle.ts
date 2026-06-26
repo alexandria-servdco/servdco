@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
-import { LAUNCH_REGION_STATUSES } from "../../../shared/launchControl.js";
+import { LAUNCH_REGION_STATUSES } from "../launch/launchControl.js";
 import { applyRegionLifecycleUpdate } from "../launch/regionLifecycle.js";
 import { runAutoLaunch } from "../launch/autoLaunch.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";

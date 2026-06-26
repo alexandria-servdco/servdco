@@ -7,8 +7,7 @@
 --   those email addresses can register again via the normal signup flow.
 --
 -- Preserves:
---   • Emails in v_preserve_emails (Alexandria admin + any co-admin)
---   • Any profile with role = 'admin'
+--   • Emails in v_preserve_emails (default: alexandria@servdco.com only)
 --   • Platform configuration, launch_regions, feature_flags, geo data
 --   • stripe_events webhook log
 --
@@ -317,25 +316,8 @@ BEGIN
   WHERE profile_id IN (SELECT profile_id FROM _beta_targets)
      OR lower(trim(email)) IN (SELECT email_norm FROM _beta_targets);
 
-  DELETE FROM storage.objects so
-  WHERE (
-      so.bucket_id = 'avatars'
-      AND (storage.foldername(so.name))[1] IN (
-        SELECT profile_id::text FROM _beta_targets
-      )
-    )
-    OR (
-      so.bucket_id IN ('cook-portfolio', 'cook-documents')
-      AND (storage.foldername(so.name))[1] IN (
-        SELECT chef_profile_id::text FROM _beta_targets WHERE chef_profile_id IS NOT NULL
-      )
-    )
-    OR (
-      so.bucket_id = 'message-attachments'
-      AND (storage.foldername(so.name))[1] IN (
-        SELECT profile_id::text FROM _beta_targets
-      )
-    );
+  -- NOTE: Supabase blocks direct DELETE on storage.objects.
+  -- Orphaned files can be removed via Storage API / dashboard after cleanup.
 
   DELETE FROM public.audit_logs
   WHERE actor_id IN (SELECT profile_id FROM _beta_targets);

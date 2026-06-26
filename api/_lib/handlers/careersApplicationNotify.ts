@@ -1,24 +1,28 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
-import { enforceRateLimit } from "../_lib/rateLimit.js";
+import { getServiceRoleClient } from "../supabase/serviceRole.js";
+import { enforceRateLimit } from "../rateLimit.js";
 import {
   sendCareerAdminNotificationEmail,
   sendCareerApplicantConfirmationEmail,
-} from "../_lib/email/careerApplicationEmails.js";
+} from "../email/careerApplicationEmails.js";
 
 const requestSchema = z.object({
   applicationId: z.string().uuid(),
 });
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleCareersApplicationNotify(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   if (
     !(await enforceRateLimit(req, res, "careers_notify", {
-      route: "/api/careers/application-notify",
+      route: "/api/platform/careers-application-notify",
     }))
   ) {
     return;
@@ -26,7 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const parsed = requestSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid request" });
+    res.status(400).json({ error: "Invalid request" });
+    return;
   }
 
   const { applicationId } = parsed.data;
@@ -40,11 +45,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (error) {
     console.error("[careers.application-notify] fetch", error);
-    return res.status(500).json({ error: "Could not load application." });
+    res.status(500).json({ error: "Could not load application." });
+    return;
   }
 
   if (!application) {
-    return res.status(404).json({ error: "Application not found." });
+    res.status(404).json({ error: "Application not found." });
+    return;
   }
 
   const jobTitle =
@@ -104,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  return res.status(200).json({
+  res.status(200).json({
     success: true,
     applicationId,
     emails: {

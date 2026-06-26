@@ -47,6 +47,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/careers/application-notify",
+      "destination": "/api/platform/careers-application-notify"
+    },
+    {
       "source": "/api/waitlist/submit",
       "destination": "/api/platform/waitlist"
     },

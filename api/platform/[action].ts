@@ -2,11 +2,13 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { handleWaitlistSubmit } from "../_lib/handlers/waitlistSubmit.js";
 import { handleSecurityEnforce } from "../_lib/handlers/securityEnforce.js";
 import { handlePlatformAnnouncements } from "../_lib/handlers/platformAnnouncements.js";
+import { handleCareersApplicationNotify } from "../_lib/handlers/careersApplicationNotify.js";
 
 const ACTIONS = {
   waitlist: handleWaitlistSubmit,
   enforce: handleSecurityEnforce,
   announcements: handlePlatformAnnouncements,
+  "careers-application-notify": handleCareersApplicationNotify,
 } as const;
 
 type PlatformAction = keyof typeof ACTIONS;

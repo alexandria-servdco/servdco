@@ -206,8 +206,8 @@ export function sendUserError(
   res.status(status).json(body);
 }
 
-export function mapSupabaseAuthError(message: string): UserErrorCode {
-  const lower = message.toLowerCase();
+export function mapSupabaseAuthError(message?: string | null): UserErrorCode {
+  const lower = (message ?? "").toLowerCase();
   if (lower.includes("email not confirmed") || lower.includes("not confirmed")) {
     return "AUTH_EMAIL_NOT_CONFIRMED";
   }

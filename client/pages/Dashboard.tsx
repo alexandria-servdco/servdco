@@ -8,7 +8,6 @@ import {
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { DashboardMobileNav } from "@/components/ui/DashboardMobileNav";
 import { DashboardMobileMenu } from "@/components/ui/DashboardMobileMenu";
-import { ReferralInviteCard } from "@/components/referral/ReferralInviteCard";
 import { formatBookingDisplayDate } from "@/lib/formatDate";
 import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
 import { useUnreadMessageCount } from "@/hooks/useConversations";
@@ -41,7 +40,9 @@ import {
 } from "@shared/profileCompletion";
 import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
 import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
+import { NotificationSettingsForm } from "@/components/settings/NotificationSettingsForm";
 import { CompletedBookingHistoryRow } from "@/components/reviews/CompletedBookingHistoryRow";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const location = useLocation();
@@ -90,18 +91,11 @@ export default function Dashboard() {
   const profileProgress = familyCompletionDetail.percent;
   const profileProgressLabel = profileCompletionLabel(profileProgress);
 
-  // Settings Form state
+  // Settings Form state (password change only — notifications use NotificationSettingsForm)
   const [settingsData, setSettingsData] = useState({
-    emailAlerts: true,
-    smsAlerts: false,
-    platformNotifications: true,
-    bookingUpdates: true,
-    verificationUpdates: true,
-    marketingEmails: false,
     newPassword: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
-  const [settingsSuccess, setSettingsSuccess] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -181,10 +175,25 @@ export default function Dashboard() {
     }
   };
 
-  const handleSettingsSave = (e: React.FormEvent) => {
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
+  const handlePasswordSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSettingsSuccess(true);
-    setTimeout(() => setSettingsSuccess(false), 3000);
+    if (!settingsData.newPassword) return;
+    if (settingsData.newPassword !== settingsData.confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      await AuthService.changePassword(settingsData.newPassword);
+      toast.success("Password updated.");
+      setSettingsData({ newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update password.");
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   const toggleDietary = (item: string) => {
@@ -294,12 +303,9 @@ export default function Dashboard() {
           ) : currentTab === "dashboard" ? (
             /* Tab 1: Dashboard Overview */
             <>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Referral Promo */}
-                <ReferralInviteCard userId={userId} />
-
+              <div className="grid grid-cols-1 gap-8">
                 {/* Upcoming Bookings Block */}
-                <div className="lg:col-span-2 velvet-card p-8 flex flex-col justify-between">
+                <div className="velvet-card p-8 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
                       <h2 className="text-2xl font-bold text-white font-serif">Upcoming Bookings</h2>
@@ -671,44 +677,12 @@ export default function Dashboard() {
             </form>
           ) : (
             /* Tab 6: Settings */
-            <form onSubmit={handleSettingsSave} className="max-w-2xl velvet-card p-8 space-y-6">
+            <div className="max-w-2xl velvet-card p-8 space-y-8">
               <h3 className="text-xl font-bold text-white font-serif">Account Settings</h3>
 
-              {settingsSuccess && (
-                <div className="p-3 bg-green-950/20 border border-green-500/20 rounded-xl text-xs text-green-400 font-semibold">
-                  Settings saved successfully!
-                </div>
-              )}
+              <NotificationSettingsForm profile={profile} />
 
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Notifications</h4>
-                <div className="space-y-3">
-                  {[
-                    { key: "platformNotifications" as const, label: "In-app platform notifications", mandatory: true },
-                    { key: "bookingUpdates" as const, label: "Booking status updates", mandatory: true },
-                    { key: "verificationUpdates" as const, label: "Verification & document updates", mandatory: false },
-                    { key: "emailAlerts" as const, label: "Email notifications", mandatory: false },
-                    { key: "smsAlerts" as const, label: "SMS text messaging (coming soon)", mandatory: false, disabled: true },
-                    { key: "marketingEmails" as const, label: "Marketing & promotional emails", mandatory: false },
-                  ].map(({ key, label, mandatory, disabled }) => (
-                    <label key={key} className={`flex items-center gap-3 ${disabled ? "opacity-50" : "cursor-pointer"}`}>
-                      <input
-                        type="checkbox"
-                        checked={settingsData[key]}
-                        disabled={mandatory || disabled}
-                        onChange={(e) => setSettingsData({ ...settingsData, [key]: e.target.checked })}
-                        className="w-4 h-4 bg-[#161616] border border-white/10 rounded accent-[#FF7A59]"
-                      />
-                      <span className="text-xs text-[#A8A8A8] font-bold">
-                        {label}
-                        {mandatory && <span className="text-[#FF7A59] ml-1">(required)</span>}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-6 border-t border-white/5">
+              <form onSubmit={(e) => void handlePasswordSave(e)} className="space-y-4 pt-6 border-t border-white/5">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Change Password</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormInput
@@ -726,13 +700,12 @@ export default function Dashboard() {
                     onChange={(e) => setSettingsData({ ...settingsData, confirmPassword: e.target.value })}
                   />
                 </div>
-              </div>
-
-              <div className="pt-4 flex items-center justify-between">
-                <Button type="submit" className="text-xs font-bold">
-                  Save Settings
+                <Button type="submit" isLoading={passwordSaving} className="text-xs font-bold" disabled={!settingsData.newPassword}>
+                  Update Password
                 </Button>
-                
+              </form>
+
+              <div className="pt-4 flex items-center justify-end border-t border-white/5">
                 <button
                   type="button"
                   onClick={() => {
@@ -746,7 +719,7 @@ export default function Dashboard() {
                   Delete Account
                 </button>
               </div>
-            </form>
+            </div>
           )}
         </div>
       </main>

@@ -51,11 +51,17 @@ export const SEO_ROUTES: Record<string, PageSeoConfig> = {
       "Questions about bookings, verification, or partnerships? Contact the Servd Co team.",
     path: "/contact",
   },
-  "/blog": {
-    title: "Servd Co Blog",
+  "/careers": {
+    title: "Careers at Servd Co",
     description:
-      "Stories, tips, and updates from the Servd Co private dining community.",
-    path: "/blog",
+      "Explore open roles and join the team building the future of private home dining.",
+    path: "/careers",
+  },
+  "/careers/apply": {
+    title: "General Application | Servd Co Careers",
+    description:
+      "Submit a general application to join the Servd Co team.",
+    path: "/careers/apply",
   },
   "/privacy": {
     title: "Privacy Policy | Servd Co",

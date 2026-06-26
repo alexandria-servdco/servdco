@@ -262,6 +262,14 @@ export const AuthService = {
     return api.getWaitlistStats(state);
   },
 
+  async changePassword(newPassword: string): Promise<void> {
+    if (await this.usesSupabaseAuth()) {
+      await supabaseAuth.completePasswordReset(newPassword);
+      return;
+    }
+    throw new Error("Password change requires Supabase authentication.");
+  },
+
   /** Dev panel — legacy in-memory session only when Supabase auth is disabled. */
   async devLogin(role: "family" | "chef" | "admin"): Promise<AppUser> {
     if (await this.usesSupabaseAuth()) {

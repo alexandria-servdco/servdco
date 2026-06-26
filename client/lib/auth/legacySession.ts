@@ -1,5 +1,6 @@
 import type { ProfileRow } from "@/lib/supabase/types";
 import type { AppUser } from "@/lib/auth/types";
+import { DEFAULT_NOTIFICATION_PREFERENCES } from "@shared/notificationPreferences";
 
 type Listener = () => void;
 
@@ -36,6 +37,7 @@ export function legacyUserToProfileRow(user: AppUser): ProfileRow {
     dietary_preferences: [],
     email_alerts: true,
     sms_alerts: true,
+    notification_preferences: DEFAULT_NOTIFICATION_PREFERENCES,
     profile_completed:
       user.profile_completed ?? (user.role === "admin" ? 100 : 0),
     created_at: new Date().toISOString(),

@@ -55,54 +55,122 @@ export type Database = {
         };
         Relationships: [];
       };
-      blog_posts: {
+      career_applications: {
         Row: {
           id: string
-          slug: string
-          title: string
-          excerpt: string | null
-          body: string | null
-          category: string | null
-          cover_image_url: string | null
-          author_name: string | null
-          read_time_minutes: number | null
-          published: boolean
-          published_at: string | null
+          job_id: string | null
+          name: string
+          email: string
+          phone: string | null
+          linkedin: string | null
+          portfolio: string | null
+          resume_storage_path: string | null
+          resume_bucket: string
+          cover_letter: string | null
+          status: Database["public"]["Enums"]["career_application_status"]
+          notes: string | null
           created_at: string
           updated_at: string
-          deleted_at: string | null
         };
         Insert: {
           id?: string | null
-          slug: string | null
-          title: string | null
-          excerpt?: string | null
-          body?: string | null
-          category?: string | null
-          cover_image_url?: string | null
-          author_name?: string | null
-          read_time_minutes?: number | null
-          published: boolean | null
-          published_at?: string | null
-          created_at: string | null
-          updated_at: string | null
-          deleted_at?: string | null
+          job_id?: string | null
+          name: string | null
+          email: string | null
+          phone?: string | null
+          linkedin?: string | null
+          portfolio?: string | null
+          resume_storage_path?: string | null
+          resume_bucket?: string | null
+          cover_letter?: string | null
+          status?: Database["public"]["Enums"]["career_application_status"] | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         };
         Update: {
           id?: string | null
-          slug?: string | null
-          title?: string | null
-          excerpt?: string | null
-          body?: string | null
-          category?: string | null
-          cover_image_url?: string | null
-          author_name?: string | null
-          read_time_minutes?: number | null
-          published?: boolean | null
+          job_id?: string | null
+          name?: string | null
+          email?: string | null
+          phone?: string | null
+          linkedin?: string | null
+          portfolio?: string | null
+          resume_storage_path?: string | null
+          resume_bucket?: string | null
+          cover_letter?: string | null
+          status?: Database["public"]["Enums"]["career_application_status"] | null
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        };
+        Relationships: [
+          {
+            foreignKeyName: "career_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "career_jobs"
+            referencedColumns: ["id"]
+          },
+        ];
+      };
+      career_jobs: {
+        Row: {
+          id: string
+          title: string
+          department: string
+          location: string
+          employment_type: string
+          salary_range: string | null
+          description: string
+          requirements: string | null
+          benefits: string | null
+          status: Database["public"]["Enums"]["career_job_status"]
+          published_at: string | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        };
+        Insert: {
+          id?: string | null
+          title: string | null
+          department?: string | null
+          location?: string | null
+          employment_type?: string | null
+          salary_range?: string | null
+          description: string | null
+          requirements?: string | null
+          benefits?: string | null
+          status?: Database["public"]["Enums"]["career_job_status"] | null
           published_at?: string | null
           created_at?: string | null
           updated_at?: string | null
+          created_by?: string | null
+          updated_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
+        };
+        Update: {
+          id?: string | null
+          title?: string | null
+          department?: string | null
+          location?: string | null
+          employment_type?: string | null
+          salary_range?: string | null
+          description?: string | null
+          requirements?: string | null
+          benefits?: string | null
+          status?: Database["public"]["Enums"]["career_job_status"] | null
+          published_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
         };
         Relationships: [];
       };
@@ -955,6 +1023,7 @@ export type Database = {
           dietary_preferences: string[]
           email_alerts: boolean
           sms_alerts: boolean
+          notification_preferences: Json
           profile_completed: number
           created_at: string
           updated_at: string
@@ -977,6 +1046,7 @@ export type Database = {
           dietary_preferences: string[] | null
           email_alerts: boolean | null
           sms_alerts: boolean | null
+          notification_preferences?: Json | null
           profile_completed: number | null
           created_at: string | null
           updated_at: string | null
@@ -999,6 +1069,7 @@ export type Database = {
           dietary_preferences?: string[] | null
           email_alerts?: boolean | null
           sms_alerts?: boolean | null
+          notification_preferences?: Json | null
           profile_completed?: number | null
           created_at?: string | null
           updated_at?: string | null
@@ -1302,6 +1373,14 @@ export type Database = {
       user_role: "family" | "chef" | "admin";
       verification_status: "pending" | "approved" | "rejected" | "suspended";
       waitlist_role: "family" | "chef";
+      career_job_status: "draft" | "published" | "archived";
+      career_application_status:
+        | "applied"
+        | "under_review"
+        | "interview"
+        | "offer"
+        | "rejected"
+        | "hired";
     };
     CompositeTypes: Record<string, never>;
   };

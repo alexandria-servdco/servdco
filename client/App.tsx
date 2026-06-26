@@ -25,12 +25,14 @@ import FamilyRegistration from "./pages/FamilyRegistration";
 import WaitlistPage from "./pages/WaitlistPage";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Careers from "./pages/Careers";
+import CareerJob from "./pages/CareerJob";
+import CareerApply from "./pages/CareerApply";
 import NotFound from "./pages/NotFound";
 import ForChefs from "./pages/ForChefs";
 import HowItWorks from "./pages/HowItWorks";
 import FAQ from "./pages/FAQ";
 import Pricing from "./pages/Pricing";
-import Blog from "./pages/Blog";
 import Unauthorized from "./pages/Unauthorized";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
@@ -189,6 +191,30 @@ const App = () => (
                 }
               />
               <Route
+                path="/careers"
+                element={
+                  <PageWrapper routeLabel="careers">
+                    <Careers />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/careers/apply"
+                element={
+                  <PageWrapper routeLabel="careers-apply">
+                    <CareerApply />
+                  </PageWrapper>
+                }
+              />
+              <Route
+                path="/careers/:jobId"
+                element={
+                  <PageWrapper routeLabel="career-job">
+                    <CareerJob />
+                  </PageWrapper>
+                }
+              />
+              <Route
                 path="/faq"
                 element={
                   <PageWrapper routeLabel="faq">
@@ -201,14 +227,6 @@ const App = () => (
                 element={
                   <PageWrapper routeLabel="pricing">
                     <Pricing />
-                  </PageWrapper>
-                }
-              />
-              <Route
-                path="/blog"
-                element={
-                  <PageWrapper routeLabel="blog">
-                    <Blog />
                   </PageWrapper>
                 }
               />

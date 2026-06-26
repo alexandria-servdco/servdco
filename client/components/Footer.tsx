@@ -351,8 +351,7 @@ export default function Footer() {
               {[
                 { label: "About Us", path: "/about" },
                 { label: "Contact Us", path: "/contact" },
-                { label: "Careers", path: "#" },
-                { label: "Blog", path: "/blog" },
+                { label: "Careers", path: "/careers" },
                 { label: "Partner With Us", path: "/contact" },
               ].map((link) => (
                 <li key={link.label}>

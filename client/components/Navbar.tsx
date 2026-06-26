@@ -50,7 +50,6 @@ export default function Navbar() {
     { label: "About", path: "/about" },
     { label: "FAQ", path: "/faq" },
     { label: "Pricing", path: "/pricing" },
-    { label: "Blog", path: "/blog" },
     { label: "Contact", path: "/contact" },
     {
       label: "Legal",

@@ -1,46 +1,24 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Shield, AlertTriangle, Ban, Bot } from "lucide-react";
 import { SecurityEventsService } from "@/services/supabase/security-events.service";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { TurnstileWidget } from "@/components/security/TurnstileWidget";
-import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
-import { Button } from "@/components/ui/button";
-import { FormInput } from "@/components/ui/FormInput";
 
 /**
- * Future admin invite flow — Turnstile-ready, not yet wired to backend invite API.
+ * Admin invite flow is not yet available — informational only.
  */
 export function AdminInviteForm() {
-  const [email, setEmail] = useState("");
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (getEffectiveTurnstileSiteKey() && !turnstileToken) {
-      setMessage("Complete security verification before sending invites.");
-      return;
-    }
-    setMessage("Admin invite API coming soon. Turnstile verification is configured.");
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
-      <FormInput
-        type="email"
-        label="Invite email"
-        id="admin-invite-email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
-      <TurnstileWidget formId="admin-invite-form" onTokenChange={setTurnstileToken} />
-      {message && <p className="text-xs text-[#A8A8A8]">{message}</p>}
-      <Button type="submit" disabled>
-        Send invite (coming soon)
-      </Button>
-    </form>
+    <div className="space-y-3 max-w-md rounded-xl border border-white/10 bg-[#161616]/50 p-5">
+      <p className="text-xs text-[#A8A8A8] leading-relaxed">
+        Admin user invitations are managed through Supabase Auth and internal
+        onboarding. Self-serve invite sending from this dashboard is not
+        available yet.
+      </p>
+      <p className="text-[10px] text-[#A8A8A8]/70">
+        Turnstile verification is configured for public forms that require bot
+        protection.
+      </p>
+    </div>
   );
 }
 

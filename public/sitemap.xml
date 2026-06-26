@@ -7,7 +7,6 @@
   <url><loc>https://servdco-one.vercel.app/for-chefs</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://servdco-one.vercel.app/faq</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://servdco-one.vercel.app/contact</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://servdco-one.vercel.app/blog</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://servdco-one.vercel.app/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://servdco-one.vercel.app/register/family</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://servdco-one.vercel.app/register/chef</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>

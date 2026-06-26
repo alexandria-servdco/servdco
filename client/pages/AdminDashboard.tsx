@@ -41,6 +41,7 @@ import {
   LogOut,
   MessageSquare,
   Mail,
+  Briefcase,
 } from "lucide-react";
 import {
   LineChart,
@@ -104,6 +105,7 @@ const GlobalAnnouncements = lazy(() => import("@/components/admin/GlobalAnnounce
 const AdminNotificationMonitor = lazy(() => import("@/components/admin/AdminNotificationMonitor").then(m => ({ default: m.AdminNotificationMonitor })));
 const PlatformSettings = lazy(() => import("@/components/admin/PlatformSettings").then(m => ({ default: m.PlatformSettings })));
 const ContactMessagesPanel = lazy(() => import("@/components/admin/ContactMessagesPanel").then(m => ({ default: m.ContactMessagesPanel })));
+const CareersPanel = lazy(() => import("@/components/admin/CareersPanel").then(m => ({ default: m.CareersPanel })));
 const OrphanedDocumentsUtility = lazy(() => import("@/components/admin/OrphanedDocumentsUtility").then(m => ({ default: m.OrphanedDocumentsUtility })));
 const MarketInterestRequests = lazy(() => import("@/components/admin/MarketInterestRequests").then(m => ({ default: m.MarketInterestRequests })));
 const AdminMessagingHub = lazy(() => import("@/components/messaging/AdminMessagingHub").then(m => ({ default: m.AdminMessagingHub })));
@@ -160,6 +162,7 @@ const NAV_ITEMS = [
   { id: "messaging", label: "Messaging", icon: MessageSquare },
   { id: "documents", label: "Verification", icon: FileText },
   { id: "contact_messages", label: "Contact", icon: Mail },
+  { id: "careers", label: "Careers", icon: Briefcase },
   { id: "payouts", label: "Payouts", icon: DollarSign },
   { id: "moderation", label: "Moderation", icon: ShieldAlert },
   { id: "announcements", label: "Announcements", icon: Megaphone },
@@ -1079,6 +1082,7 @@ export default function AdminDashboard({
               {activeNav === "messaging" && "Platform Messaging"}
               {activeNav === "documents" && "Trust & Verification Center"}
               {activeNav === "contact_messages" && "Contact Messages"}
+              {activeNav === "careers" && "Careers Management"}
               {activeNav === "payouts" && "Payout Control"}
               {activeNav === "moderation" && "Content Moderation"}
               {activeNav === "announcements" && "Global Announcements"}
@@ -1114,6 +1118,8 @@ export default function AdminDashboard({
                 "Inspect submitted cook certifications, ServSafe, ID verification and insurance policies."}
               {activeNav === "contact_messages" &&
                 "Review and resolve messages from the public contact form."}
+              {activeNav === "careers" &&
+                "Publish job openings, review applications, and manage the hiring pipeline."}
               {activeNav === "payouts" &&
                 "Manage cook payouts, disputes, and holds."}
               {activeNav === "moderation" &&
@@ -2875,6 +2881,12 @@ export default function AdminDashboard({
             {activeNav === "contact_messages" && (
               <Suspense fallback={<CardSkeleton />}>
                 <ContactMessagesPanel />
+              </Suspense>
+            )}
+
+            {activeNav === "careers" && (
+              <Suspense fallback={<CardSkeleton />}>
+                <CareersPanel />
               </Suspense>
             )}
 

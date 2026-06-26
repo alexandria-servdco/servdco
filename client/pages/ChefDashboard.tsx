@@ -89,6 +89,8 @@ import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeD
 import { useAuth } from "@/hooks/useAuth";
 import { useIsPremiumChef } from "@/hooks/useSubscription";
 import { usePlatformStore } from "@/store/usePlatformStore";
+import { NotificationSettingsForm } from "@/components/settings/NotificationSettingsForm";
+import { toast } from "sonner";
 import { StripeService } from "@/services/stripe.service";
 import { useOwnDocuments, useSubmitChefDocuments } from "@/hooks/useOwnDocuments";
 import { useChefAnalytics } from "@/hooks/useChefAnalytics";
@@ -339,12 +341,10 @@ export default function ChefDashboard() {
 
   // Settings states
   const [settingsData, setSettingsData] = useState({
-    emailAlerts: true,
-    smsAlerts: true,
     newPassword: "",
     confirmPassword: "",
   });
-  const [settingsSuccess, setSettingsSuccess] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Income Calculator state
@@ -501,10 +501,23 @@ export default function ChefDashboard() {
     }
   };
 
-  const handleSettingsSave = (e: React.FormEvent) => {
+  const handlePasswordSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSettingsSuccess(true);
-    setTimeout(() => setSettingsSuccess(false), 3000);
+    if (!settingsData.newPassword) return;
+    if (settingsData.newPassword !== settingsData.confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      await AuthService.changePassword(settingsData.newPassword);
+      toast.success("Password updated.");
+      setSettingsData({ newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update password.");
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   return (
@@ -1536,61 +1549,17 @@ export default function ChefDashboard() {
             </div>
           ) : (
             /* Settings */
-            <form
-              onSubmit={handleSettingsSave}
-              className="max-w-2xl velvet-card p-8 space-y-6"
-            >
+            <div className="max-w-2xl velvet-card p-8 space-y-8">
               <h3 className="text-xl font-bold text-white font-serif">
                 Account Preferences
               </h3>
 
-              {settingsSuccess && (
-                <div className="p-3 bg-green-950/20 border border-green-500/20 rounded-xl text-xs text-green-400 font-semibold">
-                  Preferences saved successfully!
-                </div>
-              )}
+              <NotificationSettingsForm profile={profile} />
 
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                  Alert Configurations
-                </h4>
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settingsData.emailAlerts}
-                      onChange={(e) =>
-                        setSettingsData({
-                          ...settingsData,
-                          emailAlerts: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 bg-[#161616] border border-white/10 rounded accent-[#FF7A59]"
-                    />
-                    <span className="text-xs text-[#A8A8A8] font-bold">
-                      Email alerts when a family request booking sessions
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settingsData.smsAlerts}
-                      onChange={(e) =>
-                        setSettingsData({
-                          ...settingsData,
-                          smsAlerts: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 bg-[#161616] border border-white/10 rounded accent-[#FF7A59]"
-                    />
-                    <span className="text-xs text-[#A8A8A8] font-bold">
-                      SMS text messaging updates
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-6 border-t border-white/5">
+              <form
+                onSubmit={(e) => void handlePasswordSave(e)}
+                className="space-y-4 pt-6 border-t border-white/5"
+              >
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                   Reset Account Password
                 </h4>
@@ -1620,13 +1589,17 @@ export default function ChefDashboard() {
                     }
                   />
                 </div>
-              </div>
-
-              <div className="pt-4 flex items-center justify-between">
-                <Button type="submit" className="text-xs font-bold">
-                  Save Preferences
+                <Button
+                  type="submit"
+                  className="text-xs font-bold"
+                  isLoading={passwordSaving}
+                  disabled={!settingsData.newPassword}
+                >
+                  Update Password
                 </Button>
+              </form>
 
+              <div className="pt-4 flex items-center justify-end border-t border-white/5">
                 <button
                   type="button"
                   onClick={() => {
@@ -1644,7 +1617,7 @@ export default function ChefDashboard() {
                   Delete Profile
                 </button>
               </div>
-            </form>
+            </div>
           )}
         </div>
       </main>

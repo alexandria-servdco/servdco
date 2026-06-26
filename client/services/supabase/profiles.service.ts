@@ -50,6 +50,8 @@ export const ProfilesSupabaseService = {
         | "profile_completed"
         | "avatar_url"
         | "dietary_preferences"
+        | "email_alerts"
+        | "notification_preferences"
       >
     >,
   ): Promise<ProfileRow | null> {
@@ -65,6 +67,35 @@ export const ProfilesSupabaseService = {
       .from("profiles")
       .update({
         ...updates,
+        updated_by: userId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId)
+      .select("*")
+      .single();
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+    return data;
+  },
+
+  async updateNotificationPreferences(updates: {
+    notification_preferences: import("@shared/notificationPreferences").NotificationPreferences;
+    email_alerts: boolean;
+  }): Promise<ProfileRow | null> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw new SupabaseQueryError(authError.message, authError);
+    const userId = authData.user?.id;
+    if (!userId) return null;
+
+    const { data, error } = await client
+      .from("profiles")
+      .update({
+        notification_preferences:
+          updates.notification_preferences as unknown as import("@/lib/supabase/database.types").Json,
+        email_alerts: updates.email_alerts,
         updated_by: userId,
         updated_at: new Date().toISOString(),
       })

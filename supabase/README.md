@@ -20,6 +20,20 @@ supabase link --project-ref <YOUR_PROJECT_REF>
 supabase db push
 ```
 
+This applies all `migrations/` including reference data (`launch_regions`, `feature_flags`, geo ZIPs).  
+`seed.sql` is **local dev only** (`supabase db reset`) — not used in production.
+
+## Beta cleanup (pre-launch, one-time)
+
+Remove development Family/Cook test accounts while preserving Admin:
+
+1. Review `supabase/scripts/beta-cleanup-test-users.sql`
+2. Edit `v_preserve_emails` (default: `alexandria@servdco.com`)
+3. Run STEP 0 preview in Supabase SQL Editor
+4. Backup, then run STEP 1 with `v_execute := true`
+
+See `docs/DATABASE_PORTABILITY_AUDIT.md` for full dependency map and portability audit.
+
 ## Reset local dev (optional)
 
 ```bash

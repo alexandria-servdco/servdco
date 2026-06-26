@@ -1,5 +1,7 @@
 /** US states + major cities for signup/booking address validation. */
 
+import { citiesAvailableForState } from "@/lib/zip-codes-by-city";
+
 export const US_STATES: { code: string; name: string }[] = [
   { code: "AL", name: "Alabama" },
   { code: "AK", name: "Alaska" },
@@ -121,13 +123,16 @@ export function resolveStateCode(input: string): string | null {
 export function citiesForState(stateInput: string): string[] {
   const code = resolveStateCode(stateInput);
   if (!code) return [];
+  const bundled = citiesAvailableForState(code);
+  if (bundled.length > 0) return bundled;
   return US_CITIES_BY_STATE[code] ?? [];
 }
 
 export function isValidCityForState(city: string, stateInput: string): boolean {
-  const list = citiesForState(stateInput);
-  if (list.length === 0) return city.trim().length >= 2;
-  return list.some((c) => c.toLowerCase() === city.trim().toLowerCase());
+  const trimmed = city.trim();
+  if (trimmed.length < 2 || trimmed.length > 120) return false;
+  if (!/^[\p{L}\s.'-]+$/u.test(trimmed)) return false;
+  return true;
 }
 
 export function isValidZip(zip: string): boolean {

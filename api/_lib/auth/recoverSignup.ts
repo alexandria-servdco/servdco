@@ -27,7 +27,9 @@ export function isDuplicateSignupError(message: string): boolean {
     lower.includes("already") ||
     lower.includes("registered") ||
     lower.includes("exists") ||
-    lower.includes("duplicate")
+    lower.includes("duplicate") ||
+    lower.includes("unique constraint") ||
+    lower.includes("users_email")
   );
 }
 

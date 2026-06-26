@@ -380,6 +380,7 @@ export default function FamilyRegistration() {
               <StateCitySelect
                 state={formData.state}
                 city={formData.city}
+                zip={formData.zip}
                 onStateChange={(state) => setFormData({ ...formData, state })}
                 onCityChange={(city) => setFormData({ ...formData, city })}
               />

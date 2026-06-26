@@ -8,7 +8,7 @@ import {
   createPasswordAuthClient,
   type AuthSessionPayload,
 } from "../supabaseAuthApi.js";
-import { createAuthUser } from "../supabase/authAdminRest.js";
+import { createAuthUser, findAuthUserByEmail } from "../supabase/authAdminRest.js";
 import { resolveRegionId } from "../regionMapping.js";
 import { resolveUserRegion } from "../launch/regionResolve.js";
 import { upsertUserRegionAccess } from "../launch/userRegionAccess.js";
@@ -110,6 +110,48 @@ function mapSignupCreateError(message: string): {
   };
 }
 
+async function respondToExistingSignupEmail(
+  res: VercelResponse,
+  admin: ReturnType<typeof getServiceRoleClient>,
+  signup: z.infer<typeof signupSchema>,
+  signupPayload: SignupPayload,
+): Promise<boolean> {
+  const recovery = await tryRecoverUnverifiedSignup({
+    client: admin,
+    data: signupPayload,
+  });
+
+  if (recovery.recovered) {
+    const access = await evaluateSignupAccess(signup);
+    res.status(200).json({
+      success: true,
+      status: access.status,
+      recovered: true,
+      message: recovery.confirmationEmailSent
+        ? "We found your existing account and sent a new confirmation email."
+        : "We found your existing account. Sign in, or use the login page to resend confirmation.",
+      needsEmailConfirmation: true,
+      confirmationEmailSent: recovery.confirmationEmailSent,
+      userId: recovery.userId,
+      region: {
+        effectiveStatus: access.resolved.effectiveStatus,
+        reason: access.resolved.reason,
+      },
+    });
+    return true;
+  }
+
+  sendUserError(res, 409, "CONFLICT", {
+    title: "This email is already registered",
+    message: "An account with this email already exists.",
+    guidance:
+      "Sign in with your password. If you never verified your email, open the login page and choose Resend confirmation email.",
+    primaryAction: { label: "Go to sign in", action: "sign_in" },
+    secondaryAction: { label: "Reset password", action: "reset_password" },
+  });
+  return true;
+}
+
 export async function handleAuthSignup(
   req: VercelRequest,
   res: VercelResponse,
@@ -167,6 +209,20 @@ export async function handleAuthSignup(
 
     const admin = getServiceRoleClient();
 
+    const { user: existingAuthUser } = await findAuthUserByEmail(signup.email);
+    if (existingAuthUser) {
+      if (
+        await respondToExistingSignupEmail(
+          res,
+          admin,
+          signup,
+          signupPayload,
+        )
+      ) {
+        return;
+      }
+    }
+
     const { user: createdUser, error: createErrorMessage } = await createAuthUser({
       email: signup.email,
       password: signup.password,
@@ -186,41 +242,25 @@ export async function handleAuthSignup(
 
     if (createErrorMessage) {
       const createError = { message: createErrorMessage };
-      if (isDuplicateSignupError(createError.message)) {
-        const recovery = await tryRecoverUnverifiedSignup({
-          client: admin,
-          data: signupPayload,
-        });
-
-        if (recovery.recovered) {
-          const access = await evaluateSignupAccess(signup);
-          res.status(200).json({
-            success: true,
-            status: access.status,
-            recovered: true,
-            message: recovery.confirmationEmailSent
-              ? "We found your existing account and sent a new confirmation email."
-              : "We found your existing account. Sign in, or use the login page to resend confirmation.",
-            needsEmailConfirmation: true,
-            confirmationEmailSent: recovery.confirmationEmailSent,
-            userId: recovery.userId,
-            region: {
-              effectiveStatus: access.resolved.effectiveStatus,
-              reason: access.resolved.reason,
-            },
-          });
-          return;
+      if (
+        isDuplicateSignupError(createError.message) ||
+        createError.message.toLowerCase().includes("database")
+      ) {
+        const { user: existingAfterError } = await findAuthUserByEmail(
+          signup.email,
+        );
+        if (existingAfterError) {
+          if (
+            await respondToExistingSignupEmail(
+              res,
+              admin,
+              signup,
+              signupPayload,
+            )
+          ) {
+            return;
+          }
         }
-
-        sendUserError(res, 409, "CONFLICT", {
-          title: "This email is already registered",
-          message: "An account with this email already exists.",
-          guidance:
-            "Sign in with your password. If you never verified your email, open the login page and choose Resend confirmation email.",
-          primaryAction: { label: "Go to sign in", action: "sign_in" },
-          secondaryAction: { label: "Reset password", action: "reset_password" },
-        });
-        return;
       }
 
       console.error("[auth.signup]", redactForLog(createError));

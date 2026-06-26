@@ -192,47 +192,55 @@ export const CareersSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: row, error } = await client
-      .from("career_applications")
-      .insert({
-        job_id: params.job_id ?? null,
-        name: params.name,
-        email: params.email,
-        phone: params.phone ?? null,
-        linkedin: params.linkedin || null,
-        portfolio: params.portfolio || null,
-        cover_letter: params.cover_letter ?? null,
-      })
-      .select("*")
-      .single();
-
-    if (error) throw new SupabaseQueryError(error.message, error);
+    const applicationId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    let resumeStoragePath: string | null = null;
 
     if (params.resumeFile) {
-      const ext = params.resumeFile.name.split(".").pop()?.toLowerCase() || "pdf";
-      const path = `applications/${row.id}/resume.${ext}`;
+      const ext =
+        params.resumeFile.name.split(".").pop()?.toLowerCase() || "pdf";
+      resumeStoragePath = `applications/${applicationId}/resume.${ext}`;
       const { error: uploadError } = await client.storage
         .from("career-resumes")
-        .upload(path, params.resumeFile, { upsert: true });
+        .upload(resumeStoragePath, params.resumeFile, { upsert: false });
 
       if (uploadError) {
         throw new SupabaseQueryError(uploadError.message);
       }
-
-      const { data: updated, error: updateError } = await client
-        .from("career_applications")
-        .update({ resume_storage_path: path })
-        .eq("id", row.id)
-        .select("*")
-        .single();
-
-      if (updateError) throw new SupabaseQueryError(updateError.message, updateError);
-      void EmailService.sendCareerApplicationNotify(row.id);
-      return mapApplication(updated as never);
     }
 
-    void EmailService.sendCareerApplicationNotify(row.id);
-    return mapApplication(row as never);
+    const { error } = await client.from("career_applications").insert({
+      id: applicationId,
+      job_id: params.job_id ?? null,
+      name: params.name,
+      email: params.email,
+      phone: params.phone ?? null,
+      linkedin: params.linkedin || null,
+      portfolio: params.portfolio || null,
+      cover_letter: params.cover_letter ?? null,
+      resume_storage_path: resumeStoragePath,
+    });
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+
+    void EmailService.sendCareerApplicationNotify(applicationId);
+
+    return {
+      id: applicationId,
+      job_id: params.job_id ?? null,
+      name: params.name,
+      email: params.email,
+      phone: params.phone ?? null,
+      linkedin: params.linkedin || null,
+      portfolio: params.portfolio || null,
+      resume_storage_path: resumeStoragePath,
+      resume_bucket: "career-resumes",
+      cover_letter: params.cover_letter ?? null,
+      status: "applied",
+      notes: null,
+      created_at: now,
+      updated_at: now,
+    };
   },
 
   async getResumeSignedUrl(path: string): Promise<string | null> {

@@ -1,17 +1,22 @@
 {
-  "timestamp": "2026-06-26T15:37:46.607Z",
-  "totalAppliedInDb": 39,
-  "appliedThisRun": [],
+  "timestamp": "2026-06-26T15:59:59.373Z",
+  "totalAppliedInDb": 40,
+  "appliedThisRun": [
+    {
+      "version": "20250628100000",
+      "file": "20250628100000_fix_career_applications_rls.sql"
+    }
+  ],
   "skippedCount": 39,
   "failed": [],
   "latestVersions": [
-    "20250620143000",
     "20250620180000",
     "20250621180000",
     "20250622100000",
     "20250623100000",
     "20250623100001",
     "20250625100000",
-    "20250627100000"
+    "20250627100000",
+    "20250628100000"
   ]
 }

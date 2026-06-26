@@ -664,6 +664,10 @@ export default function ChefDashboard() {
               title="Cook Dashboard"
               open={mobileMenuOpen}
               onOpenChange={setMobileMenuOpen}
+              onSignOut={async () => {
+                await AuthService.logout();
+                navigate("/login", { replace: true });
+              }}
               links={[
                 { label: "Dashboard", path: "/chef-dashboard", icon: LayoutDashboard },
                 { label: "Bookings", path: "/chef-dashboard/bookings", icon: Users },

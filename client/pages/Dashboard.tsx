@@ -206,6 +206,10 @@ export default function Dashboard() {
               title="Family Dashboard"
               open={mobileMenuOpen}
               onOpenChange={setMobileMenuOpen}
+              onSignOut={async () => {
+                await AuthService.logout();
+                navigate("/login", { replace: true });
+              }}
               links={[
                 { label: "Dashboard", path: "/family-dashboard", icon: LayoutDashboard },
                 { label: "Browse Cooks", path: "/browse-chefs", icon: Search },

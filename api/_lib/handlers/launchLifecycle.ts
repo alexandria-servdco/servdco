@@ -9,6 +9,7 @@ import { getServiceRoleClient } from "../supabase/serviceRole.js";
 const lifecycleSchema = z.object({
   regionId: z.string().trim().min(2).max(8),
   status: z.enum(LAUNCH_REGION_STATUSES).optional(),
+  refresh_waitlist: z.boolean().optional(),
   maintenance_mode: z.boolean().optional(),
   maintenance_message: z.string().max(2000).nullable().optional(),
   pause_reason: z.string().max(500).nullable().optional(),
@@ -52,17 +53,25 @@ export async function handleLaunchLifecycle(
     return;
   }
 
-  const { regionId, ...updates } = parsed.data;
+  const { regionId, refresh_waitlist, ...updates } = parsed.data;
   const result = await applyRegionLifecycleUpdate(
     regionId,
     updates,
     ctx.userId,
   );
 
+  let activatedUsers = result.activatedUsers;
+  if (refresh_waitlist) {
+    const { activateUsersInRegion } = await import(
+      "../launch/userRegionAccess.js"
+    );
+    activatedUsers += await activateUsersInRegion(regionId);
+  }
+
   res.status(200).json({
     success: true,
     regionId,
-    activatedUsers: result.activatedUsers,
+    activatedUsers,
   });
 }
 

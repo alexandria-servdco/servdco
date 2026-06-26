@@ -228,9 +228,11 @@ export function RegionCityZipEditor({
           />
         </div>
         <p id="region-city-search-hint" className="text-[10px] text-[#A8A8A8] mb-2">
-          {useStaticFallback && !citySearchQuery.isLoading
-            ? "Using offline city list — apply geo migration for full database search."
-            : "Fuzzy search powered by production ZIP dataset."}
+          {isZipSearch
+            ? "ZIP lookup — select the city to add its ZIP codes to this region."
+            : useStaticFallback && !citySearchQuery.isLoading
+              ? "Using offline city list — apply geo migration for full database search."
+              : "Fuzzy search powered by production ZIP dataset."}
         </p>
 
         {actionError && (

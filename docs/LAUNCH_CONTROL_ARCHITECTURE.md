@@ -11,7 +11,7 @@ Launch Control is the **authoritative runtime system** governing marketplace acc
 | Field | Purpose |
 |-------|---------|
 | `status` | `active`, `waitlist`, `paused`, `maintenance`, `internal_beta`, `coming_soon` |
-| `city` / `zip_codes` | **Enforced** geography — comma-separated allowlists |
+| `city` / `zip_codes` | **Ops metadata** during rollout — geography gates access only while `status` is `waitlist` or `coming_soon`. When `status` is `active` or `internal_beta`, access is **statewide**. |
 | `allow_*` flags | Per-capability toggles (bookings, payments, messages, reviews, signups) |
 | `maintenance_mode` / `maintenance_message` | Temporary outage UX |
 | `auto_launch` + `min_chefs` / `min_families` | Automated activation thresholds |
@@ -35,7 +35,9 @@ Region config + geography → effectiveStatus
 effectiveStatus + flags → permissions
 ```
 
-**Example:** Ohio active for Columbus/Cleveland/Cincinnati only → Dayton user gets `effectiveStatus: waitlist`, `reason: city_not_launched`.
+**Example (waitlist):** Ohio waitlist with Columbus/Cleveland/Cincinnati only → Dayton user gets `effectiveStatus: waitlist`, `reason: city_not_launched`.
+
+**Example (active):** Ohio active with Columbus only in city list → Dayton user still gets `effectiveStatus: active` (statewide launch). Suburban ZIPs like 43004 (Blacklick) are included automatically.
 
 ## Enforcement Layers
 
@@ -102,7 +104,17 @@ When `auto_launch` + thresholds met → activate region + users.
 
 ## Migration
 
-Apply: `supabase/migrations/20250629120000_launch_control_production.sql`
+Apply launch control + geo migrations:
+
+```bash
+node scripts/run-pending-migrations.mjs
+```
+
+Key migrations:
+- `20250629120000_launch_control_production.sql` — launch control tables + RPCs
+- `20250701120000_full_us_geo_zips.sql` — full US city/ZIP dataset (~33k rows)
+
+Regenerate geo data: `node scripts/generate-full-us-geo-migration.mjs`
 
 Backfills `user_region_access` from existing profiles.
 
@@ -121,8 +133,8 @@ pnpm test shared/launchControl.test.ts
 
 ## Manual QA Checklist
 
-- [ ] Ohio Columbus ZIP → active dashboard
-- [ ] Ohio Dayton ZIP → waitlist dashboard (cannot access family dashboard)
+- [ ] Ohio Columbus ZIP → active dashboard (when Ohio active)
+- [ ] Ohio Dayton ZIP → waitlist dashboard while Ohio is waitlist; active dashboard once Ohio is active
 - [ ] Waitlist user logout/login → still waitlist dashboard
 - [ ] Admin activate Ohio → waitlisted users gain access
 - [ ] Admin pause region → new bookings blocked, existing visible

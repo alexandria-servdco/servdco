@@ -461,6 +461,7 @@ export default function AdminDashboard({
         pause_reason: updatedData.pause_reason ?? null,
         allow_bookings: updatedData.allow_bookings,
         allow_payments: updatedData.allow_payments,
+        refresh_waitlist: true,
       });
       await reloadData();
       setEditingRegion(null);

@@ -328,12 +328,9 @@ export function resolveRegionAccess(
   const geo = evaluateGeography(input, config.cities, config.zipCodes);
   let effectiveStatus = config.status;
 
-  if (
-    (config.status === "active" || config.status === "internal_beta") &&
-    !geo.geographyAllowed
-  ) {
-    effectiveStatus = "waitlist";
-  }
+  const stateIsLive =
+    config.status === "active" || config.status === "internal_beta";
+  const geographyForAccess = stateIsLive ? true : geo.geographyAllowed;
 
   if (config.maintenance_mode) {
     effectiveStatus = "maintenance";
@@ -342,7 +339,7 @@ export function resolveRegionAccess(
   const permissions = computePermissions(
     config,
     effectiveStatus,
-    geo.geographyAllowed,
+    geographyForAccess,
     input.role,
   );
 
@@ -365,7 +362,11 @@ export function resolveRegionAccess(
     message =
       config.pause_reason ??
       "New bookings and payments are paused in your region. Existing bookings remain active.";
-  } else if (effectiveStatus === "waitlist" && !geo.geographyAllowed) {
+  } else if (
+    effectiveStatus === "waitlist" &&
+    !geographyForAccess &&
+    !stateIsLive
+  ) {
     reason = "city_not_launched";
     message = `Servd Co has not launched in ${city || "your city"} yet. Join the waitlist and we'll notify you when we arrive.`;
   } else if (effectiveStatus === "waitlist") {

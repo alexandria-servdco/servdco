@@ -297,6 +297,7 @@ export const SecurityApi = {
     pause_reason?: string | null;
     allow_bookings?: boolean;
     allow_payments?: boolean;
+    refresh_waitlist?: boolean;
   }): Promise<{ activatedUsers: number }> {
     const token = await readBearerToken();
     if (!token) {

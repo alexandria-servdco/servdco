@@ -48,10 +48,27 @@ describe("resolveRegionAccess", () => {
     family_count: 20,
   });
 
-  it("waitlists user outside covered cities", () => {
+  it("grants active access statewide when region is live", () => {
     const result = resolveRegionAccess(
       "OH",
       ohioConfig,
+      { state: "Ohio", city: "Dayton", zip: "45402", role: "family" },
+    );
+    expect(result.effectiveStatus).toBe("active");
+    expect(result.canAccessDashboard).toBe(true);
+    expect(result.permissions.booking_create).toBe(true);
+  });
+
+  it("waitlists user outside covered cities when region is not live", () => {
+    const waitlistConfig = {
+      ...ohioConfig,
+      status: "waitlist" as const,
+      is_active: false,
+      is_waitlist: true,
+    };
+    const result = resolveRegionAccess(
+      "OH",
+      waitlistConfig,
       { state: "Ohio", city: "Dayton", zip: "45402", role: "family" },
     );
     expect(result.effectiveStatus).toBe("waitlist");
@@ -59,11 +76,11 @@ describe("resolveRegionAccess", () => {
     expect(result.reason).toBe("city_not_launched");
   });
 
-  it("grants marketplace access for covered city", () => {
+  it("grants active access for Columbus suburb ZIP when region is live", () => {
     const result = resolveRegionAccess(
       "OH",
       ohioConfig,
-      { state: "Ohio", city: "Columbus", zip: "43201", role: "family" },
+      { state: "Ohio", city: "Columbus", zip: "43004", role: "family" },
     );
     expect(result.effectiveStatus).toBe("active");
     expect(result.canAccessDashboard).toBe(true);

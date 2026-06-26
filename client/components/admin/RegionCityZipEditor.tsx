@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useTransition, useEffect } from "react";
+import { useCallback, useMemo, useState, useTransition, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X, MapPin, Plus, Loader2, AlertCircle } from "lucide-react";
 import { resolveStateCode } from "@/lib/us-locations";
@@ -45,6 +45,9 @@ export function RegionCityZipEditor({
   const [actionError, setActionError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const debouncedSearch = useDebouncedValue(search, 250);
+  const zipCodesRef = useRef(zipCodes);
+  zipCodesRef.current = zipCodes;
+  const zipMutationRef = useRef(0);
   const code = resolveStateCode(stateCode) ?? stateCode.toUpperCase().slice(0, 2);
   const isZipSearch = /^\d{5}$/.test(debouncedSearch.trim());
 
@@ -128,20 +131,25 @@ export function RegionCityZipEditor({
     setActionError(null);
     setPendingCity(normalized);
     const nextCities = [...selectedCities, normalized];
+    const mutationId = ++zipMutationRef.current;
     onCitiesChange(formatCommaList(nextCities));
 
     startTransition(() => {
       void (async () => {
         try {
           const newZips = await resolveZipsForCity(normalized);
-          const currentZips = parseCommaList(zipCodes);
+          if (mutationId !== zipMutationRef.current) return;
+          const currentZips = parseCommaList(zipCodesRef.current);
           onZipCodesChange(
             formatCommaList(mergeUniqueZips(currentZips, newZips)),
           );
         } catch {
+          if (mutationId !== zipMutationRef.current) return;
           setActionError(`Could not load ZIP codes for ${normalized}.`);
         } finally {
-          setPendingCity(null);
+          if (mutationId === zipMutationRef.current) {
+            setPendingCity(null);
+          }
         }
       })();
     });
@@ -152,7 +160,13 @@ export function RegionCityZipEditor({
     const nextCities = selectedCities.filter(
       (c) => c.toLowerCase() !== city.toLowerCase(),
     );
+    const mutationId = ++zipMutationRef.current;
     onCitiesChange(formatCommaList(nextCities));
+
+    if (nextCities.length === 0) {
+      onZipCodesChange("");
+      return;
+    }
 
     startTransition(() => {
       void (async () => {
@@ -161,12 +175,14 @@ export function RegionCityZipEditor({
             code,
             nextCities,
           );
+          if (mutationId !== zipMutationRef.current) return;
           const zips =
             zipsFromDb.length > 0
               ? zipsFromDb
               : mergeZipsForCities(code, nextCities);
           onZipCodesChange(formatCommaList(zips));
         } catch {
+          if (mutationId !== zipMutationRef.current) return;
           onZipCodesChange(formatCommaList(mergeZipsForCities(code, nextCities)));
         }
       })();
@@ -293,7 +309,11 @@ export function RegionCityZipEditor({
                 {city}
                 <button
                   type="button"
-                  onClick={() => removeCity(city)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    removeCity(city);
+                  }}
                   className="hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
                   aria-label={`Remove ${city}`}
                   disabled={isPending}

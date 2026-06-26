@@ -2456,7 +2456,9 @@ export default function AdminDashboard({
                           }}
                         >
                           <button
-                            onClick={() => setEditingRegion(selectedRegion)}
+                            onClick={() =>
+                              setEditingRegion({ ...selectedRegion })
+                            }
                             style={{
                               flex: 1,
                               display: "flex",
@@ -3027,11 +3029,15 @@ export default function AdminDashboard({
                         : ""
                     }
                     onValueChange={(stId) => {
-                      setEditingRegion({
-                        ...editingRegion,
-                        id: stId,
-                        state: STATE_NAMES[stId] || stId,
-                      });
+                      setEditingRegion((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              id: stId,
+                              state: STATE_NAMES[stId] || stId,
+                            }
+                          : null,
+                      );
                     }}
                     placeholder="Select a State"
                     options={Object.entries(STATE_NAMES)
@@ -3061,10 +3067,12 @@ export default function AdminDashboard({
                 cities={editingRegion.city ?? ""}
                 zipCodes={editingRegion.zip_codes ?? ""}
                 onCitiesChange={(city) =>
-                  setEditingRegion({ ...editingRegion, city })
+                  setEditingRegion((prev) => (prev ? { ...prev, city } : null))
                 }
                 onZipCodesChange={(zip_codes) =>
-                  setEditingRegion({ ...editingRegion, zip_codes })
+                  setEditingRegion((prev) =>
+                    prev ? { ...prev, zip_codes } : null,
+                  )
                 }
               />
 
@@ -3093,10 +3101,14 @@ export default function AdminDashboard({
                     required
                     value={editingRegion.min_chefs}
                     onChange={(e) =>
-                      setEditingRegion({
-                        ...editingRegion,
-                        min_chefs: parseInt(e.target.value) || 0,
-                      })
+                      setEditingRegion((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              min_chefs: parseInt(e.target.value) || 0,
+                            }
+                          : null,
+                      )
                     }
                     style={{
                       width: "100%",
@@ -3127,10 +3139,14 @@ export default function AdminDashboard({
                     required
                     value={editingRegion.min_families}
                     onChange={(e) =>
-                      setEditingRegion({
-                        ...editingRegion,
-                        min_families: parseInt(e.target.value) || 0,
-                      })
+                      setEditingRegion((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              min_families: parseInt(e.target.value) || 0,
+                            }
+                          : null,
+                      )
                     }
                     style={{
                       width: "100%",
@@ -3175,13 +3191,17 @@ export default function AdminDashboard({
                     type="checkbox"
                     checked={editingRegion.is_active}
                     onChange={(e) =>
-                      setEditingRegion({
-                        ...editingRegion,
-                        is_active: e.target.checked,
-                        is_waitlist: e.target.checked
-                          ? false
-                          : editingRegion.is_waitlist,
-                      })
+                      setEditingRegion((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              is_active: e.target.checked,
+                              is_waitlist: e.target.checked
+                                ? false
+                                : prev.is_waitlist,
+                            }
+                          : null,
+                      )
                     }
                     style={{
                       width: "16px",
@@ -3212,10 +3232,11 @@ export default function AdminDashboard({
                     disabled={editingRegion.is_active}
                     checked={editingRegion.is_waitlist}
                     onChange={(e) =>
-                      setEditingRegion({
-                        ...editingRegion,
-                        is_waitlist: e.target.checked,
-                      })
+                      setEditingRegion((prev) =>
+                        prev
+                          ? { ...prev, is_waitlist: e.target.checked }
+                          : null,
+                      )
                     }
                     style={{
                       width: "16px",
@@ -3253,10 +3274,9 @@ export default function AdminDashboard({
                   type="checkbox"
                   checked={editingRegion.auto_launch}
                   onChange={(e) =>
-                    setEditingRegion({
-                      ...editingRegion,
-                      auto_launch: e.target.checked,
-                    })
+                    setEditingRegion((prev) =>
+                      prev ? { ...prev, auto_launch: e.target.checked } : null,
+                    )
                   }
                   style={{
                     width: "16px",

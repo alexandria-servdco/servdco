@@ -19,6 +19,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
         return handleAuthResendConfirmation(req, res);
       }
+      case "bootstrap-profile": {
+        const { handleAuthBootstrapProfile } = await import(
+          "../_lib/handlers/authBootstrapProfile.js"
+        );
+        return handleAuthBootstrapProfile(req, res);
+      }
       default:
         return res.status(404).json({
           error: "This auth action is not available.",

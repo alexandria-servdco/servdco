@@ -13,6 +13,7 @@ import { resolveRegionId } from "../regionMapping.js";
 import { resolveUserRegion } from "../launch/regionResolve.js";
 import { upsertUserRegionAccess } from "../launch/userRegionAccess.js";
 import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
+import { redactForLog } from "../sanitizeLog.js";
 import { sendUserError } from "../userErrors.js";
 import { ensureUserProfile } from "../auth/ensureProfile.js";
 import {
@@ -222,7 +223,7 @@ export async function handleAuthSignup(
         return;
       }
 
-      console.error("[auth.signup]", createError);
+      console.error("[auth.signup]", redactForLog(createError));
       const mapped = mapSignupCreateError(createError.message);
       if (mapped.code === "CONFLICT") {
         sendUserError(res, 409, "CONFLICT", {

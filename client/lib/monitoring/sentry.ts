@@ -6,6 +6,33 @@ import { setErrorTracker } from "@/lib/logger";
 
 let sentryReady = false;
 
+const SENSITIVE_KEYS = new Set([
+  "password",
+  "confirmPassword",
+  "confirm_password",
+  "access_token",
+  "refresh_token",
+  "authorization",
+  "apikey",
+]);
+
+function scrubSensitiveRecord(
+  record: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (SENSITIVE_KEYS.has(key.toLowerCase())) {
+      out[key] = "[REDACTED]";
+      continue;
+    }
+    out[key] =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? scrubSensitiveRecord(value as Record<string, unknown>)
+        : value;
+  }
+  return out;
+}
+
 export function isSentryReady(): boolean {
   return sentryReady;
 }
@@ -22,6 +49,20 @@ export async function initSentry(): Promise<void> {
       tracesSampleRate: 0.1,
       replaysSessionSampleRate: 0,
       replaysOnErrorSampleRate: 0,
+      beforeSend(event) {
+        const request = event.request;
+        if (request?.data && typeof request.data === "object") {
+          request.data = scrubSensitiveRecord(
+            request.data as Record<string, unknown>,
+          );
+        }
+        if (request?.headers) {
+          request.headers = scrubSensitiveRecord(
+            request.headers as Record<string, unknown>,
+          ) as Record<string, string>;
+        }
+        return event;
+      },
     });
 
     setErrorTracker((error, context) => {

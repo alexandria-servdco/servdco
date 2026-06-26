@@ -116,6 +116,10 @@ export const SecurityApi = {
     };
   },
 
+  /**
+   * @deprecated Login uses Supabase Auth directly — password never hits /api/auth/login.
+   * Kept for legacy API probes only.
+   */
   async login(email: string, password: string): Promise<{ user: AppUser }> {
     let res: Response;
     try {

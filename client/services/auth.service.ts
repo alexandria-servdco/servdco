@@ -13,6 +13,7 @@ import { ProfilesSupabaseService } from "@/services/supabase/profiles.service";
 import { NotificationService } from "@/services/notification.service";
 import { SecurityApi } from "@/lib/securityApi";
 import { clearClientSessionState } from "@/lib/auth/sessionCleanup";
+import { directSupabaseSignIn } from "@/lib/auth/directSignIn";
 
 export type { AppUser };
 
@@ -142,7 +143,7 @@ const supabaseAuth = {
 
   async login(email: string, password: string): Promise<AppUser> {
     clearClientSessionState();
-    const { user } = await SecurityApi.login(email, password);
+    const user = await directSupabaseSignIn(email, password);
     await NotificationService.syncUserNotifications(user.id).catch(() => {});
     return user;
   },

@@ -51,10 +51,19 @@ export function NotificationBell() {
         setIsOpen(false);
       }
     };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   const handleNotificationClick = (notif: (typeof notifications)[0]) => {
@@ -89,15 +98,27 @@ export function NotificationBell() {
 
       <AnimatePresence>
         {isOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close notifications"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[220] bg-black/50 backdrop-blur-[2px] md:hidden"
+              onClick={() => setIsOpen(false)}
+            />
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-3 w-[min(340px,calc(100vw-1.25rem))] max-h-[min(70vh,calc(100dvh-6rem))] bg-[#161616] border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] z-[200] overflow-hidden isolate flex flex-col"
+            className="fixed left-3 right-3 top-[calc(4.5rem+env(safe-area-inset-top))] z-[230] max-h-[min(72vh,calc(100dvh-6rem))] md:absolute md:left-auto md:right-0 md:top-auto md:mt-3 md:w-[min(340px,calc(100vw-1.25rem))] bg-[#161616] border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] overflow-hidden isolate flex flex-col"
           >
-            <div className="p-4 border-b border-white/8 flex items-center justify-between bg-[#161616]">
-              <h3 className="text-sm font-semibold text-white">Notifications</h3>
+            <div className="shrink-0 p-4 border-b border-white/8 flex items-center justify-between bg-[#161616]">
+              <h3 className="text-sm font-semibold text-white truncate pr-2">
+                Notifications
+              </h3>
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -110,7 +131,7 @@ export function NotificationBell() {
               )}
             </div>
 
-            <div className="flex gap-1 px-3 py-2 border-b border-white/5 bg-[#141414] overflow-x-auto servd-scrollbar">
+            <div className="shrink-0 flex gap-1 px-3 py-2 border-b border-white/5 bg-[#141414] overflow-x-auto servd-scrollbar">
               {CATEGORY_TABS.map((tab) => (
                 <button
                   key={tab.id}
@@ -128,7 +149,7 @@ export function NotificationBell() {
               ))}
             </div>
 
-            <div className="max-h-[350px] overflow-y-auto bg-[#161616] servd-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto bg-[#161616] servd-scrollbar">
               {sortedNotifications.length === 0 ? (
                 <div className="px-4 py-8 text-center text-white/40 text-xs">
                   No notifications in this category.
@@ -205,7 +226,7 @@ export function NotificationBell() {
                             e.stopPropagation();
                             removeNotification(notif.id);
                           }}
-                          className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all p-1"
+                          className="absolute right-3 top-3 md:opacity-0 md:group-hover:opacity-100 text-white/40 hover:text-red-400 transition-all p-1.5 touch-target"
                           aria-label="Dismiss notification"
                         >
                           <X size={13} />
@@ -217,6 +238,7 @@ export function NotificationBell() {
               )}
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

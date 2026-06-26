@@ -10,10 +10,10 @@ import {
 } from "@/lib/auth/legacySession";
 
 export function useProfile() {
-  const { isAuthenticated, supabaseAuthEnabled } = useAuth();
+  const { isAuthenticated, supabaseAuthEnabled, userId } = useAuth();
 
   return useQuery({
-    queryKey: profileQueryKeys.own(),
+    queryKey: profileQueryKeys.own(userId),
     queryFn: async () => {
       if (supabaseAuthEnabled) {
         return ProfilesSupabaseService.getOwnProfile();
@@ -22,6 +22,7 @@ export function useProfile() {
       const legacy = getLegacyUser();
       return legacy ? legacyUserToProfileRow(legacy) : null;
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && Boolean(userId),
+    staleTime: 0,
   });
 }

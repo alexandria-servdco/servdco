@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { logger } from "@/lib/logger";
+import { registerQueryClient } from "@/lib/queryClientRegistry";
 import { SupabaseQueryError } from "@/services/supabase/fallback";
 
 function isTransientError(error: unknown): boolean {
@@ -67,7 +68,11 @@ interface QueryProviderProps {
 }
 
 export function QueryProvider({ children }: QueryProviderProps) {
-  const [queryClient] = useState(createQueryClient);
+  const [queryClient] = useState(() => {
+    const client = createQueryClient();
+    registerQueryClient(client);
+    return client;
+  });
 
   return (
     <QueryClientProvider client={queryClient}>

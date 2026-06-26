@@ -65,9 +65,9 @@ export default function Navbar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const handleLogout = () => {
-    AuthService.logout();
-    navigate("/");
+  const handleLogout = async () => {
+    await AuthService.logout();
+    navigate("/login", { replace: true });
   };
 
   return (

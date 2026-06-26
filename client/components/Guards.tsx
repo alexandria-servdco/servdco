@@ -48,7 +48,11 @@ export function GuestGuard() {
   if (isAuthenticated && isLoading) {
     return (
       <RoleLoadingGate>
-        <div className="min-h-screen bg-[#111111]" />
+        <div className="min-h-screen bg-[#111111] flex items-center justify-center">
+          <p className="text-[#A8A8A8] text-xs font-bold uppercase tracking-wider">
+            Loading session...
+          </p>
+        </div>
       </RoleLoadingGate>
     );
   }
@@ -109,11 +113,17 @@ function dashboardPathForRole(role: string | null): string {
  * RoleGuard prevents users from accessing pages meant for other roles.
  */
 export function RoleGuard({ allowedRoles }: RoleGuardProps) {
-  const { role } = useCurrentUserRole();
+  const { role, isLoading, isAuthenticated } = useCurrentUserRole();
 
   return (
     <RoleLoadingGate>
-      {!role || !allowedRoles.includes(role) ? (
+      {isAuthenticated && isLoading ? (
+        <div className="min-h-screen bg-[#111111] flex items-center justify-center">
+          <p className="text-[#A8A8A8] text-xs font-bold uppercase tracking-wider">
+            Loading profile...
+          </p>
+        </div>
+      ) : !role || !allowedRoles.includes(role) ? (
         <Navigate to="/unauthorized" replace />
       ) : (
         <Outlet />

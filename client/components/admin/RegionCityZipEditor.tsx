@@ -46,13 +46,17 @@ export function RegionCityZipEditor({
   const [isPending, startTransition] = useTransition();
   const debouncedSearch = useDebouncedValue(search, 250);
   const code = resolveStateCode(stateCode) ?? stateCode.toUpperCase().slice(0, 2);
+  const isZipSearch = /^\d{5}$/.test(debouncedSearch.trim());
 
   const selectedCities = useMemo(() => parseCommaList(cities), [cities]);
   const selectedZips = useMemo(() => parseCommaList(zipCodes), [zipCodes]);
 
   const citySearchQuery = useQuery({
-    queryKey: ["geo-cities", code, debouncedSearch],
-    queryFn: () => GeoZipService.searchCities(code, debouncedSearch, 50),
+    queryKey: ["geo-cities", code, debouncedSearch, isZipSearch],
+    queryFn: () =>
+      isZipSearch
+        ? GeoZipService.lookupCityByZip(code, debouncedSearch.trim())
+        : GeoZipService.searchCities(code, debouncedSearch, 50),
     staleTime: 60_000,
     retry: 1,
   });
@@ -89,6 +93,29 @@ export function RegionCityZipEditor({
     [code],
   );
 
+  useEffect(() => {
+    if (selectedCities.length === 0 || selectedZips.length > 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const fromDb = await GeoZipService.getZipsForCities(code, selectedCities);
+        const zips =
+          fromDb.length > 0 ? fromDb : mergeZipsForCities(code, selectedCities);
+        if (!cancelled && zips.length > 0) {
+          onZipCodesChange(formatCommaList(zips));
+        }
+      } catch {
+        const fallback = mergeZipsForCities(code, selectedCities);
+        if (!cancelled && fallback.length > 0) {
+          onZipCodesChange(formatCommaList(fallback));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [code, selectedCities, selectedZips.length, onZipCodesChange]);
+
   const addCity = (city: string) => {
     const normalized = normalizeCityName(city);
     if (
@@ -107,8 +134,9 @@ export function RegionCityZipEditor({
       void (async () => {
         try {
           const newZips = await resolveZipsForCity(normalized);
+          const currentZips = parseCommaList(zipCodes);
           onZipCodesChange(
-            formatCommaList(mergeUniqueZips(selectedZips, newZips)),
+            formatCommaList(mergeUniqueZips(currentZips, newZips)),
           );
         } catch {
           setActionError(`Could not load ZIP codes for ${normalized}.`);
@@ -177,7 +205,7 @@ export function RegionCityZipEditor({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search cities in this state…"
+            placeholder="Search cities or enter a 5-digit ZIP…"
             className="w-full pl-9 pr-3 py-2.5 bg-[#111111] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59] focus-visible:ring-2 focus-visible:ring-[#FF7A59]/40"
             aria-label="Search cities"
             aria-describedby="region-city-search-hint"

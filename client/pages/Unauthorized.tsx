@@ -5,17 +5,21 @@ import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
 
 export default function Unauthorized() {
   const navigate = useNavigate();
-  const { role } = useCurrentUserRole();
+  const { role, isLoading } = useCurrentUserRole();
 
   const handleReturn = () => {
+    if (isLoading) {
+      navigate("/login", { replace: true });
+      return;
+    }
     if (role === "family") {
-      navigate("/family-dashboard");
+      navigate("/family-dashboard", { replace: true });
     } else if (role === "chef") {
-      navigate("/chef-dashboard");
+      navigate("/chef-dashboard", { replace: true });
     } else if (role === "admin") {
-      navigate("/admin-dashboard");
+      navigate("/admin-dashboard", { replace: true });
     } else {
-      navigate("/");
+      navigate("/login", { replace: true });
     }
   };
 

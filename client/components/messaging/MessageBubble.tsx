@@ -37,8 +37,9 @@ export function MessageBubble({
   adminView = false,
   onModeratorDelete,
 }: MessageBubbleProps) {
-  const isOwn =
-    message.is_own && (!currentUserId || message.sender_id === currentUserId);
+  const isOwn = Boolean(
+    currentUserId && message.sender_id === currentUserId,
+  );
   const isFamilySender = Boolean(familyId && message.sender_id === familyId);
   const senderLabel = resolveSenderLabel(
     message,

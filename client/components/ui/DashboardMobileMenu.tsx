@@ -34,10 +34,15 @@ export function DashboardMobileMenu({
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    if (open) window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, onOpenChange]);
 
   return (
     <>
@@ -60,7 +65,7 @@ export function DashboardMobileMenu({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="md:hidden fixed inset-0 z-[180] bg-black/70 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 z-[280] bg-black/70 backdrop-blur-sm"
               onClick={() => onOpenChange(false)}
             />
             <motion.aside
@@ -68,7 +73,7 @@ export function DashboardMobileMenu({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="md:hidden fixed inset-y-0 left-0 z-[190] w-[min(88vw,320px)] bg-[#161616] border-r border-white/10 shadow-2xl flex flex-col safe-area-pt safe-area-pb"
+              className="md:hidden fixed inset-y-0 left-0 z-[290] w-[min(88vw,320px)] bg-[#161616] border-r border-white/10 shadow-2xl flex flex-col safe-area-pt safe-area-pb"
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
                 <span className="text-sm font-bold text-white">{title}</span>

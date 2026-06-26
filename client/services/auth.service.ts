@@ -12,6 +12,7 @@ import { isSupabaseAuthEnabled } from "@/services/featureFlags.service";
 import { ProfilesSupabaseService } from "@/services/supabase/profiles.service";
 import { NotificationService } from "@/services/notification.service";
 import { SecurityApi } from "@/lib/securityApi";
+import { clearClientSessionState } from "@/lib/auth/sessionCleanup";
 
 export type { AppUser };
 
@@ -140,15 +141,17 @@ const supabaseAuth = {
   },
 
   async login(email: string, password: string): Promise<AppUser> {
+    clearClientSessionState();
     const { user } = await SecurityApi.login(email, password);
     await NotificationService.syncUserNotifications(user.id).catch(() => {});
     return user;
   },
 
   async logout(): Promise<void> {
+    clearClientSessionState();
     const client = getSupabaseClient();
     if (client) {
-      await client.auth.signOut();
+      await client.auth.signOut({ scope: "global" });
     }
     setLegacyUser(null);
   },
@@ -215,6 +218,7 @@ export const AuthService = {
       await supabaseAuth.logout();
       return;
     }
+    clearClientSessionState();
     setLegacyUser(null);
   },
 

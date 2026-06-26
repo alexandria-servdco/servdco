@@ -4,7 +4,8 @@ import { SupabaseQueryError } from "./fallback";
 
 export const profileQueryKeys = {
   all: ["profiles"] as const,
-  own: () => [...profileQueryKeys.all, "own"] as const,
+  own: (userId?: string | null) =>
+    [...profileQueryKeys.all, "own", userId ?? "none"] as const,
   byId: (id: string) => [...profileQueryKeys.all, id] as const,
 };
 

@@ -95,8 +95,8 @@ export async function processRefund(
     title: status === "refunded" ? "Refund Completed" : "Partial Refund Issued",
     message:
       status === "refunded"
-        ? "Your booking payment has been fully refunded."
-        : `A partial refund of $${((refund.amount ?? 0) / 100).toFixed(2)} was issued.`,
+        ? "Your booking payment has been fully refunded. Funds typically appear on your card within 5–10 business days."
+        : `A partial refund of $${((refund.amount ?? 0) / 100).toFixed(2)} was issued. It may take 5–10 business days to appear on your statement.`,
     type: "info",
     metadata: {
       event: "refund_completed",

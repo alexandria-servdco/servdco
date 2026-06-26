@@ -1692,11 +1692,7 @@ export default function AdminDashboard({
               <>
                 {/* Stats cards */}
                 <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(5, 1fr)",
-                    gap: "16px",
-                  }}
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
                 >
                   <div
                     style={{
@@ -1923,12 +1919,7 @@ export default function AdminDashboard({
 
                 {/* Map Grid and Details Sidebar */}
                 <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "2.2fr 1fr",
-                    gap: "24px",
-                    alignItems: "start",
-                  }}
+                  className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] gap-6 items-start"
                 >
                   {/* Cartogram Visualizer Card */}
                   <div
@@ -2050,11 +2041,15 @@ export default function AdminDashboard({
                     </div>
 
                     <div
+                      className="overflow-x-auto servd-scrollbar -mx-1 px-1"
+                    >
+                    <div
                       style={{
                         display: "flex",
                         flexDirection: "column",
                         gap: "10px",
                         padding: "12px 0",
+                        minWidth: "min(100%, 520px)",
                       }}
                     >
                       {US_CARTOGRAM.map((row, rIdx) => (
@@ -2143,6 +2138,7 @@ export default function AdminDashboard({
                           })}
                         </div>
                       ))}
+                    </div>
                     </div>
                   </div>
 

@@ -168,7 +168,7 @@ export default function Dashboard() {
           zip: profileData.zip,
           dietary_preferences: profileData.dietary,
         });
-        await queryClient.invalidateQueries({ queryKey: profileQueryKeys.own() });
+        await queryClient.invalidateQueries({ queryKey: profileQueryKeys.all });
       }
 
       setProfileSuccess(true);

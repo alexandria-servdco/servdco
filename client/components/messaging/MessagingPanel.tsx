@@ -134,7 +134,9 @@ export function MessagingPanel({
   return (
     <div
       className={`velvet-card flex flex-col overflow-hidden ${
-        fullHeight ? "h-full min-h-[420px]" : "h-[420px]"
+        fullHeight
+          ? "h-full min-h-[min(70dvh,640px)] max-h-[calc(100dvh-10rem)] md:max-h-none"
+          : "h-[min(420px,65dvh)]"
       }`}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
@@ -213,7 +215,7 @@ export function MessagingPanel({
 
       <form
         onSubmit={handleSend}
-        className="px-4 py-3 border-t border-white/5 flex gap-2 items-center"
+        className="shrink-0 px-3 sm:px-4 py-3 border-t border-white/5 flex gap-2 items-center bg-[#161616]/95 safe-area-pb"
       >
         <input
           ref={fileInputRef}
@@ -225,13 +227,13 @@ export function MessagingPanel({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="text-[#A8A8A8] hover:text-[#FF7A59] p-2"
+          className="shrink-0 flex items-center justify-center w-11 h-11 rounded-xl text-[#A8A8A8] hover:text-[#FF7A59] hover:bg-white/5 touch-target"
           aria-label="Attach file"
         >
-          <Paperclip size={14} />
+          <Paperclip size={18} />
         </button>
         {pendingFile && (
-          <span className="text-[9px] text-[#FF7A59] truncate max-w-[80px]">
+          <span className="shrink-0 text-[9px] text-[#FF7A59] truncate max-w-[72px]">
             {pendingFile.name}
           </span>
         )}
@@ -246,15 +248,14 @@ export function MessagingPanel({
             }
           }}
           placeholder="Type a message..."
-          className="flex-1 px-3 py-2 bg-[#161616] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-[#FF7A59]"
+          className="flex-1 min-w-0 h-11 px-3 bg-[#161616] border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-[#FF7A59]"
         />
         <button
-          type="button"
+          type="submit"
           disabled={(!draft.trim() && !pendingFile) || sendMessage.isPending}
-          onClick={submitMessage}
-          className="px-4 py-2 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all"
+          className="shrink-0 h-11 min-w-[4.5rem] px-4 bg-[#FF7A59] hover:bg-[#e96a49] disabled:opacity-50 text-white font-bold rounded-xl text-xs whitespace-nowrap touch-target transition-all"
         >
-          {sendMessage.isPending ? "Sending…" : "Send"}
+          {sendMessage.isPending ? "…" : "Send"}
         </button>
       </form>
     </div>

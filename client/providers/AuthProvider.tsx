@@ -21,6 +21,7 @@ import {
   isRecoveryPending,
   markRecoveryPending,
 } from "@/lib/auth/passwordRecovery";
+import { clearClientSessionState } from "@/lib/auth/sessionCleanup";
 
 export interface AuthContextValue {
   session: Session | null;
@@ -117,6 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (event === "SIGNED_OUT") {
         setPasswordRecovery(false);
         clearRecoveryPending();
+        clearClientSessionState();
       }
       setSession(nextSession);
       setUser(nextSession?.user ?? null);

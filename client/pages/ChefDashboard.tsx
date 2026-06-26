@@ -476,7 +476,7 @@ export default function ChefDashboard() {
       full_name: profileData.name,
       avatar_url: profileData.avatarUrl || null,
     });
-    await queryClient.invalidateQueries({ queryKey: profileQueryKeys.own() });
+    await queryClient.invalidateQueries({ queryKey: profileQueryKeys.all });
     if (profile?.id) {
       await queryClient.invalidateQueries({
         queryKey: chefQueryKeys.byUserId(profile.id),

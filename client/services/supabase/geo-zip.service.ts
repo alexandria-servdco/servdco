@@ -13,6 +13,32 @@ export type GeoCitySearchResult = {
 };
 
 export const GeoZipService = {
+  async lookupCityByZip(stateCode: string, zip: string): Promise<GeoCitySearchResult[]> {
+    assertSupabaseConfigured();
+    const client = getSupabaseClient();
+    const code = stateCode.trim().toUpperCase().slice(0, 2);
+    const normalizedZip = zip.trim().slice(0, 5);
+    if (!/^\d{5}$/.test(normalizedZip)) return [];
+
+    if (client) {
+      const { data, error } = await client
+        .from("geo_city_zip_codes")
+        .select("city_name")
+        .eq("state_code", code)
+        .eq("zip_code", normalizedZip)
+        .limit(5);
+
+      if (!error && data && data.length > 0) {
+        const unique = [...new Set(data.map((r) => r.city_name))];
+        return unique.map((cityName) => ({ cityName, zipCount: 1 }));
+      }
+    }
+
+    const { findCityByZip } = await import("@/lib/zip-codes-by-city");
+    const city = findCityByZip(code, normalizedZip);
+    return city ? [{ cityName: city, zipCount: 1 }] : [];
+  },
+
   async searchCities(
     stateCode: string,
     query: string,

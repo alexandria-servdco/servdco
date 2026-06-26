@@ -128,15 +128,25 @@ export default function Index() {
         {/* Warm lighting glow in center */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#FF7A59]/5 blur-[130px] pointer-events-none z-0" />
 
-        {/* Hero Kitchen Image on Right (fades to left dark bg) */}
-        <div className="absolute top-0 right-0 w-full lg:w-[55%] h-[400px] lg:h-full z-0 opacity-15 lg:opacity-75 mt-16 lg:mt-0">
+        {/* Mobile: full-bleed hero behind navbar (desktop unchanged below) */}
+        <div className="absolute inset-0 z-0 lg:hidden" aria-hidden="true">
+          <img
+            src="/home-hero.png"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-[center_35%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/75 via-[#111111]/55 to-[#111111]" />
+        </div>
+
+        {/* Hero Kitchen Image on Right (fades to left dark bg) — desktop only */}
+        <div className="absolute top-0 right-0 w-full lg:w-[55%] h-full z-0 hidden lg:block opacity-75">
           {/* Radial center/left fade overlay */}
-          <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-[#111111] via-[#111111]/85 to-transparent z-10 w-[40%]" />
-          <div className="hidden lg:block absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent z-10 h-full" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#111111] via-[#111111]/85 to-transparent z-10 w-[40%]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent z-10 h-full" />
           <img
             src="/home-hero.png"
             alt="Cook preparing food in warm family kitchen"
-            className="w-full h-full object-cover object-right rounded-bl-[100px] lg:rounded-bl-[160px] shadow-2xl border-l border-b border-white/5"
+            className="w-full h-full object-cover object-right rounded-bl-[160px] shadow-2xl border-l border-b border-white/5"
           />
         </div>
 
@@ -149,7 +159,7 @@ export default function Index() {
               </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight font-serif text-white">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.05] tracking-tight font-serif text-white">
               Real food,
               <br />
               Cooked in

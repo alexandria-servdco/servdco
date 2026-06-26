@@ -80,9 +80,9 @@ export function MessagingHub({
         <p className="text-xs text-[#A8A8A8] mt-1">{subtitle}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[min(480px,70dvh)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[min(480px,70dvh)] lg:min-h-[min(560px,75dvh)]">
         <div
-          className={`velvet-card p-4 lg:col-span-1 flex flex-col ${
+          className={`velvet-card p-4 lg:col-span-1 flex flex-col min-h-[240px] ${
             activeId ? "hidden lg:flex" : ""
           }`}
         >
@@ -147,13 +147,19 @@ export function MessagingHub({
           </div>
         </div>
 
-        <div className={`lg:col-span-2 ${!activeId ? "hidden lg:block" : ""}`}>
+        <div
+          className={`lg:col-span-2 flex flex-col min-h-0 ${
+            !activeId ? "hidden lg:flex" : "fixed inset-0 z-[200] md:relative md:inset-auto md:z-auto bg-[#0E0E0E] md:bg-transparent p-0 md:p-0"
+          }`}
+        >
           {activeId ? (
+            <div className="flex flex-col h-full min-h-0 p-3 md:p-0 safe-area-pt safe-area-pb">
             <MessagingPanel
               conversationId={activeId}
               onClose={() => setActiveId(null)}
               fullHeight
             />
+            </div>
           ) : (
             <div className="velvet-card h-full min-h-[320px] lg:min-h-[420px] flex flex-col items-center justify-center text-center p-8">
               <MessageSquare size={40} className="text-[#FF7A59]/30 mb-4" />

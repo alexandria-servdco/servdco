@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/launch/auto-check",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 6 * * *"
     }
   ],
   "headers": [

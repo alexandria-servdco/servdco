@@ -117,7 +117,8 @@ flowchart TB
 | `platform_settings` | Platform config |
 | `feature_flags` | Platform config |
 | `geo_city_zip_codes` | Reference data |
-| `blog_posts` | Content |
+| `career_jobs` | Careers content (admin-managed) |
+| `career_applications` | Job applications (admin review) |
 | `interest_requests` | Anonymous leads |
 | `contact_messages` | Support inbox (no profile FK on submit) |
 | `stripe_events` | Webhook audit log |
@@ -135,7 +136,7 @@ flowchart TB
 | **Marketplace** | `bookings`, `booking_status_history`, `booking_addresses`, `reviews`, `favorites`, `notifications`, `chef_documents`, `chef_availability` |
 | **Messaging** | `conversations`, `messages`, `message_attachments` |
 | **Stripe** | `stripe_customers`, `stripe_accounts`, `payments`, `stripe_events`, `subscriptions`, `transfers`, `cook_payouts`, `tips`, `tip_events` |
-| **Launch/Ops** | `launch_regions`, `waitlist_signups`, `interest_requests`, `contact_messages`, `platform_settings`, `blog_posts`, `feature_flags` |
+| **Launch/Ops** | `launch_regions`, `waitlist_signups`, `interest_requests`, `contact_messages`, `platform_settings`, `career_jobs`, `career_applications`, `feature_flags` |
 | **Security** | `audit_logs`, `security_events` |
 | **Geo** | `geo_city_zip_codes` |
 | **Analytics** | `chef_profile_views` |

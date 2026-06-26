@@ -120,8 +120,9 @@ export function CareerApplicationForm({
         </div>
         <h3 className="text-2xl font-bold font-serif text-white">Application Received!</h3>
         <p className="text-xs text-[#A8A8A8] max-w-[320px] mx-auto leading-relaxed">
-          Thank you for your interest in Servd Co. Our team will review your application and
-          reach out if your experience is a strong match.
+          Thank you for your interest in Servd Co. A confirmation email is on its way.
+          Our team will review your application within 5–7 business days and reach out
+          if your experience is a strong match.
         </p>
       </div>
     );

@@ -58,4 +58,16 @@ export const EmailService = {
       // Non-blocking
     }
   },
+
+  async sendCareerApplicationNotify(applicationId: string): Promise<void> {
+    try {
+      await fetch("/api/careers/application-notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicationId }),
+      });
+    } catch (err) {
+      console.warn("[email] career application notify failed", err);
+    }
+  },
 };

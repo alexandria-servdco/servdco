@@ -8,6 +8,7 @@ export type RateLimitPolicyKey =
   | "booking_create"
   | "review_submit"
   | "email_event"
+  | "careers_notify"
   | "stripe_default";
 
 export type RateLimitPolicy = {
@@ -30,5 +31,6 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitPolicyKey, RateLimitPolicy> = 
   booking_create: { prefix: "rl:booking", limit: 10, window: "1 h", scope: "user" },
   review_submit: { prefix: "rl:review", limit: 5, window: "1 d", scope: "user" },
   email_event: { prefix: "rl:email", limit: 20, window: "1 m", scope: "ip" },
+  careers_notify: { prefix: "rl:careers", limit: 10, window: "1 h", scope: "ip" },
   stripe_default: { prefix: "rl:stripe", limit: 30, window: "1 m", scope: "ip" },
 };

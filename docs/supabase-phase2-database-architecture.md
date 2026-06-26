@@ -86,19 +86,18 @@ erDiagram
   interest_requests
   contact_messages
   platform_settings
-  blog_posts
+  career_jobs ||--o{ career_applications : receives
 
-  launch_regions {
-    text id PK
-    boolean is_active
-    int chef_count
-    int family_count
+  career_jobs {
+    uuid id PK
+    career_job_status status
+    timestamptz published_at
   }
 
-  blog_posts {
+  career_applications {
     uuid id PK
-    text slug UQ
-    boolean published
+    uuid job_id FK
+    career_application_status status
   }
 ```
 
@@ -159,7 +158,10 @@ erDiagram
 | `subscriptions` | Stripe Phase 3 | Cook premium billing |
 | `conversations` | Messaging Phase 4+ | Per booking/thread |
 | `messages` | Messaging Phase 4+ | In-app chat |
-| `blog_posts` | Content | Public published posts |
+| `career_jobs` | Careers (launch) | Admin-managed job postings |
+| `career_applications` | Careers (launch) | Public applications + admin pipeline |
+
+**Removed:** `blog_posts` (dropped in migration `20250627100000_production_launch_cleanup.sql`)
 
 ---
 
@@ -173,7 +175,7 @@ Migrations live in `supabase/migrations/` and must be applied in order:
 | `20250605120001_02_helper_functions.sql` | RLS helpers, `updated_at` trigger, `handle_new_user` stub |
 | `20250605120002_03_core_profiles.sql` | `profiles`, `chef_profiles`, `chef_portfolio_images` |
 | `20250605120003_04_marketplace_tables.sql` | Bookings, reviews, favorites, notifications, docs, availability |
-| `20250605120004_05_launch_ops_tables.sql` | Regions, waitlist, interest, contact, settings, blog |
+| `20250605120004_05_launch_ops_tables.sql` | Regions, waitlist, interest, contact, settings (blog removed in `20250627100000`) |
 | `20250605120005_06_stripe_future_tables.sql` | Payments, Stripe tables, subscriptions |
 | `20250605120006_07_messaging_future.sql` | Conversations, messages |
 | `20250605120007_08_indexes.sql` | Performance indexes |
@@ -388,7 +390,8 @@ Use `supabase storage cp` or custom migration script — no hardcoded bucket URL
 | `interest_requests` | insert | insert | insert | read |
 | `contact_messages` | insert | insert | insert | all |
 | `platform_settings` | fee keys | fee keys | fee keys | all |
-| `blog_posts` | published | published | published | all |
+| `career_jobs` | published | published | published | all |
+| `career_applications` | insert | insert | insert | all |
 | `payments` | — | own | own | all |
 | `stripe_events` | — | — | — | read (write: service role) |
 
@@ -410,7 +413,7 @@ Only these are readable without authentication:
 2. Public portfolio images for public cooks
 3. Public availability for public cooks
 4. Reviews on public cook profiles
-5. Published `blog_posts`
+5. Published `career_jobs` (status = published)
 6. `launch_regions` (waitlist UI)
 7. Public `platform_settings` keys (fee display)
 

@@ -1,13 +1,8 @@
 {
-  "timestamp": "2026-06-26T15:26:49.706Z",
+  "timestamp": "2026-06-26T15:37:46.607Z",
   "totalAppliedInDb": 39,
-  "appliedThisRun": [
-    {
-      "version": "20250627100000",
-      "file": "20250627100000_production_launch_cleanup.sql"
-    }
-  ],
-  "skippedCount": 38,
+  "appliedThisRun": [],
+  "skippedCount": 39,
   "failed": [],
   "latestVersions": [
     "20250620143000",

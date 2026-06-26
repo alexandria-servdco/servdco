@@ -249,31 +249,18 @@ No new Express/Vercel API routes. Careers and notification preferences use Supab
 
 ## Remaining technical debt
 
-1. **Career application email confirmation** — not wired; applications stored in DB only (add Resend template when ready)
-2. **Review notification category** — DB helper supports `review_notifications`; review triggers may still use default category (verify if review-specific notifications exist)
-3. **Admin invite flow** — informational only; invites via Supabase Auth / internal ops
-4. **Architecture docs** — `docs/servdco-master-architecture.md` and related docs still mention `blog_posts` (documentation drift, not runtime)
-5. **Dev seed scripts** — `pnpm seed:dev-chefs` retained for ops; not bundled in production
-6. **Local mock auth fallback** — `auth.service.ts` mock paths for non-Supabase local dev; disabled when `VITE_USE_SUPABASE_AUTH=true`
+1. **Supabase CLI typegen on Windows** — requires Docker or `SUPABASE_ACCESS_TOKEN` for full regeneration; `scripts/regenerate-database-types.mjs` validates live schema against committed types
+2. **Review notification category** — verify review triggers use `review` preference category if review-specific notifications exist
+3. **Admin invites** — informational only; invites via Supabase Auth / internal ops
+4. **Dev seed scripts** — retained for ops; not bundled in production
 
 ---
 
-## Recommended future improvements
+## Careers application emails (pre-launch completion)
 
-1. Email confirmation on career application submit (Resend)
-2. Admin careers: export applicants CSV
-3. Regenerate `database.types.ts` from Supabase CLI after migration
-4. Update architecture docs to reflect careers + notification preferences schema
-5. Wire review-created notifications to `review` preference category explicitly
+| Event | Route | Trigger |
+|-------|-------|---------|
+| Applicant confirmation | `POST /api/careers/application-notify` | After `CareersSupabaseService.submitApplication` |
+| Admin notification | Same route | Resend to `ADMIN_NOTIFY_EMAIL` + in-app admin notification |
 
----
-
-## Migration apply
-
-Run against linked Supabase project:
-
-```bash
-node scripts/run-pending-migrations.mjs
-```
-
-Requires `SUPABASE_DB_URL` in `.env.local`.
+Templates: `api/_lib/email/careerApplicationEmails.ts` (branded via `brandedTemplate.ts`)

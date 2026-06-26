@@ -62,9 +62,30 @@ Last updated: Phase 12A + MVP Final Audit.
 
 ---
 
-## 4. Tables Created (25 public)
+## 4. Tables Created (public core)
 
-`audit_logs`, `blog_posts`, `booking_status_history`, `bookings`, `chef_availability`, `chef_documents`, `chef_portfolio_images`, `chef_profiles`, `contact_messages`, `conversations`, `favorites`, `feature_flags`, `interest_requests`, `launch_regions`, `messages`, `notifications`, `payments`, `platform_settings`, `profiles`, `reviews`, `stripe_accounts`, `stripe_customers`, `stripe_events`, `subscriptions`, `waitlist_signups`
+`audit_logs`, `booking_status_history`, `bookings`, `career_applications`, `career_jobs`, `chef_availability`, `chef_documents`, `chef_portfolio_images`, `chef_profiles`, `contact_messages`, `conversations`, `favorites`, `feature_flags`, `interest_requests`, `launch_regions`, `messages`, `notifications`, `payments`, `platform_settings`, `profiles`, `reviews`, `stripe_accounts`, `stripe_customers`, `stripe_events`, `subscriptions`, `waitlist_signups`
+
+**Removed (production launch cleanup):** `blog_posts`
+
+### Careers (`career_jobs`, `career_applications`)
+
+- Admin CRUD via `CareersPanel` → `CareersSupabaseService`
+- Public routes: `/careers`, `/careers/:jobId`, `/careers/apply`
+- Resume storage: private bucket `career-resumes`
+- Application emails: `POST /api/careers/application-notify` (Resend — applicant confirmation + admin alert)
+
+### Cook Verification Queue
+
+- Admin `VerificationCenter` — real `chef_documents` only (no third-party Checkr integration)
+- Actions: approve, reject, request resubmission, notes, document preview
+- Notifications respect `verification_notifications` preference
+
+### Notification preferences (`profiles.notification_preferences`)
+
+JSONB keys: `booking_notifications`, `message_notifications`, `review_notifications`, `verification_notifications`, `marketing_emails`, `announcement_emails`
+
+Enforced by `user_allows_notification()` in DB triggers and `insert_booking_notification()`.
 
 ---
 
@@ -89,6 +110,7 @@ RLS forced on: `profiles`, `chef_profiles`, `bookings`, `payments`, `stripe_even
 | `avatars` | Yes | Profile photos — `{user_id}/{file}` |
 | `cook-portfolio` | Yes | Cook gallery — `{chef_profile_id}/{file}` |
 | `cook-documents` | No | Verification docs — `{chef_profile_id}/{type}/{file}` |
+| `career-resumes` | No | Job applications — `applications/{application_id}/resume.*` |
 
 ---
 
@@ -96,7 +118,7 @@ RLS forced on: `profiles`, `chef_profiles`, `bookings`, `payments`, `stripe_even
 
 ### Functions (public)
 
-`get_auth_uid`, `get_user_role`, `is_admin`, `is_family`, `is_chef`, `owns_chef_profile`, `is_public_chef_profile`, `set_updated_at`, `handle_new_user`, `write_audit_log`
+`get_auth_uid`, `get_user_role`, `is_admin`, `is_family`, `is_chef`, `owns_chef_profile`, `is_public_chef_profile`, `set_updated_at`, `handle_new_user`, `write_audit_log`, `user_allows_notification`, `insert_booking_notification`
 
 ### Auth trigger (Phase 4)
 
@@ -268,7 +290,7 @@ erDiagram
 | `family` | Own profile, bookings, favorites, notifications |
 | `chef` | Own cook profile, docs, availability, assigned bookings |
 | `admin` | Full access via `is_admin()` — **manual assignment only** |
-| `anon` | Public cooks, portfolio, published blog, region list, feature_flags read, insert waitlist/contact/interest |
+| `anon` | Public cooks, portfolio, published careers jobs, region list, feature_flags read, insert waitlist/contact/interest/career applications |
 
 **Service role (Vercel only):** Stripe webhooks, system notifications, audit writes, admin bulk ops.
 

@@ -5,6 +5,7 @@ import type {
   CareerJob,
   CareerJobStatus,
 } from "@shared/careers";
+import { EmailService } from "@/services/email.service";
 import { SupabaseQueryError } from "./fallback";
 
 export const careersQueryKeys = {
@@ -226,9 +227,11 @@ export const CareersSupabaseService = {
         .single();
 
       if (updateError) throw new SupabaseQueryError(updateError.message, updateError);
+      void EmailService.sendCareerApplicationNotify(row.id);
       return mapApplication(updated as never);
     }
 
+    void EmailService.sendCareerApplicationNotify(row.id);
     return mapApplication(row as never);
   },
 

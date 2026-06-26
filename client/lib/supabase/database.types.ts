@@ -1344,6 +1344,10 @@ export type Database = {
         Args: { p_state_code: string; p_cities: string[] };
         Returns: string[];
       };
+      user_allows_notification: {
+        Args: { p_user_id: string; p_category: string };
+        Returns: boolean;
+      };
     };
     Enums: {
       account_status: "active" | "suspended" | "pending";

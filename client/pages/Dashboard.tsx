@@ -44,6 +44,38 @@ import { NotificationSettingsForm } from "@/components/settings/NotificationSett
 import { CompletedBookingHistoryRow } from "@/components/reviews/CompletedBookingHistoryRow";
 import { toast } from "sonner";
 
+const DIETARY_PRESETS = [
+  "Keto",
+  "Vegan",
+  "Gluten-Free",
+  "Low-Carb",
+  "Organic",
+  "Halal",
+] as const;
+
+function splitDietaryPreferences(prefs: string[] | null | undefined) {
+  const list = prefs ?? [];
+  return {
+    presets: list.filter((d) =>
+      DIETARY_PRESETS.includes(d as (typeof DIETARY_PRESETS)[number]),
+    ),
+    other: list
+      .filter(
+        (d) =>
+          !DIETARY_PRESETS.includes(d as (typeof DIETARY_PRESETS)[number]),
+      )
+      .join(", "),
+  };
+}
+
+function mergeDietaryPreferences(presets: string[], other: string): string[] {
+  const custom = other
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [...presets, ...custom];
+}
+
 export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,7 +108,8 @@ export default function Dashboard() {
     city: "",
     state: "Ohio",
     zip: "",
-    dietary: [] as string[]
+    dietary: [] as string[],
+    dietaryOther: "",
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
@@ -86,7 +119,8 @@ export default function Dashboard() {
     state: profile?.state ?? profileData.state,
     zip: profile?.zip ?? profileData.zip,
     email_verified: Boolean(user?.email_confirmed_at),
-    dietary_preferences: profile?.dietary_preferences ?? profileData.dietary,
+    dietary_preferences: profile?.dietary_preferences ??
+      mergeDietaryPreferences(profileData.dietary, profileData.dietaryOther),
   });
   const profileProgress = familyCompletionDetail.percent;
   const profileProgressLabel = profileCompletionLabel(profileProgress);
@@ -110,6 +144,7 @@ export default function Dashboard() {
       state: profile.state,
       zip: profile.zip,
     });
+    const dietarySplit = splitDietaryPreferences(profile.dietary_preferences);
     setProfileData({
       name: profile.full_name || "",
       email: profile.email || "",
@@ -117,7 +152,8 @@ export default function Dashboard() {
       city: profile.city || "",
       state: profile.state || "Ohio",
       zip: profile.zip || "",
-      dietary: profile.dietary_preferences ?? [],
+      dietary: dietarySplit.presets,
+      dietaryOther: dietarySplit.other,
     });
 
     const fetchData = async () => {
@@ -161,7 +197,10 @@ export default function Dashboard() {
           city: profileData.city,
           state: profileData.state,
           zip: profileData.zip,
-          dietary_preferences: profileData.dietary,
+          dietary_preferences: mergeDietaryPreferences(
+            profileData.dietary,
+            profileData.dietaryOther,
+          ),
         });
         await queryClient.invalidateQueries({ queryKey: profileQueryKeys.all });
       }
@@ -649,7 +688,7 @@ export default function Dashboard() {
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Dietary Preferences</h4>
                 <div className="flex flex-wrap gap-2">
-                  {["Keto", "Vegan", "Gluten-Free", "Low-Carb", "Organic", "Halal"].map((diet) => {
+                  {DIETARY_PRESETS.map((diet) => {
                     const active = profileData.dietary.includes(diet);
                     return (
                       <button
@@ -666,6 +705,27 @@ export default function Dashboard() {
                       </button>
                     );
                   })}
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <label
+                    htmlFor="dietary-other"
+                    className="block text-[10px] font-bold text-[#A8A8A8] uppercase tracking-wider"
+                  >
+                    Other (type anything else)
+                  </label>
+                  <textarea
+                    id="dietary-other"
+                    value={profileData.dietaryOther}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, dietaryOther: e.target.value })
+                    }
+                    rows={2}
+                    placeholder="e.g. nut allergy, low sodium, kosher, picky eaters…"
+                    className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white placeholder:text-[#6B6B6B] focus:outline-none focus:border-[#FF7A59]"
+                  />
+                  <p className="text-[10px] text-[#6B6B6B]">
+                    Separate multiple items with commas.
+                  </p>
                 </div>
               </div>
 

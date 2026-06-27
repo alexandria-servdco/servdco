@@ -321,7 +321,10 @@ export function mapThrownError(err: unknown): UserFacingError {
     /^[A-Za-z]/.test(err.message) &&
     !message.includes("pgrst") &&
     !message.includes("jwt") &&
-    !message.includes("failed to fetch")
+    !message.includes("failed to fetch") &&
+    !message.includes("function public.") &&
+    !message.includes("is not unique") &&
+    !message.includes("violates ")
   ) {
     return getUserError("VALIDATION_ERROR", { message: err.message });
   }

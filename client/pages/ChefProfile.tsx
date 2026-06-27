@@ -66,6 +66,7 @@ export default function ChefProfile() {
   const [zip, setZip] = useState("");
   const [locationNotes, setLocationNotes] = useState("");
   const [specialInstructions, setSpecialInstructions] = useState("");
+  const [otherRequests, setOtherRequests] = useState("");
   const [allergies, setAllergies] = useState("");
   const [dietaryRestrictions, setDietaryRestrictions] = useState("");
   const [mealRequest, setMealRequest] = useState("");
@@ -144,7 +145,10 @@ export default function ChefProfile() {
       ingredients_available: ingredientsAvailable.trim() || undefined,
       recipe_notes: recipeNotes.trim() || undefined,
       family_platform_fee_dollars: familyPlatformFee,
-      special_instructions: specialInstructions || undefined,
+      special_instructions: [specialInstructions, otherRequests]
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join("\n\n") || undefined,
       allergies: allergies || undefined,
       dietary_restrictions: dietaryRestrictions
         ? dietaryRestrictions
@@ -693,6 +697,19 @@ export default function ChefProfile() {
                           </button>
                         </div>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1.5">
+                        Anything else you need? (optional)
+                      </label>
+                      <textarea
+                        value={otherRequests}
+                        onChange={(e) => setOtherRequests(e.target.value)}
+                        rows={2}
+                        placeholder="Equipment on site, timing preferences, anything not covered above…"
+                        className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/5 rounded-xl text-xs text-white placeholder:text-[#6B6B6B] focus:outline-none focus:border-[#FF7A59]"
+                      />
                     </div>
 
                     {/* Total cost and breakout */}

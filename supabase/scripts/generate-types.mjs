@@ -53,6 +53,13 @@ function mapType(udtName, dataType, isNullable) {
   return isNullable === "YES" ? `${t} | null` : t;
 }
 
+function isInsertOptional(col) {
+  if (col.column_name === "id") return true;
+  if (col.is_nullable === "YES") return true;
+  if (col.column_default != null && col.column_default !== "") return true;
+  return false;
+}
+
 const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } });
 
 try {
@@ -74,7 +81,7 @@ try {
   }
 
   const { rows: columns } = await client.query(`
-    SELECT table_name, column_name, data_type, udt_name, is_nullable
+    SELECT table_name, column_name, data_type, udt_name, is_nullable, column_default
     FROM information_schema.columns
     WHERE table_schema = 'public'
     ORDER BY table_name, ordinal_position
@@ -115,7 +122,7 @@ ${rowType}
         Insert: {
 ${cols.map((c) => {
   const t = mapType(c.udt_name, c.data_type, "YES");
-  const optional = c.is_nullable === "YES" || c.column_name === "id" ? "?" : "";
+  const optional = isInsertOptional(c) ? "?" : "";
   return `          ${c.column_name}${optional}: ${t}`;
 }).join("\n")}
         };
@@ -137,6 +144,22 @@ ${cols.map((c) => `          ${c.column_name}?: ${mapType(c.udt_name, c.data_typ
       is_chef: { Args: Record<string, never>; Returns: boolean };
       owns_chef_profile: { Args: { p_chef_profile_id: string }; Returns: boolean };
       is_public_chef_profile: { Args: { p_chef_profile_id: string }; Returns: boolean };
+      search_geo_cities: {
+        Args: { p_state_code: string; p_query?: string; p_limit?: number };
+        Returns: { city_name: string; zip_count: number }[];
+      };
+      geo_zips_for_cities: {
+        Args: { p_state_code: string; p_cities: string[] };
+        Returns: string[];
+      };
+      geo_primary_location_for_zip: {
+        Args: { p_zip: string };
+        Returns: { city: string; state: string; state_code: string }[];
+      };
+      user_allows_notification: {
+        Args: { p_user_id: string; p_category: string };
+        Returns: boolean;
+      };
     };
     Enums: {
 `;

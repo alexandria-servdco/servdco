@@ -41,6 +41,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { handleLaunchAutoCheck } = await import("../_lib/handlers/launchLifecycle.js");
         return handleLaunchAutoCheck(req, res);
       }
+      case "location-reverse": {
+        const { handleLocationReverse } = await import(
+          "../_lib/handlers/locationReverse.js"
+        );
+        return handleLocationReverse(req, res);
+      }
+      case "location-update": {
+        const { handleLocationUpdate } = await import(
+          "../_lib/handlers/locationUpdate.js"
+        );
+        return handleLocationUpdate(req, res);
+      }
       default:
         return res.status(404).json({ error: "Unknown platform action." });
     }

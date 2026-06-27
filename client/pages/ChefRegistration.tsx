@@ -26,6 +26,9 @@ import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationMod
 import { chefRegisterCoreSchema, safeParse } from "@shared/validation";
 import { trackEvent } from "@/lib/analytics";
 import { StateCitySelect, validateStateCityZip } from "@/components/ui/StateCitySelect";
+import { LocationPicker } from "@/components/location/LocationPicker";
+import { BrandSelect } from "@/components/ui/BrandSelect";
+import { SERVICE_RADIUS_OPTIONS, type LocationFormValue, type ServiceRadiusMiles } from "@shared/location";
 import {
   PasswordStrengthMeter,
   evaluatePassword,
@@ -92,6 +95,16 @@ export default function ChefRegistration() {
     bio: "",
     serviceTypes: [] as string[],
   });
+  const [location, setLocation] = useState<LocationFormValue>({
+    state: "Ohio",
+    city: "",
+    zip: "",
+    country: "US",
+    latitude: null,
+    longitude: null,
+    locationSource: "manual",
+  });
+  const [serviceRadiusMiles, setServiceRadiusMiles] = useState<ServiceRadiusMiles | null>(null);
 
   const clearFieldError = (key: string) => {
     setFieldErrors((prev) => {
@@ -111,9 +124,9 @@ export default function ChefRegistration() {
       const parsed = safeParse(chefRegisterCoreSchema, {
         name: formData.fullName,
         email: formData.email,
-        state: formData.state,
-        city: formData.city,
-        zip: formData.zip,
+        state: location.state,
+        city: location.city,
+        zip: location.zip,
         phone: formData.phone,
       });
       if (parsed.success === false) {
@@ -150,9 +163,9 @@ export default function ChefRegistration() {
       }
 
       const locationError = validateStateCityZip(
-        formData.state,
-        formData.city,
-        formData.zip,
+        location.state,
+        location.city,
+        location.zip,
       );
       if (locationError) {
         setError(locationError);
@@ -194,9 +207,9 @@ export default function ChefRegistration() {
           password: formData.password || undefined,
           phone: formData.phone,
           role: "chef",
-          state: formData.state,
-          city: formData.city,
-          zip: formData.zip,
+          state: location.state,
+          city: location.city,
+          zip: location.zip,
           yearsExperience: formData.yearsExperience,
           primaryCuisine: formData.primaryCuisine,
           bio: formData.bio,
@@ -204,6 +217,11 @@ export default function ChefRegistration() {
           acceptTerms: true,
           acceptPrivacy: true,
           marketingOptIn,
+          country: location.country,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          locationSource: location.locationSource === "gps" ? "gps" : "manual",
+          serviceRadiusMiles,
         });
 
         if (!result.needsEmailConfirmation) {
@@ -441,44 +459,38 @@ export default function ChefRegistration() {
                           : undefined)
                       }
                     />
-                    <FormInput
-                      type="text"
-                      label="ZIP Code"
-                      id="zip"
-                      inputMode="numeric"
-                      autoComplete="postal-code"
-                      value={formData.zip}
-                      onChange={(e) => {
-                        clearFieldError("zip");
-                        setFormData({
-                          ...formData,
-                          zip: e.target.value.replace(/\D/g, "").slice(0, 5),
-                        });
-                      }}
-                      icon={<MapPin size={16} />}
-                      required
-                      error={
-                        fieldErrors.zip ||
-                        (formData.zip && !/^\d{5}$/.test(formData.zip)
-                          ? "Enter a valid 5-digit ZIP code."
-                          : undefined)
-                      }
-                    />
                   </div>
 
                   <PasswordStrengthMeter password={formData.password} />
 
-                  <StateCitySelect
-                    state={formData.state}
-                    city={formData.city}
-                    zip={formData.zip}
-                    onStateChange={(state) =>
-                      setFormData((prev) => ({ ...prev, state, city: "" }))
-                    }
-                    onCityChange={(city) =>
-                      setFormData((prev) => ({ ...prev, city }))
-                    }
+                  <LocationPicker
+                    value={location}
+                    onChange={setLocation}
+                    stateError={fieldErrors.state}
+                    cityError={fieldErrors.city}
+                    zipError={fieldErrors.zip}
                   />
+
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-[#FF7A59] uppercase tracking-wider">
+                      Service radius (optional)
+                    </label>
+                    <BrandSelect
+                      value={serviceRadiusMiles ? String(serviceRadiusMiles) : "none"}
+                      onValueChange={(v) =>
+                        setServiceRadiusMiles(
+                          v === "none" ? null : (Number(v) as ServiceRadiusMiles),
+                        )
+                      }
+                      options={[
+                        { value: "none", label: "Not set" },
+                        ...SERVICE_RADIUS_OPTIONS.map((m) => ({
+                          value: String(m),
+                          label: `${m} miles`,
+                        })),
+                      ]}
+                    />
+                  </div>
 
                   <div className="p-4 bg-[#FF7A59]/5 rounded-2xl flex gap-3.5 border border-[#FF7A59]/10">
                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 text-[#FF7A59] shadow-sm">
@@ -587,7 +599,7 @@ export default function ChefRegistration() {
                     </p>
                     <p>
                       <span className="text-white font-semibold">Location:</span>{" "}
-                      {formData.city}, {formData.state} {formData.zip}
+                      {location.city}, {location.state} {location.zip}
                     </p>
                     <p>
                       <span className="text-white font-semibold">Experience:</span>{" "}

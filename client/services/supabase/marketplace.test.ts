@@ -47,6 +47,7 @@ describe("chef marketplace mapper", () => {
         verification_rejection_reason: null,
         verification_rejected_at: null,
         suspension_reason: null,
+        service_radius_miles: null,
       },
       [
         {

@@ -94,6 +94,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsPremiumChef } from "@/hooks/useSubscription";
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { NotificationSettingsForm } from "@/components/settings/NotificationSettingsForm";
+import { LocationSettingsPanel } from "@/components/location/LocationSettingsPanel";
+import {
+  LocationPromptBanner,
+  shouldShowLocationPrompt,
+} from "@/components/location/LocationPromptBanner";
+import type { LocationFormValue, ServiceRadiusMiles } from "@shared/location";
 import { toast } from "sonner";
 import { StripeService } from "@/services/stripe.service";
 import { useOwnDocuments, useSubmitChefDocuments } from "@/hooks/useOwnDocuments";
@@ -824,9 +830,10 @@ export default function ChefDashboard() {
               <DashboardWidgetSkeleton />
             </div>
           ) : currentTab === "dashboard" ? (
-            /* Dashboard Overview */
             <>
-              {/* StatCards Strip */}
+              {profile && userId && shouldShowLocationPrompt(profile) && (
+                <LocationPromptBanner userId={userId} />
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatItem
                   icon={Users}
@@ -1563,7 +1570,27 @@ export default function ChefDashboard() {
             </div>
           ) : (
             /* Settings */
-            <div className="max-w-2xl velvet-card p-8 space-y-8">
+            <div className="max-w-2xl space-y-8">
+              <LocationSettingsPanel
+                role="chef"
+                initial={{
+                  state: profile?.state ?? "",
+                  city: profile?.city ?? "",
+                  zip: profile?.zip ?? "",
+                  country: profile?.country ?? "US",
+                  latitude: profile?.latitude ?? null,
+                  longitude: profile?.longitude ?? null,
+                  locationSource:
+                    (profile?.location_source as LocationFormValue["locationSource"]) ??
+                    "legacy",
+                }}
+                serviceRadiusMiles={
+                  ((ownChefProfile as { service_radius_miles?: number | null } | undefined)
+                    ?.service_radius_miles ?? null) as ServiceRadiusMiles | null
+                }
+              />
+
+            <div className="velvet-card p-8 space-y-8">
               <h3 className="text-xl font-bold text-white font-serif">
                 Account Preferences
               </h3>
@@ -1631,6 +1658,7 @@ export default function ChefDashboard() {
                   Delete Profile
                 </button>
               </div>
+            </div>
             </div>
           )}
         </div>

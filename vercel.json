@@ -79,6 +79,14 @@
       "destination": "/api/platform/launch-auto-check"
     },
     {
+      "source": "/api/location/reverse",
+      "destination": "/api/platform/location-reverse"
+    },
+    {
+      "source": "/api/location/update",
+      "destination": "/api/platform/location-update"
+    },
+    {
       "source": "/((?!api).*)",
       "destination": "/index.html"
     }

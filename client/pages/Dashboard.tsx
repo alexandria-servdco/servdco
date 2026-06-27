@@ -41,6 +41,12 @@ import {
 import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
 import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
 import { NotificationSettingsForm } from "@/components/settings/NotificationSettingsForm";
+import { LocationSettingsPanel } from "@/components/location/LocationSettingsPanel";
+import {
+  LocationPromptBanner,
+  shouldShowLocationPrompt,
+} from "@/components/location/LocationPromptBanner";
+import type { LocationFormValue } from "@shared/location";
 import { CompletedBookingHistoryRow } from "@/components/reviews/CompletedBookingHistoryRow";
 import { toast } from "sonner";
 
@@ -340,8 +346,10 @@ export default function Dashboard() {
               <DashboardWidgetSkeleton />
             </div>
           ) : currentTab === "dashboard" ? (
-            /* Tab 1: Dashboard Overview */
             <>
+              {profile && userId && shouldShowLocationPrompt(profile) && (
+                <LocationPromptBanner userId={userId} />
+              )}
               <div className="grid grid-cols-1 gap-8">
                 {/* Upcoming Bookings Block */}
                 <div className="velvet-card p-8 flex flex-col justify-between">
@@ -741,7 +749,23 @@ export default function Dashboard() {
             </form>
           ) : (
             /* Tab 6: Settings */
-            <div className="max-w-2xl velvet-card p-8 space-y-8">
+            <div className="max-w-2xl space-y-8">
+              <LocationSettingsPanel
+                role="family"
+                initial={{
+                  state: profile?.state ?? "",
+                  city: profile?.city ?? "",
+                  zip: profile?.zip ?? "",
+                  country: profile?.country ?? "US",
+                  latitude: profile?.latitude ?? null,
+                  longitude: profile?.longitude ?? null,
+                  locationSource:
+                    (profile?.location_source as LocationFormValue["locationSource"]) ??
+                    "legacy",
+                }}
+              />
+
+              <div className="velvet-card p-8 space-y-8">
               <h3 className="text-xl font-bold text-white font-serif">Account Settings</h3>
 
               <NotificationSettingsForm profile={profile} />
@@ -782,6 +806,7 @@ export default function Dashboard() {
                 >
                   Delete Account
                 </button>
+              </div>
               </div>
             </div>
           )}

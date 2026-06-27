@@ -574,6 +574,7 @@ export type Database = {
           verification_rejection_reason: string | null
           verification_rejected_at: string | null
           suspension_reason: string | null
+          service_radius_miles: number | null
         };
         Insert: {
           id?: string | null
@@ -602,6 +603,7 @@ export type Database = {
           verification_rejection_reason?: string | null
           verification_rejected_at?: string | null
           suspension_reason?: string | null
+          service_radius_miles?: number | null
         };
         Update: {
           id?: string | null
@@ -630,6 +632,7 @@ export type Database = {
           verification_rejection_reason?: string | null
           verification_rejected_at?: string | null
           suspension_reason?: string | null
+          service_radius_miles?: number | null
         };
         Relationships: [];
       };
@@ -1047,6 +1050,11 @@ export type Database = {
           marketing_opt_in: boolean
           cookie_preferences: Json
           account_restore_requested_at: string | null
+          country: string
+          latitude: number | null
+          longitude: number | null
+          location_source: string | null
+          last_location_update: string | null
         };
         Insert: {
           id?: string | null
@@ -1077,6 +1085,11 @@ export type Database = {
           marketing_opt_in?: boolean | null
           cookie_preferences?: Json | null
           account_restore_requested_at?: string | null
+          country?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          location_source?: string | null
+          last_location_update?: string | null
         };
         Update: {
           id?: string | null
@@ -1107,6 +1120,11 @@ export type Database = {
           marketing_opt_in?: boolean | null
           cookie_preferences?: Json | null
           account_restore_requested_at?: string | null
+          country?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          location_source?: string | null
+          last_location_update?: string | null
         };
         Relationships: [];
       };

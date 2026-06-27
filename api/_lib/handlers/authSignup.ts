@@ -17,6 +17,7 @@ import { sendSignupConfirmationEmail } from "../email/signupConfirmation.js";
 import { redactForLog } from "../sanitizeLog.js";
 import { sendUserError } from "../userErrors.js";
 import { ensureUserProfile } from "../auth/ensureProfile.js";
+import { validateLocationFields } from "../location/reverseGeocode.js";
 import {
   isDuplicateSignupError,
   tryRecoverUnverifiedSignup,
@@ -45,6 +46,14 @@ const signupSchema = z.object({
   marketingOptIn: z.boolean().optional().default(false),
   termsVersion: z.string().trim().min(1).default(TERMS_VERSION),
   privacyVersion: z.string().trim().min(1).default(PRIVACY_VERSION),
+  country: z.string().trim().max(8).optional().default("US"),
+  latitude: z.number().finite().min(-90).max(90).nullable().optional(),
+  longitude: z.number().finite().min(-180).max(180).nullable().optional(),
+  locationSource: z.enum(["gps", "manual"]).optional(),
+  serviceRadiusMiles: z
+    .union([z.literal(5), z.literal(10), z.literal(20), z.literal(30), z.literal(50)])
+    .optional()
+    .nullable(),
 });
 
 async function evaluateSignupAccess(
@@ -203,6 +212,19 @@ export async function handleAuthSignup(
 
     const signup = parsed.data;
 
+    const normalizedZip = signup.zip.replace(/\D/g, "").slice(0, 5);
+    const locValidation = await validateLocationFields({
+      state: signup.state,
+      city: signup.city,
+      zip: normalizedZip,
+    });
+    if (!locValidation.valid) {
+      sendUserError(res, 400, "VALIDATION_ERROR", {
+        message: locValidation.message ?? "Invalid location.",
+      });
+      return;
+    }
+
     const access = await evaluateSignupAccess(signup);
     if (!access.allowed) {
       sendUserError(res, 403, "AUTHORIZATION_DENIED", {
@@ -338,8 +360,23 @@ export async function handleAuthSignup(
           accepted_privacy_version: signup.privacyVersion,
           accepted_privacy_at: acceptedAt,
           marketing_opt_in: signup.marketingOptIn ?? false,
+          country: signup.country ?? "US",
+          latitude: signup.latitude ?? null,
+          longitude: signup.longitude ?? null,
+          location_source: signup.locationSource ?? "manual",
+          last_location_update: acceptedAt,
         })
         .eq("id", userId);
+
+      if (signup.role === "chef" && signup.serviceRadiusMiles) {
+        await admin
+          .from("chef_profiles")
+          .update({
+            service_radius_miles: signup.serviceRadiusMiles,
+            updated_at: acceptedAt,
+          })
+          .eq("user_id", userId);
+      }
     }
 
     const status = access.status;

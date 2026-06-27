@@ -53,5 +53,10 @@ export function legacyUserToProfileRow(user: AppUser): ProfileRow {
     marketing_opt_in: false,
     cookie_preferences: {},
     account_restore_requested_at: null,
+    country: "US",
+    latitude: null,
+    longitude: null,
+    location_source: "legacy",
+    last_location_update: null,
   };
 }

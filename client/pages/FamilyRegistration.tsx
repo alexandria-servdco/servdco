@@ -12,6 +12,8 @@ import { SignupConfirmationModal } from "@/components/auth/SignupConfirmationMod
 import { familyRegisterCoreSchema, safeParse } from "@shared/validation";
 import { trackEvent } from "@/lib/analytics";
 import { StateCitySelect, validateStateCityZip } from "@/components/ui/StateCitySelect";
+import { LocationPicker } from "@/components/location/LocationPicker";
+import type { LocationFormValue } from "@shared/location";
 import {
   PasswordStrengthMeter,
   evaluatePassword,
@@ -64,6 +66,15 @@ export default function FamilyRegistration() {
     state: "Ohio",
     zip: ""
   });
+  const [location, setLocation] = useState<LocationFormValue>({
+    state: "Ohio",
+    city: "",
+    zip: "",
+    country: "US",
+    latitude: null,
+    longitude: null,
+    locationSource: "manual",
+  });
 
   const clearFieldError = (key: string) => {
     setFieldErrors((prev) => {
@@ -114,9 +125,9 @@ export default function FamilyRegistration() {
     const parsed = safeParse(familyRegisterCoreSchema, {
       name: formData.fullName,
       email: formData.email,
-      state: formData.state,
-      city: formData.city,
-      zip: formData.zip,
+      state: location.state,
+      city: location.city,
+      zip: location.zip,
       phone: formData.phone,
     });
     if (parsed.success === false) {
@@ -163,9 +174,9 @@ export default function FamilyRegistration() {
     }
 
     const locationError = validateStateCityZip(
-      formData.state,
-      formData.city,
-      formData.zip,
+      location.state,
+      location.city,
+      location.zip,
     );
     if (locationError) {
       showValidationError(locationError);
@@ -196,13 +207,17 @@ export default function FamilyRegistration() {
         password: formData.password || undefined,
         phone: formData.phone,
         role: "family",
-        state: formData.state,
-        city: formData.city,
-        zip: formData.zip,
+        state: location.state,
+        city: location.city,
+        zip: location.zip,
         turnstileToken,
         acceptTerms: true,
         acceptPrivacy: true,
         marketingOptIn,
+        country: location.country,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        locationSource: location.locationSource === "gps" ? "gps" : "manual",
       });
 
       await new Promise((resolve) => setTimeout(resolve, 800));
@@ -362,45 +377,17 @@ export default function FamilyRegistration() {
                       : undefined)
                   }
                 />
-
-                {/* ZIP Code */}
-                <FormInput
-                  type="text"
-                  label="ZIP Code"
-                  id="zip"
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  value={formData.zip}
-                  onChange={(e) => {
-                    clearFieldError("zip");
-                    setFormData({
-                      ...formData,
-                      zip: e.target.value.replace(/\D/g, "").slice(0, 5),
-                    });
-                  }}
-                  icon={<MapPin size={16} />}
-                  required
-                  error={
-                    fieldErrors.zip ||
-                    (formData.zip && !/^\d{5}$/.test(formData.zip)
-                      ? "Enter a valid 5-digit ZIP code."
-                      : undefined)
-                  }
-                />
                 </div>
 
               <PasswordStrengthMeter password={formData.password} className="px-1" />
 
-              <StateCitySelect
-                state={formData.state}
-                city={formData.city}
-                zip={formData.zip}
-                onStateChange={(state) =>
-                  setFormData((prev) => ({ ...prev, state, city: "" }))
-                }
-                onCityChange={(city) =>
-                  setFormData((prev) => ({ ...prev, city }))
-                }
+              <LocationPicker
+                value={location}
+                onChange={setLocation}
+                stateError={fieldErrors.state}
+                cityError={fieldErrors.city}
+                zipError={fieldErrors.zip}
+                className="mt-2"
               />
 
               {/* Safety Shield */}

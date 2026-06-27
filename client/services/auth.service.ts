@@ -34,6 +34,11 @@ export interface RegisterUserParams {
   acceptTerms?: boolean;
   acceptPrivacy?: boolean;
   marketingOptIn?: boolean;
+  country?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationSource?: "gps" | "manual";
+  serviceRadiusMiles?: 5 | 10 | 20 | 30 | 50 | null;
 }
 
 export interface RegisterResult {

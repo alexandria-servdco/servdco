@@ -1,16 +1,16 @@
 {
-  "timestamp": "2026-06-27T19:38:49.704Z",
+  "timestamp": "2026-06-27T19:51:11.930Z",
   "base": "https://servdco-one.vercel.app",
-  "healthCommit": "abd34f7f6521441a11fa581106891c873b73a44b",
+  "healthCommit": "edb417524f4473879443a6b5c84b5f550f56a358",
   "expectedCommit": "pending-after-push",
-  "passed": 9,
+  "passed": 12,
   "failed": 0,
-  "warned": 2,
+  "warned": 0,
   "results": [
     {
       "name": "GET /api/health",
       "status": "PASS",
-      "detail": "commit abd34f7f"
+      "detail": "commit edb41752"
     },
     {
       "name": "POST /api/auth/signup",
@@ -43,14 +43,19 @@
       "detail": "HTTP 400"
     },
     {
-      "name": "POST /api/location/reverse",
-      "status": "WARN",
-      "detail": "HTTP 404"
+      "name": "POST /api/location/reverse (invalid)",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "POST /api/location/reverse (Columbus)",
+      "status": "PASS",
+      "detail": "HTTP 200"
     },
     {
       "name": "POST /api/location/update",
-      "status": "WARN",
-      "detail": "HTTP 404"
+      "status": "PASS",
+      "detail": "HTTP 401"
     },
     {
       "name": "POST /api/launch/sync-user",

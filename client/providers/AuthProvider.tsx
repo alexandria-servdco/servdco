@@ -22,6 +22,7 @@ import {
   markRecoveryPending,
 } from "@/lib/auth/passwordRecovery";
 import { clearClientSessionState } from "@/lib/auth/sessionCleanup";
+import { sessionExpired, clearSessionMarkers } from "@/lib/session/sessionPolicy";
 
 export interface AuthContextValue {
   session: Session | null;
@@ -83,6 +84,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (sessionError) {
           setError(sessionError);
+          setSession(null);
+          setUser(null);
+        } else if (data.session && sessionExpired()) {
+          await client.auth.signOut({ scope: "global" });
+          clearSessionMarkers();
+          clearClientSessionState();
           setSession(null);
           setUser(null);
         } else {

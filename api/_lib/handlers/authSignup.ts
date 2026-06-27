@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
+import { TERMS_VERSION, PRIVACY_VERSION } from "../legalVersions.js";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { getStripeEnv } from "../stripe/env.js";
@@ -35,6 +36,15 @@ const signupSchema = z.object({
   yearsExperience: z.string().trim().max(40).optional(),
   primaryCuisine: z.string().trim().max(80).optional(),
   bio: z.string().trim().max(2000).optional(),
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the Terms of Service." }),
+  }),
+  acceptPrivacy: z.literal(true, {
+    errorMap: () => ({ message: "You must acknowledge the Privacy Policy." }),
+  }),
+  marketingOptIn: z.boolean().optional().default(false),
+  termsVersion: z.string().trim().min(1).default(TERMS_VERSION),
+  privacyVersion: z.string().trim().min(1).default(PRIVACY_VERSION),
 });
 
 async function evaluateSignupAccess(
@@ -139,6 +149,24 @@ async function respondToExistingSignupEmail(
       },
     });
     return true;
+  }
+
+  if (recovery.userId) {
+    const { data: existingProfile } = await admin
+      .from("profiles")
+      .select("deleted_at")
+      .eq("id", recovery.userId)
+      .maybeSingle();
+
+    if (existingProfile?.deleted_at) {
+      sendUserError(res, 409, "CONFLICT", {
+        title: "Account already exists",
+        message: "This email belongs to a deleted account.",
+        guidance: "Sign in to view deletion options or request account restoration.",
+        primaryAction: { label: "Go to sign in", action: "sign_in" },
+      });
+      return true;
+    }
   }
 
   sendUserError(res, 409, "CONFLICT", {
@@ -300,6 +328,18 @@ export async function handleAuthSignup(
           bio: signup.bio ?? null,
         },
       });
+
+      const acceptedAt = new Date().toISOString();
+      await admin
+        .from("profiles")
+        .update({
+          accepted_terms_version: signup.termsVersion,
+          accepted_terms_at: acceptedAt,
+          accepted_privacy_version: signup.privacyVersion,
+          accepted_privacy_at: acceptedAt,
+          marketing_opt_in: signup.marketingOptIn ?? false,
+        })
+        .eq("id", userId);
     }
 
     const status = access.status;

@@ -3,6 +3,8 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
 import { isRecoveryPending } from "@/lib/auth/passwordRecovery";
+import { useCurrentProfile } from "@/hooks/useCurrentProfile";
+import { DeletedAccountPanel } from "@/components/account/AccountLifecyclePanels";
 
 function AuthLoadingGate({ children }: { children: React.ReactNode }) {
   const { isLoading, supabaseAuthEnabled } = useAuth();
@@ -132,8 +134,27 @@ export function RoleGuard({ allowedRoles }: RoleGuardProps) {
   );
 }
 
+export function AccountStatusGuard() {
+  const { profile, isLoading, isAuthenticated } = useCurrentProfile();
+
+  if (isAuthenticated && isLoading) {
+    return (
+      <div className="min-h-screen bg-[#111111] flex items-center justify-center">
+        <p className="text-[#A8A8A8] text-xs font-bold uppercase tracking-wider">
+          Loading account...
+        </p>
+      </div>
+    );
+  }
+
+  if (profile?.deleted_at) {
+    return <DeletedAccountPanel restoreRequestedAt={profile.account_restore_requested_at} />;
+  }
+
+  return <Outlet />;
+}
+
 /**
- * AdminGuard — production owner access. Only profile.role === 'admin' may proceed.
  * Non-admins redirect to their role dashboard (not /unauthorized).
  */
 export function AdminGuard() {

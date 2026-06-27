@@ -40,8 +40,11 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import CookiePolicy from "./pages/CookiePolicy";
 import LegalHub from "./pages/LegalHub";
-import { GuestGuard, AuthGuard, RoleGuard, AdminGuard } from "./components/Guards";
+import { GuestGuard, AuthGuard, RoleGuard, AdminGuard, AccountStatusGuard } from "./components/Guards";
 import { LaunchRegionGuard } from "./components/LaunchRegionGuard";
+import { CookieConsentBanner, CookiePreferencesManager } from "@/components/legal/CookieConsentBanner";
+import { SessionPolicyManager } from "@/hooks/useSessionPolicy";
+import { LegalReacceptanceModal } from "@/components/legal/LegalReacceptanceModal";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import { PlatformSettingsHydrator } from "./components/PlatformSettingsHydrator";
 
@@ -335,6 +338,7 @@ const App = () => (
               </Route>
 
               <Route element={<AuthGuard />}>
+                <Route element={<AccountStatusGuard />}>
                 <Route
                   path="/waitlist-dashboard"
                   element={
@@ -396,6 +400,7 @@ const App = () => (
                     }
                   />
                 </Route>
+                </Route>
               </Route>
 
               <Route
@@ -407,6 +412,10 @@ const App = () => (
                 }
               />
             </Routes>
+            <CookieConsentBanner />
+            <CookiePreferencesManager />
+            <SessionPolicyManager />
+            <LegalReacceptanceModal />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

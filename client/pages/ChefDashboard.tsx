@@ -81,6 +81,10 @@ import {
 import { availabilityQueryKeys } from "@/services/supabase/availability.service";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { GlobalBannerStrip } from "@/components/GlobalBannerStrip";
+import {
+  SuspendedAccountBanner,
+  VerificationRejectedBanner,
+} from "@/components/account/AccountLifecyclePanels";
 import { DashboardMobileNav } from "@/components/ui/DashboardMobileNav";
 import { DashboardMobileMenu } from "@/components/ui/DashboardMobileMenu";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -740,6 +744,16 @@ export default function ChefDashboard() {
         </div>
 
         <GlobalBannerStrip variant="embedded" />
+
+        {profile?.status === "suspended" && <SuspendedAccountBanner />}
+        {verificationStatus === "rejected" && (
+          <VerificationRejectedBanner
+            reason={
+              (ownChefProfile as { verification_rejection_reason?: string | null })
+                ?.verification_rejection_reason
+            }
+          />
+        )}
 
         {/* Post-signup verification onboarding */}
         {(showOnboardingBanner || needsVerification) && (

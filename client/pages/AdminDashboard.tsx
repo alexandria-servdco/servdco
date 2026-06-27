@@ -598,6 +598,13 @@ export default function AdminDashboard({
   };
 
   const handleDeleteUser = async (id: string) => {
+    if (
+      !window.confirm(
+        "Soft-delete this account? The user can still sign in and will see a deleted-account screen.",
+      )
+    ) {
+      return;
+    }
     try {
       await api.deleteUser(id);
       await reloadData();
@@ -606,13 +613,54 @@ export default function AdminDashboard({
     }
   };
 
-  // Chef Handlers
+  const handlePermanentDeleteUser = async (id: string, email: string) => {
+    const typed = window.prompt(
+      `PERMANENT DELETE — type the user's email to confirm:\n${email}`,
+    );
+    if (!typed || typed.trim().toLowerCase() !== email.trim().toLowerCase()) {
+      return;
+    }
+    if (
+      !window.confirm(
+        "This permanently removes auth, profile, documents, and region access. This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+    try {
+      await api.permanentDeleteUser(id, email);
+      await reloadData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const [chefRejectModal, setChefRejectModal] = useState<{
+    id: string;
+    reason: string;
+  } | null>(null);
+
   const handleChefVerification = async (
     id: string,
     status: "approved" | "rejected" | "suspended",
+    rejectionReason?: string,
   ) => {
     try {
-      await api.updateChefStatus(id, status);
+      if (status === "rejected" && !rejectionReason) {
+        setChefRejectModal({ id, reason: "" });
+        return;
+      }
+      await api.updateChefStatus(id, status, rejectionReason);
+      await reloadData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSuspendCookAccount = async (userId: string) => {
+    const reason = window.prompt("Optional suspension reason for internal records:");
+    try {
+      await api.suspendCookAccount(userId, reason ?? undefined);
       await reloadData();
     } catch (err) {
       console.error(err);
@@ -2884,6 +2932,7 @@ export default function AdminDashboard({
                 users={users}
                 handleSuspendUser={handleSuspendUser}
                 handleDeleteUser={handleDeleteUser}
+                handlePermanentDeleteUser={handlePermanentDeleteUser}
               />
             )}
 
@@ -2896,6 +2945,7 @@ export default function AdminDashboard({
                 chefStatusFilter={chefStatusFilter}
                 setChefStatusFilter={setChefStatusFilter}
                 handleChefVerification={handleChefVerification}
+                handleSuspendCookAccount={handleSuspendCookAccount}
               />
             )}
 
@@ -3398,6 +3448,52 @@ export default function AdminDashboard({
           />
         </Suspense>
       )}
+
+      <Dialog
+        open={chefRejectModal !== null}
+        onOpenChange={(open) => {
+          if (!open) setChefRejectModal(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md bg-[#161616] border border-white/10 text-white rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl">Reject cook verification</DialogTitle>
+            <DialogDescription className="text-[#A8A8A8]">
+              The cook can still sign in. Share why verification failed — they can upload new documents.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={chefRejectModal?.reason ?? ""}
+            onChange={(e) =>
+              setChefRejectModal((prev) =>
+                prev ? { ...prev, reason: e.target.value } : prev,
+              )
+            }
+            placeholder="Explain what needs to be corrected..."
+            className="min-h-[120px] bg-[#111111] border-white/10 text-white"
+          />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setChefRejectModal(null)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-500 hover:bg-red-600"
+              disabled={!chefRejectModal?.reason.trim()}
+              onClick={() => {
+                if (!chefRejectModal?.reason.trim()) return;
+                void handleChefVerification(
+                  chefRejectModal.id,
+                  "rejected",
+                  chefRejectModal.reason.trim(),
+                );
+                setChefRejectModal(null);
+              }}
+            >
+              Reject verification
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={docReasonModal !== null}

@@ -34,6 +34,7 @@ export default function Login() {
   const [signupConfirmEmail, setSignupConfirmEmail] = useState("");
   const [signupConfirmRole, setSignupConfirmRole] = useState<"family" | "chef">("family");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [emailValid, setEmailValid] = useState(true);
   const [error, setError] = useState<UserFacingError | null>(null);
@@ -57,6 +58,16 @@ export default function Login() {
     if (next.get("reset") === "1") {
       setShowReset(true);
       next.delete("reset");
+      changed = true;
+    }
+    if (next.get("expired") === "1") {
+      setError({
+        code: "AUTH_SESSION_EXPIRED",
+        title: "Session expired",
+        message: "Your session expired. Please sign in again.",
+        guidance: "For longer sessions, check Remember me when signing in.",
+      });
+      next.delete("expired");
       changed = true;
     }
     if (next.get("registered") === "1") {
@@ -102,7 +113,7 @@ export default function Login() {
     setError(null);
     setSuccess("");
     try {
-      const user = await AuthService.login(email, password);
+      const user = await AuthService.login(email, password, rememberMe);
       navigateForRole(navigate, user.role);
     } catch (err) {
       setError(toUserFacingError(err));
@@ -326,6 +337,14 @@ export default function Login() {
                   icon={<Lock size={16} />}
                   required
                 />
+                <label className="flex items-center gap-2 px-1 pt-1 text-[11px] text-[#A8A8A8] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  Remember me for 30 days
+                </label>
               </div>
             )}
 

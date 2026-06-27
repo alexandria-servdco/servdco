@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/PasswordStrengthMeter";
 import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
+import { LegalAcceptanceFields } from "@/components/legal/LegalAcceptanceFields";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -72,6 +73,10 @@ export default function ChefRegistration() {
   const [emailValid, setEmailValid] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [legalError, setLegalError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -175,6 +180,11 @@ export default function ChefRegistration() {
         setError("Please complete the security verification.");
         return;
       }
+      if (!termsAccepted || !privacyAccepted) {
+        setLegalError("You must accept the Terms of Service and Privacy Policy to continue.");
+        return;
+      }
+      setLegalError(null);
 
       setLoading(true);
       try {
@@ -191,6 +201,9 @@ export default function ChefRegistration() {
           primaryCuisine: formData.primaryCuisine,
           bio: formData.bio,
           turnstileToken,
+          acceptTerms: true,
+          acceptPrivacy: true,
+          marketingOptIn,
         });
 
         if (!result.needsEmailConfirmation) {
@@ -592,10 +605,15 @@ export default function ChefRegistration() {
                       booking requests require admin approval.
                     </p>
                   </div>
-                  <p className="text-[10px] text-[#A8A8A8] leading-relaxed">
-                    By submitting, you agree to Servd Co verification, background
-                    checks, and marketplace terms.
-                  </p>
+                  <LegalAcceptanceFields
+                    termsAccepted={termsAccepted}
+                    privacyAccepted={privacyAccepted}
+                    marketingOptIn={marketingOptIn}
+                    onTermsChange={setTermsAccepted}
+                    onPrivacyChange={setPrivacyAccepted}
+                    onMarketingChange={setMarketingOptIn}
+                    error={legalError}
+                  />
                   <TurnstileWidget
                     formId="chef-register-form"
                     resetKey={turnstileResetKey}

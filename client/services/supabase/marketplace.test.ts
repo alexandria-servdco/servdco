@@ -44,6 +44,9 @@ describe("chef marketplace mapper", () => {
         updated_by: null,
         deleted_at: null,
         deleted_by: null,
+        verification_rejection_reason: null,
+        verification_rejected_at: null,
+        suspension_reason: null,
       },
       [
         {

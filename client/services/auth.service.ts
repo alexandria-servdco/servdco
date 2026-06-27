@@ -14,6 +14,7 @@ import { NotificationService } from "@/services/notification.service";
 import { SecurityApi } from "@/lib/securityApi";
 import { clearClientSessionState } from "@/lib/auth/sessionCleanup";
 import { directSupabaseSignIn } from "@/lib/auth/directSignIn";
+import { markSessionStarted, clearSessionMarkers } from "@/lib/session/sessionPolicy";
 
 export type { AppUser };
 
@@ -30,6 +31,9 @@ export interface RegisterUserParams {
   primaryCuisine?: string;
   bio?: string;
   turnstileToken?: string | null;
+  acceptTerms?: boolean;
+  acceptPrivacy?: boolean;
+  marketingOptIn?: boolean;
 }
 
 export interface RegisterResult {
@@ -141,8 +145,9 @@ const supabaseAuth = {
     };
   },
 
-  async login(email: string, password: string): Promise<AppUser> {
+  async login(email: string, password: string, rememberMe = false): Promise<AppUser> {
     clearClientSessionState();
+    markSessionStarted(rememberMe);
     const user = await directSupabaseSignIn(email, password);
     await NotificationService.syncUserNotifications(user.id).catch(() => {});
     return user;
@@ -150,6 +155,7 @@ const supabaseAuth = {
 
   async logout(): Promise<void> {
     clearClientSessionState();
+    clearSessionMarkers();
     const client = getSupabaseClient();
     if (client) {
       await client.auth.signOut({ scope: "global" });
@@ -207,9 +213,9 @@ export const AuthService = {
     return legacyAuth.register(params);
   },
 
-  async login(email: string, password?: string): Promise<AppUser> {
+  async login(email: string, password?: string, rememberMe?: boolean): Promise<AppUser> {
     if (await this.usesSupabaseAuth()) {
-      return supabaseAuth.login(email, password ?? "");
+      return supabaseAuth.login(email, password ?? "", rememberMe ?? false);
     }
     return legacyAuth.login(email);
   },

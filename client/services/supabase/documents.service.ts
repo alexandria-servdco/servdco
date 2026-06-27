@@ -287,6 +287,19 @@ export const DocumentsSupabaseService = {
       .select("*");
 
     if (error) throw new SupabaseQueryError(error.message, error);
+
+    await client
+      .from("chef_profiles")
+      .update({
+        verification_status: "pending",
+        verification_rejection_reason: null,
+        verification_rejected_at: null,
+        profile_visibility: "hidden",
+        updated_at: now,
+      })
+      .eq("id", params.chefProfileId)
+      .eq("verification_status", "rejected");
+
     const chefNames = await resolveChefNames([params.chefProfileId]);
     return Promise.all((data ?? []).map((row) => mapRow(row, chefNames)));
   },

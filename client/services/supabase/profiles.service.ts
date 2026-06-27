@@ -30,8 +30,89 @@ export const ProfilesSupabaseService = {
       .from("profiles")
       .select("*")
       .eq("id", userId)
-      .is("deleted_at", null)
       .maybeSingle();
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+    return data;
+  },
+
+  async getOwnProfileIncludingDeleted(): Promise<ProfileRow | null> {
+    return this.getOwnProfile();
+  },
+
+  async requestAccountRestore(): Promise<void> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw new SupabaseQueryError(authError.message, authError);
+    const userId = authData.user?.id;
+    if (!userId) throw new SupabaseQueryError("Not signed in");
+
+    const { error } = await client
+      .from("profiles")
+      .update({
+        account_restore_requested_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+  },
+
+  async acceptLegalVersions(params: {
+    termsVersion: string;
+    privacyVersion: string;
+    marketingOptIn?: boolean;
+  }): Promise<ProfileRow | null> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw new SupabaseQueryError(authError.message, authError);
+    const userId = authData.user?.id;
+    if (!userId) return null;
+
+    const now = new Date().toISOString();
+    const { data, error } = await client
+      .from("profiles")
+      .update({
+        accepted_terms_version: params.termsVersion,
+        accepted_terms_at: now,
+        accepted_privacy_version: params.privacyVersion,
+        accepted_privacy_at: now,
+        marketing_opt_in: params.marketingOptIn ?? false,
+        updated_by: userId,
+        updated_at: now,
+      })
+      .eq("id", userId)
+      .select("*")
+      .single();
+
+    if (error) throw new SupabaseQueryError(error.message, error);
+    return data;
+  },
+
+  async saveCookiePreferences(
+    prefs: import("@shared/cookieConsent").CookiePreferences,
+  ): Promise<ProfileRow | null> {
+    const client = getSupabaseClient();
+    if (!client) throw new SupabaseQueryError("Supabase client unavailable");
+
+    const { data: authData, error: authError } = await client.auth.getUser();
+    if (authError) throw new SupabaseQueryError(authError.message, authError);
+    const userId = authData.user?.id;
+    if (!userId) return null;
+
+    const { data, error } = await client
+      .from("profiles")
+      .update({
+        cookie_preferences: prefs as unknown as import("@/lib/supabase/database.types").Json,
+        updated_by: userId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId)
+      .select("*")
+      .single();
 
     if (error) throw new SupabaseQueryError(error.message, error);
     return data;

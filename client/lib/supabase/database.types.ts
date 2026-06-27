@@ -571,6 +571,9 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          verification_rejection_reason: string | null
+          verification_rejected_at: string | null
+          suspension_reason: string | null
         };
         Insert: {
           id?: string | null
@@ -596,6 +599,9 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          verification_rejection_reason?: string | null
+          verification_rejected_at?: string | null
+          suspension_reason?: string | null
         };
         Update: {
           id?: string | null
@@ -621,6 +627,9 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          verification_rejection_reason?: string | null
+          verification_rejected_at?: string | null
+          suspension_reason?: string | null
         };
         Relationships: [];
       };
@@ -1031,6 +1040,13 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          accepted_terms_version: string | null
+          accepted_terms_at: string | null
+          accepted_privacy_version: string | null
+          accepted_privacy_at: string | null
+          marketing_opt_in: boolean
+          cookie_preferences: Json
+          account_restore_requested_at: string | null
         };
         Insert: {
           id?: string | null
@@ -1054,6 +1070,13 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          accepted_terms_version?: string | null
+          accepted_terms_at?: string | null
+          accepted_privacy_version?: string | null
+          accepted_privacy_at?: string | null
+          marketing_opt_in?: boolean | null
+          cookie_preferences?: Json | null
+          account_restore_requested_at?: string | null
         };
         Update: {
           id?: string | null
@@ -1077,6 +1100,13 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          accepted_terms_version?: string | null
+          accepted_terms_at?: string | null
+          accepted_privacy_version?: string | null
+          accepted_privacy_at?: string | null
+          marketing_opt_in?: boolean | null
+          cookie_preferences?: Json | null
+          account_restore_requested_at?: string | null
         };
         Relationships: [];
       };

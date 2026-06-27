@@ -1,15 +1,39 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { isSupabaseConfigured, requireSupabaseEnv } from "./env";
+import { SESSION_REMEMBER_KEY } from "@/lib/session/sessionPolicy";
 
 let supabaseSingleton: SupabaseClient<Database> | null = null;
+
+/** Routes auth tokens to sessionStorage (browser session) or localStorage (remember me). */
+const adaptiveAuthStorage =
+  typeof window !== "undefined"
+    ? {
+        getItem(key: string) {
+          const remember = localStorage.getItem(SESSION_REMEMBER_KEY) === "1";
+          const primary = remember ? localStorage : sessionStorage;
+          return primary.getItem(key) ?? (!remember ? localStorage.getItem(key) : null);
+        },
+        setItem(key: string, value: string) {
+          const remember = localStorage.getItem(SESSION_REMEMBER_KEY) === "1";
+          const primary = remember ? localStorage : sessionStorage;
+          const secondary = remember ? sessionStorage : localStorage;
+          secondary.removeItem(key);
+          primary.setItem(key, value);
+        },
+        removeItem(key: string) {
+          localStorage.removeItem(key);
+          sessionStorage.removeItem(key);
+        },
+      }
+    : undefined;
 
 const clientOptions = {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: typeof window !== "undefined" ? window.localStorage : undefined,
+    storage: adaptiveAuthStorage,
   },
 } as const;
 

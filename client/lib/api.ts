@@ -122,8 +122,9 @@ export const api = {
   async updateChefStatus(
     id: string,
     status: "approved" | "pending" | "rejected" | "suspended",
-  ): Promise<{ success: boolean; chef?: MarketplaceChef }> {
-    return ChefService.updateStatus(id, status);
+    rejectionReason?: string,
+  ): Promise<{ success: boolean }> {
+    return AdminService.updateChefStatus(id, status, rejectionReason);
   },
 
   async getBookings(): Promise<UiBooking[]> {
@@ -208,6 +209,17 @@ export const api = {
 
   async deleteUser(id: string): Promise<{ success: boolean }> {
     return FamilyService.deleteUser(id);
+  },
+
+  async permanentDeleteUser(
+    userId: string,
+    confirmEmail: string,
+  ): Promise<{ success: boolean }> {
+    return AdminService.permanentDeleteUser(userId, confirmEmail);
+  },
+
+  async suspendCookAccount(userId: string, reason?: string) {
+    return AdminService.suspendCookAccount(userId, reason);
   },
 
   async getUserNotifications(_userId: string) {

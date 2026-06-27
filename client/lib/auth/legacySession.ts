@@ -46,5 +46,12 @@ export function legacyUserToProfileRow(user: AppUser): ProfileRow {
     updated_by: null,
     deleted_at: null,
     deleted_by: null,
+    accepted_terms_version: null,
+    accepted_terms_at: null,
+    accepted_privacy_version: null,
+    accepted_privacy_at: null,
+    marketing_opt_in: false,
+    cookie_preferences: {},
+    account_restore_requested_at: null,
   };
 }

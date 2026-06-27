@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/PasswordStrengthMeter";
 import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
+import { LegalAcceptanceFields } from "@/components/legal/LegalAcceptanceFields";
 
 function ServdLogo({ className }: { className?: string }) {
   return (
@@ -48,6 +49,10 @@ export default function FamilyRegistration() {
   const [emailValid, setEmailValid] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [legalError, setLegalError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -175,6 +180,12 @@ export default function FamilyRegistration() {
       return;
     }
 
+    if (!termsAccepted || !privacyAccepted) {
+      setLegalError("You must accept the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
+    setLegalError(null);
+
     setLoading(true);
     trackEvent("signup_started", { role: "family" });
 
@@ -189,6 +200,9 @@ export default function FamilyRegistration() {
         city: formData.city,
         zip: formData.zip,
         turnstileToken,
+        acceptTerms: true,
+        acceptPrivacy: true,
+        marketingOptIn,
       });
 
       await new Promise((resolve) => setTimeout(resolve, 800));
@@ -401,6 +415,17 @@ export default function FamilyRegistration() {
                   </p>
                 </div>
               </div>
+
+              <LegalAcceptanceFields
+                termsAccepted={termsAccepted}
+                privacyAccepted={privacyAccepted}
+                marketingOptIn={marketingOptIn}
+                onTermsChange={setTermsAccepted}
+                onPrivacyChange={setPrivacyAccepted}
+                onMarketingChange={setMarketingOptIn}
+                error={legalError}
+                className="mt-2"
+              />
 
               <TurnstileWidget
                 formId="family-register-form"

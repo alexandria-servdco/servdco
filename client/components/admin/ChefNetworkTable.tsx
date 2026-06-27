@@ -15,6 +15,7 @@ const PAGE_SIZE = 10;
 
 interface Chef {
   id: string;
+  userId?: string;
   name: string;
   avatar?: string;
   cuisine: string;
@@ -30,7 +31,8 @@ interface ChefNetworkTableProps {
   setChefSearch: (value: string) => void;
   chefStatusFilter: string;
   setChefStatusFilter: (value: string) => void;
-  handleChefVerification: (id: string, action: string) => void;
+  handleChefVerification: (id: string, action: string, reason?: string) => void;
+  handleSuspendCookAccount?: (userId: string) => void;
 }
 
 export function ChefNetworkTable({
@@ -40,6 +42,7 @@ export function ChefNetworkTable({
   chefStatusFilter,
   setChefStatusFilter,
   handleChefVerification,
+  handleSuspendCookAccount,
 }: ChefNetworkTableProps) {
   const [page, setPage] = useState(1);
 
@@ -293,11 +296,9 @@ export function ChefNetworkTable({
                           Approve
                         </button>
                       )}
-                      {c.verification_status === "approved" && (
+                      {c.verification_status === "approved" && c.userId && handleSuspendCookAccount && (
                         <button
-                          onClick={() =>
-                            handleChefVerification(c.id, "suspended")
-                          }
+                          onClick={() => handleSuspendCookAccount(c.userId!)}
                           style={{
                             padding: "6px 12px",
                             borderRadius: "8px",
@@ -351,10 +352,10 @@ export function ChefNetworkTable({
                     Approve
                   </button>
                 )}
-                {c.verification_status === "approved" && (
+                {c.verification_status === "approved" && c.userId && handleSuspendCookAccount && (
                   <button
                     type="button"
-                    onClick={() => handleChefVerification(c.id, "suspended")}
+                    onClick={() => handleSuspendCookAccount(c.userId!)}
                     className="flex-1 py-2.5 rounded-lg bg-amber-500/15 text-amber-400 text-xs font-semibold touch-target"
                   >
                     Suspend

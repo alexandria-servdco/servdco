@@ -169,6 +169,7 @@ export const AdminService = {
   async updateChefStatus(
     id: string,
     status: "approved" | "pending" | "rejected" | "suspended",
+    rejectionReason?: string,
   ) {
     assertSupabaseConfigured();
     const parsed = chefVerificationStatusSchema.safeParse(status);
@@ -178,7 +179,39 @@ export const AdminService = {
     await AdminModerationSupabaseService.updateChefVerification(
       id,
       parsed.data,
+      rejectionReason,
     );
+    return { success: true };
+  },
+
+  async suspendCookAccount(userId: string, reason?: string) {
+    assertSupabaseConfigured();
+    await AdminModerationSupabaseService.suspendCookAccount(userId, reason);
+    return { success: true };
+  },
+
+  async permanentDeleteUser(userId: string, confirmEmail: string) {
+    assertSupabaseConfigured();
+    const client = getSupabaseClient();
+    if (!client) throw new Error("Supabase client unavailable");
+
+    const { data: session } = await client.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token) throw new Error("Admin session required.");
+
+    const res = await fetch("/api/admin/permanent-delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userId, confirmEmail }),
+    });
+
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+      throw new Error(body.message ?? body.error ?? "Permanent delete failed.");
+    }
     return { success: true };
   },
 };

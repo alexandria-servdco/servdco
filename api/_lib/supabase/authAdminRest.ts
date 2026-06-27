@@ -250,6 +250,38 @@ export async function getAuthUserById(
 
 type GenerateLinkType = "signup" | "magiclink" | "recovery" | "invite";
 
+/** DELETE /auth/v1/admin/users/:id */
+export async function deleteAuthUser(
+  userId: string,
+): Promise<{ error: string | null }> {
+  const config = getAdminConfig();
+  if (!config) {
+    return { error: "Supabase auth is not configured." };
+  }
+
+  try {
+    const res = await fetchWithTimeout(
+      `${config.url}/auth/v1/admin/users/${userId}`,
+      {
+        method: "DELETE",
+        headers: adminHeaders(config.key),
+        timeoutMs: 18_000,
+      },
+    );
+
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      return { error: await readAuthError(res, body, "Delete user failed") };
+    }
+
+    return { error: null };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Delete user failed",
+    };
+  }
+}
+
 /** POST /auth/v1/admin/generate_link */
 export async function generateAuthLink(params: {
   type: GenerateLinkType;

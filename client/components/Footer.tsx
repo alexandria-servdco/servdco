@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { openCookiePreferences } from "@/components/legal/CookieConsentBanner";
 import { api } from "@/lib/api";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
@@ -384,6 +385,15 @@ export default function Footer() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => openCookiePreferences()}
+                  className="text-[12.5px] text-[#A5A5A5] hover:text-[#FF7A59] transition-all font-medium"
+                >
+                  Manage Cookie Preferences
+                </button>
+              </li>
             </ul>
           </div>
         </div>

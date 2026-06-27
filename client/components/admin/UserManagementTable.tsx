@@ -19,12 +19,14 @@ interface UserManagementTableProps {
   users: any[];
   handleSuspendUser: (id: string, currentStatus: string) => void;
   handleDeleteUser: (id: string) => void;
+  handlePermanentDeleteUser?: (id: string, email: string) => void;
 }
 
 export function UserManagementTable({
   users,
   handleSuspendUser,
   handleDeleteUser,
+  handlePermanentDeleteUser,
 }: UserManagementTableProps) {
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
@@ -287,6 +289,7 @@ export function UserManagementTable({
                           </button>
                           <button
                             onClick={() => handleDeleteUser(usr.id)}
+                            title="Soft delete"
                             style={{
                               padding: "6px",
                               borderRadius: "8px",
@@ -298,6 +301,26 @@ export function UserManagementTable({
                           >
                             <Trash2 size={13} />
                           </button>
+                          {handlePermanentDeleteUser && (
+                            <button
+                              onClick={() =>
+                                handlePermanentDeleteUser(usr.id, usr.email)
+                              }
+                              title="Permanent delete"
+                              style={{
+                                padding: "6px 8px",
+                                borderRadius: "8px",
+                                fontSize: "10px",
+                                fontWeight: "700",
+                                background: "rgba(127, 29, 29, 0.35)",
+                                color: "#FCA5A5",
+                                border: "1px solid rgba(239,68,68,0.35)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Erase
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

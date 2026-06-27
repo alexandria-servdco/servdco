@@ -133,6 +133,8 @@ export default function Index() {
           <img
             src="/home-hero.png"
             alt=""
+            fetchPriority="high"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover object-[center_35%]"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/75 via-[#111111]/55 to-[#111111]" />
@@ -146,6 +148,8 @@ export default function Index() {
           <img
             src="/home-hero.png"
             alt="Cook preparing food in warm family kitchen"
+            fetchPriority="high"
+            decoding="async"
             className="w-full h-full object-cover object-right rounded-bl-[160px] shadow-2xl border-l border-b border-white/5"
           />
         </div>

@@ -34,33 +34,41 @@ export function initAnalytics(): void {
   if (!isAnalyticsEnabled() || initialized || typeof window === "undefined") {
     return;
   }
-  initialized = true;
 
-  window.dataLayer = window.dataLayer ?? [];
-  window.gtag = function gtag(...args: unknown[]) {
-    window.dataLayer!.push(args);
-  };
-  window.gtag("js", new Date());
-  window.gtag("config", MEASUREMENT_ID, { send_page_view: false });
+  void import("@/lib/cookieConsent/storage").then(({ analyticsAllowed }) => {
+    if (!analyticsAllowed()) return;
+    if (initialized) return;
+    initialized = true;
 
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
-  document.head.appendChild(script);
-
-  if (isProductionBuild()) {
-    window.__SERVDCO_ANALYTICS__ = {
-      enabled: true,
-      measurementId: MEASUREMENT_ID,
+    window.dataLayer = window.dataLayer ?? [];
+    window.gtag = function gtag(...args: unknown[]) {
+      window.dataLayer!.push(args);
     };
-  }
+    window.gtag("js", new Date());
+    window.gtag("config", MEASUREMENT_ID, { send_page_view: false });
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
+    document.head.appendChild(script);
+
+    if (isProductionBuild()) {
+      window.__SERVDCO_ANALYTICS__ = {
+        enabled: true,
+        measurementId: MEASUREMENT_ID,
+      };
+    }
+  });
 }
 
 export function trackPageView(path: string, title?: string): void {
   if (!isAnalyticsEnabled() || !window.gtag) return;
-  window.gtag("event", "page_view", {
-    page_path: path,
-    page_title: title ?? document.title,
+  void import("@/lib/cookieConsent/storage").then(({ analyticsAllowed }) => {
+    if (!analyticsAllowed()) return;
+    window.gtag?.("event", "page_view", {
+      page_path: path,
+      page_title: title ?? document.title,
+    });
   });
 }
 
@@ -69,5 +77,8 @@ export function trackEvent(
   params?: Record<string, string | number | boolean | undefined>,
 ): void {
   if (!isAnalyticsEnabled() || !window.gtag) return;
-  window.gtag("event", name, params ?? {});
+  void import("@/lib/cookieConsent/storage").then(({ analyticsAllowed }) => {
+    if (!analyticsAllowed()) return;
+    window.gtag?.("event", name, params ?? {});
+  });
 }

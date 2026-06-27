@@ -17,6 +17,7 @@ import { NotificationBell } from "@/components/ui/NotificationBell";
 import { GlobalBannerStrip } from "@/components/GlobalBannerStrip";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
+import { useValidSession } from "@/hooks/useValidSession";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -27,6 +28,8 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const sessionValid = useValidSession();
+  const showAuthenticatedNav = isAuthenticated && sessionValid;
   const { role: userRole } = useCurrentUserRole();
 
   useEffect(() => {
@@ -212,7 +215,7 @@ export default function Navbar() {
 
           {/* ── RIGHT ACTIONS ─────────────────────────────────────────────── */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            {isAuthenticated ? (
+            {showAuthenticatedNav ? (
               <>
                 <Link
                   to={
@@ -426,13 +429,13 @@ export default function Navbar() {
 
               {/* Bottom actions */}
               <div className="px-5 pb-8 pt-5 border-t border-white/[0.06] flex flex-col gap-3">
-                {isAuthenticated && (
+                {showAuthenticatedNav && (
                   <div className="flex items-center justify-between px-1 pb-1">
                     <span className="text-xs font-semibold text-white/60">Notifications</span>
                     <NotificationBell />
                   </div>
                 )}
-                {isAuthenticated ? (
+                {showAuthenticatedNav ? (
                   <>
                     <motion.div
                       initial={{ opacity: 0, y: 12 }}

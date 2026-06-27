@@ -7,6 +7,8 @@ import {
   type UserFacingError,
 } from "@shared/userErrors";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { TERMS_VERSION, PRIVACY_VERSION } from "@shared/legalVersions";
+import { markSessionStarted } from "@/lib/session/sessionPolicy";
 
 async function readBearerToken(): Promise<string | null> {
   const client = getSupabaseClient();
@@ -74,6 +76,11 @@ export const SecurityApi = {
           yearsExperience: params.yearsExperience,
           primaryCuisine: params.primaryCuisine,
           bio: params.bio,
+          acceptTerms: params.acceptTerms ?? true,
+          acceptPrivacy: params.acceptPrivacy ?? true,
+          marketingOptIn: params.marketingOptIn ?? false,
+          termsVersion: TERMS_VERSION,
+          privacyVersion: PRIVACY_VERSION,
         }),
         timeoutMs: 28_000,
       });
@@ -97,6 +104,7 @@ export const SecurityApi = {
     };
 
     if (body.session) {
+      markSessionStarted(false);
       const client = getSupabaseClient();
       if (client) {
         const { error } = await client.auth.setSession({

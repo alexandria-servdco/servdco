@@ -94,19 +94,34 @@ Verified domains:
 
 ## Step 7 — Git
 
-Commit: *(pending — Phase 1 sync artifacts)*  
-Push: `git push origin main`
+| Commit | Message |
+|--------|---------|
+| `e280d7e` | Sync production schema types and add Phase 1 verification tooling |
+| `5bf71aa` | Add Phase 1 production smoke test script |
+
+**Pushed:** `5bf71aa` → `origin/main` ✅
 
 ---
 
 ## Step 8 — Deployment
 
-Vercel auto-deploy on push to `main`. Verify:
+| Check | Result |
+|-------|--------|
+| GitHub push | ✅ Success |
+| Vercel auto-deploy | ⚠️ **BLOCKED** |
+| Manual `vercel deploy --prod` | ❌ Failed |
 
+**Deploy failure reason:**
 ```
-GET https://servdco-one.vercel.app/api/health
-→ { ok: true, commit: "<sha>" }
+No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan.
 ```
+
+**Production still serving:** commit `abd34f7` (pre-location, pre-legal, pre-hardening)  
+**Repository HEAD:** commit `5bf71aa`
+
+**Action required before Phase 2:** Upgrade Vercel to Pro **or** consolidate API routes below 12 functions, then redeploy.
+
+Current serverless entrypoints exceed Hobby limit due to `api/**/*.ts` glob including individual stripe/contact/health handlers alongside consolidated `[action].ts` routers.
 
 ---
 
@@ -114,21 +129,47 @@ GET https://servdco-one.vercel.app/api/health
 
 Run: `node scripts/phase1-production-smoke.mjs`
 
-Endpoints probed: health, auth, contact, waitlist, stripe, location, launch, careers.
+| Endpoint | Status | Notes |
+|----------|--------|-------|
+| GET /api/health | ✅ PASS | commit `abd34f7` (stale) |
+| POST /api/auth/signup | ✅ PASS | HTTP 400 (validation) |
+| POST /api/auth/login | ✅ PASS | HTTP 400 |
+| POST /api/contact/submit | ✅ PASS | HTTP 400 |
+| POST /api/waitlist/submit | ✅ PASS | HTTP 400 |
+| POST /api/stripe/* | ✅ PASS | No 500 / no FUNCTION_INVOCATION_FAILED |
+| POST /api/launch/sync-user | ✅ PASS | HTTP 401 (auth required) |
+| POST /api/location/reverse | ⚠️ WARN | HTTP 404 — not deployed yet |
+| POST /api/location/update | ⚠️ WARN | HTTP 404 — not deployed yet |
+| GET /api/careers/jobs | ✅ PASS | HTTP 404 (route via platform) |
+
+**No FUNCTION_INVOCATION_FAILED or 500 errors** on probed endpoints.
 
 ---
 
 ## Remaining Issues
 
-1. **`supabase link` not configured** — use `scripts/run-pending-migrations.mjs` and `scripts/phase1-generate-types.mjs` until CLI link is set up
-2. **Supabase CLI typegen requires Docker** on this machine — pg introspection fallback used
-3. **Uncommitted local audit artifacts** — safe to `.gitignore` or delete; not production blockers
-4. **`client/components/ui/StateCitySelect.tsx`** — minor local modification unrelated to Phase 1; not committed
+1. **🔴 Vercel Hobby 12-function limit blocks deployment** — production code is 4+ commits behind repository
+2. **`supabase link` not configured** — use `scripts/run-pending-migrations.mjs` and `scripts/phase1-generate-types.mjs`
+3. **Supabase CLI `--db-url` typegen requires Docker** on Windows — pg introspection fallback used successfully
+4. **Uncommitted local audit artifacts** — not production blockers
+5. **`StateCitySelect.tsx`** — minor local diff, not committed
 
 ---
 
 ## Phase 1 Status
 
-**COMPLETE** after commit/push/deploy verification.
+| Area | Status |
+|------|--------|
+| Repository audit | ✅ Complete |
+| Migration audit | ✅ Complete |
+| DB migrations applied | ✅ 48/48 (`20250704120000`) |
+| Types regenerated | ✅ Complete (pg introspection) |
+| Schema verification | ✅ 45/45 checks |
+| typecheck / test / build | ✅ All pass |
+| Git push | ✅ Complete |
+| **Production deploy** | ❌ **Blocked — Vercel plan limit** |
+| Smoke tests (current prod) | ✅ No 500s; location routes pending deploy |
 
-Do not proceed to Phase 2 until final QA sign-off.
+**Phase 1 sync work is complete on repo + database.** Production runtime is **not** yet serving latest code until Vercel deploy succeeds.
+
+**Do not proceed to Phase 2** until deployment blocker is resolved and production commit matches `5bf71aa`.

@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-06-27T19:38:49.704Z",
+  "base": "https://servdco-one.vercel.app",
+  "healthCommit": "abd34f7f6521441a11fa581106891c873b73a44b",
+  "expectedCommit": "pending-after-push",
+  "passed": 9,
+  "failed": 0,
+  "warned": 2,
+  "results": [
+    {
+      "name": "GET /api/health",
+      "status": "PASS",
+      "detail": "commit abd34f7f"
+    },
+    {
+      "name": "POST /api/auth/signup",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "POST /api/auth/login",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "POST /api/contact/submit",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "POST /api/waitlist/submit",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "POST /api/stripe/create-checkout-session",
+      "status": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "POST /api/stripe/webhook",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "POST /api/location/reverse",
+      "status": "WARN",
+      "detail": "HTTP 404"
+    },
+    {
+      "name": "POST /api/location/update",
+      "status": "WARN",
+      "detail": "HTTP 404"
+    },
+    {
+      "name": "POST /api/launch/sync-user",
+      "status": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "name": "GET /api/careers/jobs",
+      "status": "PASS",
+      "detail": "HTTP 404"
+    }
+  ]
+}

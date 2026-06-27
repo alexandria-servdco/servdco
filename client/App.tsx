@@ -11,35 +11,11 @@ import { lazy, Suspense, useEffect } from "react";
 import { GlobalErrorBoundary } from "@/components/errors/GlobalErrorBoundary";
 import { RouteErrorBoundary } from "@/components/errors/RouteErrorBoundary";
 import { validateClientStartup } from "@/lib/env/validateStartup";
-import { initAnalytics } from "@/lib/analytics";
-import { initSentry } from "@/lib/monitoring/sentry";
 import { PageMetaManager } from "@/components/seo/PageMetaManager";
+import { DeferredMonitoring } from "@/components/DeferredMonitoring";
 import { cn } from "@/lib/utils";
 
 import Index from "./pages/Index";
-import Login from "./pages/Login";
-import ResetPassword from "./pages/ResetPassword";
-import Register from "./pages/Register";
-import ChefRegistration from "./pages/ChefRegistration";
-import FamilyRegistration from "./pages/FamilyRegistration";
-import WaitlistPage from "./pages/WaitlistPage";
-import WaitlistDashboard from "./pages/WaitlistDashboard";
-import MaintenancePage from "./pages/MaintenancePage";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Careers from "./pages/Careers";
-import CareerJob from "./pages/CareerJob";
-import CareerApply from "./pages/CareerApply";
-import NotFound from "./pages/NotFound";
-import ForChefs from "./pages/ForChefs";
-import HowItWorks from "./pages/HowItWorks";
-import FAQ from "./pages/FAQ";
-import Pricing from "./pages/Pricing";
-import Unauthorized from "./pages/Unauthorized";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import Terms from "./pages/Terms";
-import CookiePolicy from "./pages/CookiePolicy";
-import LegalHub from "./pages/LegalHub";
 import { GuestGuard, AuthGuard, RoleGuard, AdminGuard, AccountStatusGuard } from "./components/Guards";
 import { LaunchRegionGuard } from "./components/LaunchRegionGuard";
 import { CookieConsentBanner, CookiePreferencesManager } from "@/components/legal/CookieConsentBanner";
@@ -48,6 +24,29 @@ import { LegalReacceptanceModal } from "@/components/legal/LegalReacceptanceModa
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import { PlatformSettingsHydrator } from "./components/PlatformSettingsHydrator";
 
+const Login = lazy(() => import("./pages/Login"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Register = lazy(() => import("./pages/Register"));
+const ChefRegistration = lazy(() => import("./pages/ChefRegistration"));
+const FamilyRegistration = lazy(() => import("./pages/FamilyRegistration"));
+const WaitlistPage = lazy(() => import("./pages/WaitlistPage"));
+const WaitlistDashboard = lazy(() => import("./pages/WaitlistDashboard"));
+const MaintenancePage = lazy(() => import("./pages/MaintenancePage"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Careers = lazy(() => import("./pages/Careers"));
+const CareerJob = lazy(() => import("./pages/CareerJob"));
+const CareerApply = lazy(() => import("./pages/CareerApply"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ForChefs = lazy(() => import("./pages/ForChefs"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Unauthorized = lazy(() => import("./pages/Unauthorized"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
+const LegalHub = lazy(() => import("./pages/LegalHub"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ChefDashboard = lazy(() => import("./pages/ChefDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -55,17 +54,22 @@ const BrowseChefs = lazy(() => import("./pages/BrowseChefs"));
 const ChefProfile = lazy(() => import("./pages/ChefProfile"));
 
 validateClientStartup();
-void initSentry();
-initAnalytics();
 
 function RouteFallback() {
   return (
     <div
-      className="min-h-[40vh] flex items-center justify-center text-[#A8A8A8] text-sm"
+      className="min-h-[40vh] p-6 md:p-10 animate-pulse space-y-4"
       role="status"
       aria-live="polite"
+      aria-label="Loading page"
     >
-      Loading…
+      <div className="h-8 bg-white/10 rounded-lg max-w-md" />
+      <div className="h-4 bg-white/5 rounded max-w-sm" />
+      <div className="grid gap-3 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="h-32 bg-white/5 rounded-2xl" />
+        <div className="h-32 bg-white/5 rounded-2xl hidden sm:block" />
+        <div className="h-32 bg-white/5 rounded-2xl hidden lg:block" />
+      </div>
     </div>
   );
 }
@@ -110,12 +114,14 @@ function PageWrapper({
 function LazyRoute({
   label,
   children,
+  viewportLocked,
 }: {
   label: string;
   children: React.ReactNode;
+  viewportLocked?: boolean;
 }) {
   return (
-    <PageWrapper routeLabel={label}>
+    <PageWrapper routeLabel={label} viewportLocked={viewportLocked}>
       <Suspense fallback={<RouteFallback />}>{children}</Suspense>
     </PageWrapper>
   );
@@ -130,6 +136,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <DeferredMonitoring />
             <PageMetaManager />
             <a
               href="#main-content"
@@ -151,17 +158,17 @@ const App = () => (
               <Route
                 path="/about"
                 element={
-                  <PageWrapper routeLabel="about">
+                  <LazyRoute label="about">
                     <About />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/how-it-works"
                 element={
-                  <PageWrapper routeLabel="how-it-works">
+                  <LazyRoute label="how-it-works">
                     <HowItWorks />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
@@ -183,122 +190,122 @@ const App = () => (
               <Route
                 path="/for-chefs"
                 element={
-                  <PageWrapper routeLabel="for-chefs">
+                  <LazyRoute label="for-chefs">
                     <ForChefs />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/contact"
                 element={
-                  <PageWrapper routeLabel="contact">
+                  <LazyRoute label="contact">
                     <Contact />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/careers"
                 element={
-                  <PageWrapper routeLabel="careers">
+                  <LazyRoute label="careers">
                     <Careers />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/careers/apply"
                 element={
-                  <PageWrapper routeLabel="careers-apply">
+                  <LazyRoute label="careers-apply">
                     <CareerApply />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/careers/:jobId"
                 element={
-                  <PageWrapper routeLabel="career-job">
+                  <LazyRoute label="career-job">
                     <CareerJob />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/faq"
                 element={
-                  <PageWrapper routeLabel="faq">
+                  <LazyRoute label="faq">
                     <FAQ />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/pricing"
                 element={
-                  <PageWrapper routeLabel="pricing">
+                  <LazyRoute label="pricing">
                     <Pricing />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/unauthorized"
                 element={
-                  <PageWrapper routeLabel="unauthorized">
+                  <LazyRoute label="unauthorized">
                     <Unauthorized />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/waitlist"
                 element={
-                  <PageWrapper routeLabel="waitlist">
+                  <LazyRoute label="waitlist">
                     <WaitlistPage />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/maintenance"
                 element={
-                  <PageWrapper routeLabel="maintenance">
+                  <LazyRoute label="maintenance">
                     <MaintenancePage />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/privacy-policy"
                 element={
-                  <PageWrapper routeLabel="privacy">
+                  <LazyRoute label="privacy">
                     <PrivacyPolicy />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/terms"
                 element={
-                  <PageWrapper routeLabel="terms">
+                  <LazyRoute label="terms">
                     <Terms />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/cookie-policy"
                 element={
-                  <PageWrapper routeLabel="cookies">
+                  <LazyRoute label="cookies">
                     <CookiePolicy />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
               <Route
                 path="/legal"
                 element={
-                  <PageWrapper routeLabel="legal">
+                  <LazyRoute label="legal">
                     <LegalHub />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
 
               <Route
                 path="/reset-password"
                 element={
-                  <PageWrapper routeLabel="reset-password" viewportLocked>
+                  <LazyRoute label="reset-password" viewportLocked>
                     <ResetPassword />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
 
@@ -306,33 +313,33 @@ const App = () => (
                 <Route
                   path="/login"
                   element={
-                    <PageWrapper routeLabel="login" viewportLocked>
+                    <LazyRoute label="login" viewportLocked>
                       <Login />
-                    </PageWrapper>
+                    </LazyRoute>
                   }
                 />
                 <Route
                   path="/register"
                   element={
-                    <PageWrapper routeLabel="register" viewportLocked>
+                    <LazyRoute label="register" viewportLocked>
                       <Register />
-                    </PageWrapper>
+                    </LazyRoute>
                   }
                 />
                 <Route
                   path="/register/family"
                   element={
-                    <PageWrapper routeLabel="register-family" viewportLocked>
+                    <LazyRoute label="register-family" viewportLocked>
                       <FamilyRegistration />
-                    </PageWrapper>
+                    </LazyRoute>
                   }
                 />
                 <Route
                   path="/register/chef"
                   element={
-                    <PageWrapper routeLabel="register-chef" viewportLocked>
+                    <LazyRoute label="register-chef" viewportLocked>
                       <ChefRegistration />
-                    </PageWrapper>
+                    </LazyRoute>
                   }
                 />
               </Route>
@@ -406,9 +413,9 @@ const App = () => (
               <Route
                 path="*"
                 element={
-                  <PageWrapper routeLabel="not-found">
+                  <LazyRoute label="not-found">
                     <NotFound />
-                  </PageWrapper>
+                  </LazyRoute>
                 }
               />
             </Routes>

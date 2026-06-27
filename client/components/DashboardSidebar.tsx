@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { LogoPicture } from "@/components/ui/OptimizedPicture";
 import { AuthService } from "@/services/auth.service";
 import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
 import { useUnreadMessageCount } from "@/hooks/useConversations";
@@ -58,13 +59,11 @@ export default function DashboardSidebar() {
           to="/"
           className="flex items-center gap-3 hover:opacity-90 transition-opacity"
         >
-          <img
-            src="/1.png"
-            alt="ServdCo"
-            loading="lazy"
-            decoding="async"
+          <LogoPicture
+            alt="Servd Co"
             className="h-12 w-auto object-contain flex-shrink-0"
-            style={{ objectPosition: "center" }}
+            width={120}
+            height={48}
           />
         </Link>
       </div>

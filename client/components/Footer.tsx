@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
 import { BrandSelect } from "@/components/ui/BrandSelect";
+import { LogoPicture } from "@/components/ui/OptimizedPicture";
 import {
   Heart,
   Instagram,
@@ -32,13 +33,11 @@ import {
 function ServdLogo() {
   return (
     <div className="flex items-center gap-3">
-      <img
-        src="/1.png"
-        alt="ServdCo"
-        loading="lazy"
-        decoding="async"
+      <LogoPicture
+        alt="Servd Co"
         className="h-[48px] sm:h-[60px] md:h-[64px] lg:h-[72px] w-auto object-contain"
-        style={{ objectPosition: "center" }}
+        width={140}
+        height={72}
       />
     </div>
   );
@@ -410,13 +409,12 @@ export default function Footer() {
               className="flex items-center flex-shrink-0 overflow-hidden"
               style={{ minWidth: 36, lineHeight: 1, height: 36 }}
             >
-              <img
-                src="/3.png"
-                alt="ServdCo"
-                loading="lazy"
-                decoding="async"
+              <LogoPicture
+                base="3"
+                alt="Servd Co"
+                width={140}
+                height={56}
                 className="block h-[40px] sm:h-[44px] md:h-[52px] lg:h-[56px] w-auto object-none align-middle transform -translate-x-6 sm:-translate-x-8 md:-translate-x-10 scale-150 sm:scale-175 md:scale-200 lg:scale-225"
-                style={{ objectPosition: "left center", display: "block" }}
               />
             </div>
             <p className="text-[11px] text-white/30 font-semibold uppercase tracking-wider">

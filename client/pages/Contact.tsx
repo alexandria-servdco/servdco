@@ -11,8 +11,15 @@ import {
   COMPANY_ADDRESS_LINES,
   COMPANY_LEGAL_EMAIL,
 } from "@shared/companyAddress";
+import { OptimizedPicture } from "@/components/ui/OptimizedPicture";
+import { pictureProps } from "@/lib/marketingImages";
 
 export default function Contact() {
+  const hero = pictureProps("contact-hero", {
+    alt: "Cook preparing organic food",
+    sizesAttr: "(max-width: 1024px) 100vw, 50vw",
+  });
+
   const [formState, setFormState] = useState({
     name: "",
     email: "",
@@ -116,9 +123,8 @@ export default function Contact() {
 
             {/* Supporting Hero Image */}
             <div className="rounded-[32px] overflow-hidden shadow-2xl border border-white/5 aspect-[16/10] bg-[#161616]">
-              <img 
-                src="/contact-hero.png" 
-                alt="Cook preparing organic food" 
+              <OptimizedPicture
+                {...hero}
                 className="w-full h-full object-cover"
               />
             </div>

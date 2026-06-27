@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -13,11 +13,17 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthService } from "@/services/auth.service";
-import { NotificationBell } from "@/components/ui/NotificationBell";
+import { LogoPicture } from "@/components/ui/OptimizedPicture";
 import { GlobalBannerStrip } from "@/components/GlobalBannerStrip";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentUserRole } from "@/hooks/useCurrentUserRole";
 import { useValidSession } from "@/hooks/useValidSession";
+
+const NotificationBell = lazy(() =>
+  import("@/components/ui/NotificationBell").then((m) => ({
+    default: m.NotificationBell,
+  })),
+);
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -120,13 +126,11 @@ export default function Navbar() {
               className="flex items-center justify-center flex-shrink-0"
               style={{ minWidth: 40 }}
             >
-              <img
-                src="/1.png"
-                alt="ServdCo"
-                loading="eager"
-                decoding="async"
+              <LogoPicture
+                alt="Servd Co"
                 className="h-[40px] sm:h-[42px] md:h-[48px] lg:h-[52px] w-auto object-contain"
-                style={{ imageRendering: "auto", objectPosition: "center" }}
+                width={120}
+                height={52}
               />
             </div>
           </Link>
@@ -237,7 +241,9 @@ export default function Navbar() {
                   My Dashboard
                 </Link>
                 <div className="hidden sm:block">
-                  <NotificationBell />
+                  <Suspense fallback={<span className="inline-block w-9 h-9" aria-hidden />}>
+                    <NotificationBell />
+                  </Suspense>
                 </div>
                 <button
                   onClick={handleLogout}
@@ -340,13 +346,11 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2.5"
                 >
-                  <img
-                    src="/1.png"
-                    alt="ServdCo"
-                    loading="eager"
-                    decoding="async"
+                  <LogoPicture
+                    alt="Servd Co"
                     className="h-[40px] w-auto object-contain"
-                    style={{ objectPosition: "center" }}
+                    width={120}
+                    height={40}
                   />
                 </Link>
                 <button
@@ -432,7 +436,9 @@ export default function Navbar() {
                 {showAuthenticatedNav && (
                   <div className="flex items-center justify-between px-1 pb-1">
                     <span className="text-xs font-semibold text-white/60">Notifications</span>
-                    <NotificationBell />
+                    <Suspense fallback={<span className="inline-block w-9 h-9" aria-hidden />}>
+                      <NotificationBell />
+                    </Suspense>
                   </div>
                 )}
                 {showAuthenticatedNav ? (

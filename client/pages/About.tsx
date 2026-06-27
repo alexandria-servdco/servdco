@@ -2,8 +2,15 @@ import { Link } from "react-router-dom";
 import { Heart, Play, Users, Home, MapPin, ChefHat, ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { OptimizedPicture } from "@/components/ui/OptimizedPicture";
+import { pictureProps } from "@/lib/marketingImages";
 
 export default function About() {
+  const hero = pictureProps("about-hero", {
+    alt: "Family and cook enjoying a meal",
+    sizesAttr: "(max-width: 1024px) 100vw, 50vw",
+  });
+
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
       <Navbar />
@@ -40,9 +47,8 @@ export default function About() {
             {/* Right Image Container */}
             <div className="lg:col-span-6 relative">
               <div className="w-full aspect-[4/3] rounded-[32px] overflow-hidden shadow-2xl border border-white/5 relative bg-[#1A1A1A]">
-                <img 
-                  src="/about-hero.png" 
-                  alt="Family and cook enjoying a meal" 
+                <OptimizedPicture
+                  {...hero}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

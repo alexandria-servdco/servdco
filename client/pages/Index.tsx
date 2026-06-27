@@ -23,11 +23,12 @@ import {
   ChevronRight,
   Gift,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { calculateCookPayout } from "@/utils/platformFee";
 import { useBrowseChefs } from "@/hooks/useChefs";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resolveAvatarUrl } from "@/lib/avatar";
+import { OptimizedPicture } from "@/components/ui/OptimizedPicture";
+import { pictureProps } from "@/lib/marketingImages";
 import { MarketplaceEmptyState } from "@/components/marketplace/MarketplaceEmptyState";
 import { BrandSelect } from "@/components/ui/BrandSelect";
 
@@ -102,22 +103,15 @@ export default function Index() {
     }
   };
 
-  const containerVariants: any = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
-  };
-
-  const itemVariants: any = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5, ease: "easeOut" },
-    },
-  };
+  const heroPicture = pictureProps("home-hero", {
+    alt: "Cook preparing food in warm family kitchen",
+    priority: true,
+    sizesAttr: "(max-width: 1024px) 100vw, 55vw",
+  });
+  const founderPicture = pictureProps("home-mother-child", {
+    alt: "Mother sitting happily with her child in a warm home after a long day",
+    sizesAttr: "(max-width: 1024px) 100vw, 42vw",
+  });
 
   return (
     <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans overflow-x-hidden selection:bg-[#FF7A59]/20 selection:text-[#FF7A59]">
@@ -130,11 +124,8 @@ export default function Index() {
 
         {/* Mobile: full-bleed hero behind navbar (desktop unchanged below) */}
         <div className="absolute inset-0 z-0 lg:hidden" aria-hidden="true">
-          <img
-            src="/home-hero.png"
-            alt=""
-            fetchPriority="high"
-            decoding="async"
+          <OptimizedPicture
+            {...heroPicture}
             className="absolute inset-0 w-full h-full object-cover object-[center_35%]"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/75 via-[#111111]/55 to-[#111111]" />
@@ -145,11 +136,8 @@ export default function Index() {
           {/* Radial center/left fade overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#111111] via-[#111111]/85 to-transparent z-10 w-[40%]" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent z-10 h-full" />
-          <img
-            src="/home-hero.png"
-            alt="Cook preparing food in warm family kitchen"
-            fetchPriority="high"
-            decoding="async"
+          <OptimizedPicture
+            {...heroPicture}
             className="w-full h-full object-cover object-right rounded-bl-[160px] shadow-2xl border-l border-b border-white/5"
           />
         </div>
@@ -264,12 +252,8 @@ export default function Index() {
             </p>
           </div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="relative grid grid-cols-1 lg:grid-cols-3 gap-10"
+          <div
+            className="relative grid grid-cols-1 lg:grid-cols-3 gap-10 animate-page-in"
           >
             {/* Connector line desktop */}
             <div className="hidden lg:block absolute top-[52px] left-[calc(16.66%+24px)] right-[calc(16.66%+24px)] h-[1px] bg-gradient-to-r from-white/0 via-[#FF7A59]/30 to-white/0 pointer-events-none" />
@@ -294,9 +278,8 @@ export default function Index() {
                 desc: "Your cook arrives, prepares your meals in your kitchen, and handles basic kitchen cleanup before they leave.",
               },
             ].map(({ step, icon: Icon, title, desc }, i) => (
-              <motion.div
+              <div
                 key={i}
-                variants={itemVariants}
                 className="relative velvet-card p-8 group"
               >
                 <div className="absolute -top-4 left-8">
@@ -311,9 +294,9 @@ export default function Index() {
                   {title}
                 </h3>
                 <p className="text-xs text-[#A8A8A8] leading-relaxed">{desc}</p>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -403,9 +386,8 @@ export default function Index() {
             <div className="absolute -top-6 -left-6 w-32 h-32 bg-[#FF7A59]/5 rounded-full opacity-60 blur-3xl pointer-events-none" />
 
             <div className="relative rounded-[32px] overflow-hidden border border-white/5 shadow-2xl bg-[#2A2A2A] transition-all duration-500">
-              <img
-                src="/home-mother-child.png"
-                alt="Mother sitting happily with her child in a warm home after a long day"
+              <OptimizedPicture
+                {...founderPicture}
                 className="w-full h-[480px] object-cover object-center group-hover:scale-[1.01] transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#111111]/90 via-transparent to-transparent opacity-90" />
@@ -445,7 +427,7 @@ export default function Index() {
               <p>
                 As I started building Servd Co., I realized that busy parents and professionals aren’t the only ones who would benefit from this platform. From elderly adults looking to maintain their independence with wholesome meals, to college students leaving home for the very first time, to postpartum moms and new dads navigating those beautiful, exhausting early weeks, to your dad who just had a major surgery and needs real nutrition to heal, Servd Co. is designed with everyone in mind. Because after all, we could all use a helping hand in the kitchen sometimes
               </p>
-              <p className="text-xs text-[#A8A8A8]/60 border-t border-white/5 pt-4 mt-2">
+              <p className="text-xs text-[#A8A8A8] border-t border-white/5 pt-4 mt-2">
                 From busy parents and elderly adults to college students,
                 postpartum moms, recovering family members, and anyone needing
                 support, Servd Co was designed for everyone.

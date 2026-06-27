@@ -1,0 +1,365 @@
+{
+  "1": {
+    "original": "/1.png",
+    "originalBytes": 676651,
+    "aspectRatio": "1536 / 1536",
+    "defaultWidth": 1536,
+    "defaultHeight": 1536,
+    "sizes": [
+      {
+        "width": 128,
+        "height": 128,
+        "path": "/1-128.webp",
+        "bytes": 4356
+      },
+      {
+        "width": 256,
+        "height": 256,
+        "path": "/1-256.webp",
+        "bytes": 10100
+      },
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/1-480.webp",
+        "bytes": 20598
+      },
+      {
+        "width": 1280,
+        "height": 1280,
+        "path": "/1-1280.webp",
+        "bytes": 67042
+      }
+    ]
+  },
+  "3": {
+    "original": "/3.png",
+    "originalBytes": 301029,
+    "aspectRatio": "1536 / 1536",
+    "defaultWidth": 1536,
+    "defaultHeight": 1536,
+    "sizes": [
+      {
+        "width": 128,
+        "height": 128,
+        "path": "/3-128.webp",
+        "bytes": 2610
+      },
+      {
+        "width": 256,
+        "height": 256,
+        "path": "/3-256.webp",
+        "bytes": 6058
+      },
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/3-480.webp",
+        "bytes": 12604
+      },
+      {
+        "width": 1280,
+        "height": 1280,
+        "path": "/3-1280.webp",
+        "bytes": 41848
+      }
+    ]
+  },
+  "about-hero": {
+    "original": "/about-hero.png",
+    "originalBytes": 903686,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/about-hero-480.webp",
+        "bytes": 53346
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/about-hero-768.webp",
+        "bytes": 104710
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/about-hero-1280.webp",
+        "bytes": 159830
+      }
+    ]
+  },
+  "about-test": {
+    "original": "/about-test.png",
+    "originalBytes": 793898,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/about-test-480.webp",
+        "bytes": 44738
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/about-test-768.webp",
+        "bytes": 83678
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/about-test-1280.webp",
+        "bytes": 124048
+      }
+    ]
+  },
+  "about-why": {
+    "original": "/about-why.png",
+    "originalBytes": 823353,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/about-why-480.webp",
+        "bytes": 45298
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/about-why-768.webp",
+        "bytes": 85320
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/about-why-1280.webp",
+        "bytes": 125188
+      }
+    ]
+  },
+  "chef-illustration": {
+    "original": "/chef-illustration.png",
+    "originalBytes": 842687,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/chef-illustration-480.webp",
+        "bytes": 48680
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/chef-illustration-768.webp",
+        "bytes": 91602
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/chef-illustration-1280.webp",
+        "bytes": 137412
+      }
+    ]
+  },
+  "chef-registration-hero": {
+    "original": "/chef-registration-hero.png",
+    "originalBytes": 795745,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/chef-registration-hero-480.webp",
+        "bytes": 42984
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/chef-registration-hero-768.webp",
+        "bytes": 79472
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/chef-registration-hero-1280.webp",
+        "bytes": 117808
+      }
+    ]
+  },
+  "contact-hero": {
+    "original": "/contact-hero.png",
+    "originalBytes": 869696,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/contact-hero-480.webp",
+        "bytes": 48498
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/contact-hero-768.webp",
+        "bytes": 92942
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/contact-hero-1280.webp",
+        "bytes": 143934
+      }
+    ]
+  },
+  "contact-map": {
+    "original": "/contact-map.png",
+    "originalBytes": 851114,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/contact-map-480.webp",
+        "bytes": 49444
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/contact-map-768.webp",
+        "bytes": 104630
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/contact-map-1280.webp",
+        "bytes": 164432
+      }
+    ]
+  },
+  "family-illustration": {
+    "original": "/family-illustration.png",
+    "originalBytes": 1071112,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/family-illustration-480.webp",
+        "bytes": 69250
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/family-illustration-768.webp",
+        "bytes": 148208
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/family-illustration-1280.webp",
+        "bytes": 239436
+      }
+    ]
+  },
+  "home-hero": {
+    "original": "/home-hero.png",
+    "originalBytes": 784354,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/home-hero-480.webp",
+        "bytes": 40174
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/home-hero-768.webp",
+        "bytes": 76016
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/home-hero-1280.webp",
+        "bytes": 108532
+      }
+    ]
+  },
+  "home-mother-child": {
+    "original": "/home-mother-child.png",
+    "originalBytes": 827565,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/home-mother-child-480.webp",
+        "bytes": 41612
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/home-mother-child-768.webp",
+        "bytes": 84292
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/home-mother-child-1280.webp",
+        "bytes": 131666
+      }
+    ]
+  },
+  "home-steps": {
+    "original": "/home-steps.png",
+    "originalBytes": 566803,
+    "aspectRatio": "1024 / 1024",
+    "defaultWidth": 1024,
+    "defaultHeight": 1024,
+    "sizes": [
+      {
+        "width": 480,
+        "height": 480,
+        "path": "/home-steps-480.webp",
+        "bytes": 27420
+      },
+      {
+        "width": 768,
+        "height": 768,
+        "path": "/home-steps-768.webp",
+        "bytes": 47956
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "path": "/home-steps-1280.webp",
+        "bytes": 67552
+      }
+    ]
+  }
+}

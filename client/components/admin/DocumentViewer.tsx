@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, FileText, Loader2, RefreshCw } from "lucide-react";
-import * as pdfjs from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 export interface DocumentViewerProps {
   url: string;
@@ -12,6 +8,22 @@ export interface DocumentViewerProps {
 }
 
 const PDF_RENDER_TIMEOUT_MS = 12_000;
+
+let pdfJsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
+
+async function loadPdfJs() {
+  if (!pdfJsPromise) {
+    pdfJsPromise = (async () => {
+      const pdfjs = await import("pdfjs-dist");
+      const worker = await import(
+        "pdfjs-dist/build/pdf.worker.min.mjs?url"
+      );
+      pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+      return pdfjs;
+    })();
+  }
+  return pdfJsPromise;
+}
 
 function isPdf(url: string, mimeHint?: string, fileName?: string): boolean {
   if (mimeHint === "application/pdf") return true;
@@ -111,6 +123,7 @@ function PdfCanvasViewer({
       setLoading(true);
       setError(null);
       try {
+        const pdfjs = await loadPdfJs();
         const task = pdfjs.getDocument({
           url,
           withCredentials: false,

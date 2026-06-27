@@ -117,10 +117,10 @@ export function StateCitySelect({
   }, [remoteCities, bundledCities, cityQuery]);
 
   const handleStateChange = (nextState: string) => {
-    onStateChange(nextState);
-    onCityChange("");
     setCityQuery("");
     setRemoteCities([]);
+    onStateChange(nextState);
+    onCityChange("");
   };
 
   const listId = `city-suggestions-${stateCode || "state"}`;

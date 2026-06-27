@@ -13,6 +13,7 @@
     "test:browser-e2e": "node scripts/browser-workflows-e2e.mjs",
     "test:security-e2e": "node scripts/security-e2e-verify.mjs",
     "analyze": "vite build && node scripts/bundle-report.mjs",
+    "optimize:images": "node scripts/optimize-public-images.mjs",
     "seed:dev-chefs": "node supabase/scripts/run-dev-chefs-seed.mjs",
     "format.fix": "prettier --write .",
     "typecheck": "tsc"
@@ -88,6 +89,7 @@
     "react-resizable-panels": "^3.0.4",
     "react-router-dom": "^6.30.1",
     "recharts": "^2.12.7",
+    "sharp": "^0.35.2",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3.4.17",

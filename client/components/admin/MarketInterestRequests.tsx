@@ -39,6 +39,9 @@ export function MarketInterestRequests({
   const [reviewRequest, setReviewRequest] = useState<InterestRequestRow | null>(
     null,
   );
+  const [actionResult, setActionResult] = useState<
+    "approve" | "queue" | "reject" | null
+  >(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
 
@@ -405,12 +408,21 @@ export function MarketInterestRequests({
         allRequests={interestRequests}
         regions={regions}
         open={!!reviewRequest}
-        onOpenChange={(open) => !open && setReviewRequest(null)}
+        onOpenChange={(open) => {
+          if (!open && !regionActionPending) {
+            setReviewRequest(null);
+            setActionResult(null);
+          }
+        }}
         onAction={async (action, request) => {
           await onRegionAction(action, request);
+          setActionResult(action);
+          await new Promise((resolve) => setTimeout(resolve, 500));
           setReviewRequest(null);
+          setActionResult(null);
         }}
         isPending={regionActionPending}
+        actionResult={actionResult}
       />
     </>
   );

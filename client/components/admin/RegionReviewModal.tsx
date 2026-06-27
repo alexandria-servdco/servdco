@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, TrendingUp, Users, ChefHat } from "lucide-react";
+import { Loader2, MapPin, TrendingUp, Users, ChefHat, CheckCircle2 } from "lucide-react";
 import type { LaunchRegion } from "@/lib/launchOpsTypes";
 import { resolveStateCode } from "@/lib/us-locations";
 
@@ -33,6 +33,7 @@ type RegionReviewModalProps = {
     request: InterestRequestRow,
   ) => Promise<void>;
   isPending?: boolean;
+  actionResult?: "approve" | "queue" | "reject" | null;
 };
 
 export function RegionReviewModal({
@@ -43,6 +44,7 @@ export function RegionReviewModal({
   onOpenChange,
   onAction,
   isPending,
+  actionResult,
 }: RegionReviewModalProps) {
   const stats = useMemo(() => {
     if (!request) return null;
@@ -154,32 +156,47 @@ export function RegionReviewModal({
         )}
 
         <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
-          <Button
-            variant="outline"
-            className="border-white/10 bg-transparent text-white hover:bg-white/5"
-            disabled={isPending}
-            onClick={() => void onAction("reject", request)}
-          >
-            Reject
-          </Button>
-          <Button
-            variant="outline"
-            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-            disabled={isPending}
-            onClick={() => void onAction("queue", request)}
-          >
-            Queue Region
-          </Button>
-          <Button disabled={isPending} onClick={() => void onAction("approve", request)}>
-            {isPending ? (
-              <>
-                <Loader2 className="animate-spin mr-2" size={14} />
-                Saving…
-              </>
-            ) : (
-              "Approve Region"
-            )}
-          </Button>
+          {actionResult ? (
+            <div className="w-full flex items-center justify-center gap-2 py-2 text-emerald-400 animate-fadeIn">
+              <CheckCircle2 size={18} />
+              <span className="text-sm font-semibold">
+                {actionResult === "approve"
+                  ? "Region approved — updating launch control…"
+                  : actionResult === "queue"
+                    ? "Region queued on waitlist"
+                    : "Region review declined"}
+              </span>
+            </div>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                className="border-white/10 bg-transparent text-white hover:bg-white/5"
+                disabled={isPending}
+                onClick={() => void onAction("reject", request)}
+              >
+                Reject
+              </Button>
+              <Button
+                variant="outline"
+                className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                disabled={isPending}
+                onClick={() => void onAction("queue", request)}
+              >
+                Queue Region
+              </Button>
+              <Button disabled={isPending} onClick={() => void onAction("approve", request)}>
+                {isPending ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" size={14} />
+                    Saving…
+                  </>
+                ) : (
+                  "Approve Region"
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -6,6 +6,7 @@ import {
   mapToUserFacingError,
   type UserFacingError,
 } from "@shared/userErrors";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 async function readBearerToken(): Promise<string | null> {
   const client = getSupabaseClient();
@@ -57,7 +58,7 @@ export const SecurityApi = {
   > {
     let res: Response;
     try {
-      res = await fetch("/api/auth/signup", {
+      res = await fetchWithTimeout("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,6 +75,7 @@ export const SecurityApi = {
           primaryCuisine: params.primaryCuisine,
           bio: params.bio,
         }),
+        timeoutMs: 28_000,
       });
     } catch (err) {
       throw await parseFetchError(err);

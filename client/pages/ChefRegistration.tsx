@@ -459,8 +459,12 @@ export default function ChefRegistration() {
                     state={formData.state}
                     city={formData.city}
                     zip={formData.zip}
-                    onStateChange={(state) => setFormData({ ...formData, state })}
-                    onCityChange={(city) => setFormData({ ...formData, city })}
+                    onStateChange={(state) =>
+                      setFormData((prev) => ({ ...prev, state, city: "" }))
+                    }
+                    onCityChange={(city) =>
+                      setFormData((prev) => ({ ...prev, city }))
+                    }
                   />
 
                   <div className="p-4 bg-[#FF7A59]/5 rounded-2xl flex gap-3.5 border border-[#FF7A59]/10">

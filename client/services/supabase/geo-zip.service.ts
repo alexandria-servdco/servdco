@@ -1,5 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { assertSupabaseConfigured } from "@/services/supabase/fallback";
+import { withTimeout } from "@/lib/fetchWithTimeout";
+import { citiesAvailableForState } from "@/lib/zip-codes-by-city";
 import {
   formatCommaList,
   mergeUniqueZips,
@@ -21,16 +23,23 @@ export const GeoZipService = {
     if (!/^\d{5}$/.test(normalizedZip)) return [];
 
     if (client) {
-      const { data, error } = await client
-        .from("geo_city_zip_codes")
-        .select("city_name")
-        .eq("state_code", code)
-        .eq("zip_code", normalizedZip)
-        .limit(5);
+      try {
+        const { data, error } = await withTimeout(
+          client
+            .from("geo_city_zip_codes")
+            .select("city_name")
+            .eq("state_code", code)
+            .eq("zip_code", normalizedZip)
+            .limit(5),
+          6_000,
+        );
 
-      if (!error && data && data.length > 0) {
-        const unique = [...new Set(data.map((r) => r.city_name))];
-        return unique.map((cityName) => ({ cityName, zipCount: 1 }));
+        if (!error && data && data.length > 0) {
+          const unique = [...new Set(data.map((r) => r.city_name))];
+          return unique.map((cityName) => ({ cityName, zipCount: 1 }));
+        }
+      } catch {
+        // fall through to bundled data
       }
     }
 
@@ -49,21 +58,36 @@ export const GeoZipService = {
     if (!client) return [];
 
     const code = stateCode.trim().toUpperCase().slice(0, 2);
-    const { data, error } = await client.rpc("search_geo_cities", {
-      p_state_code: code,
-      p_query: query.trim(),
-      p_limit: limit,
-    });
+    const bundled = citiesAvailableForState(code).map((cityName) => ({
+      cityName,
+      zipCount: 0,
+    }));
 
-    if (error) {
-      console.warn("[GeoZipService.searchCities]", error.message);
-      return [];
+    try {
+      const { data, error } = await withTimeout(
+        client.rpc("search_geo_cities", {
+          p_state_code: code,
+          p_query: query.trim(),
+          p_limit: limit,
+        }),
+        6_000,
+      );
+
+      if (!error && data && data.length > 0) {
+        return data.map((row) => ({
+          cityName: row.city_name,
+          zipCount: Number(row.zip_count),
+        }));
+      }
+    } catch (err) {
+      console.warn("[GeoZipService.searchCities]", err);
     }
 
-    return (data ?? []).map((row) => ({
-      cityName: row.city_name,
-      zipCount: Number(row.zip_count),
-    }));
+    const q = query.trim().toLowerCase();
+    const list = q
+      ? bundled.filter((c) => c.cityName.toLowerCase().includes(q))
+      : bundled;
+    return list.slice(0, limit);
   },
 
   async getZipsForCities(stateCode: string, cities: string[]): Promise<string[]> {

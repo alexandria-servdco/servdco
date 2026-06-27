@@ -1,4 +1,5 @@
 import { getStripeEnv } from "../stripe/env.js";
+import { fetchWithTimeout } from "../fetchWithTimeout.js";
 
 export type AuthUserSummary = {
   id: string;
@@ -51,7 +52,7 @@ export async function createAuthUser(params: {
   }
 
   try {
-    const res = await fetch(`${config.url}/auth/v1/admin/users`, {
+    const res = await fetchWithTimeout(`${config.url}/auth/v1/admin/users`, {
       method: "POST",
       headers: adminHeaders(config.key),
       body: JSON.stringify({
@@ -60,6 +61,7 @@ export async function createAuthUser(params: {
         email_confirm: params.email_confirm ?? false,
         user_metadata: params.user_metadata ?? {},
       }),
+      timeoutMs: 18_000,
     });
 
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
@@ -97,11 +99,12 @@ export async function findAuthUserByEmail(
   const normalized = email.trim().toLowerCase();
 
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${config.url}/auth/v1/admin/users?filter=${encodeURIComponent(`email=eq.${normalized}`)}`,
       {
         method: "GET",
         headers: adminHeaders(config.key),
+        timeoutMs: 12_000,
       },
     );
 

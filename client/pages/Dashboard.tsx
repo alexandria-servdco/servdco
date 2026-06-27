@@ -681,8 +681,12 @@ export default function Dashboard() {
               <StateCitySelect
                 state={profileData.state}
                 city={profileData.city}
-                onStateChange={(state) => setProfileData({ ...profileData, state, city: "" })}
-                onCityChange={(city) => setProfileData({ ...profileData, city })}
+                onStateChange={(state) =>
+                  setProfileData((prev) => ({ ...prev, state, city: "" }))
+                }
+                onCityChange={(city) =>
+                  setProfileData((prev) => ({ ...prev, city }))
+                }
               />
 
               <div className="space-y-3">

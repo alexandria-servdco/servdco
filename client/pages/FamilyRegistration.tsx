@@ -381,8 +381,12 @@ export default function FamilyRegistration() {
                 state={formData.state}
                 city={formData.city}
                 zip={formData.zip}
-                onStateChange={(state) => setFormData({ ...formData, state })}
-                onCityChange={(city) => setFormData({ ...formData, city })}
+                onStateChange={(state) =>
+                  setFormData((prev) => ({ ...prev, state, city: "" }))
+                }
+                onCityChange={(city) =>
+                  setFormData((prev) => ({ ...prev, city }))
+                }
               />
 
               {/* Safety Shield */}

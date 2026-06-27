@@ -317,8 +317,8 @@ export default function AdminDashboard({
     }
   }, [location.pathname]);
 
-  const reloadData = useCallback(async () => {
-    setIsLoading(true);
+  const reloadData = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setIsLoading(true);
     try {
       const data = await api.getRegions();
       setRegions(data.regions);
@@ -438,7 +438,7 @@ export default function AdminDashboard({
         is_active: !region.is_active,
         is_waitlist: !region.is_active ? false : region.is_waitlist,
       });
-      await reloadData();
+      await reloadData({ silent: true });
     } catch (err) {
       console.error(err);
     }
@@ -463,7 +463,7 @@ export default function AdminDashboard({
         allow_payments: updatedData.allow_payments,
         refresh_waitlist: true,
       });
-      await reloadData();
+      await reloadData({ silent: true });
       setEditingRegion(null);
     } catch (err) {
       console.error(err);
@@ -503,6 +503,22 @@ export default function AdminDashboard({
           is_waitlist: false,
           city: request.city,
         });
+        setRegions((prev) => {
+          const idx = prev.findIndex(
+            (r) =>
+              r.id === stateCode ||
+              r.state.toLowerCase() === request.state.trim().toLowerCase(),
+          );
+          if (idx < 0) return prev;
+          const next = [...prev];
+          next[idx] = {
+            ...next[idx],
+            is_active: true,
+            is_waitlist: false,
+            city: request.city,
+          };
+          return next;
+        });
         toast.success(`${request.city}, ${stateName} approved for launch`);
       } else if (action === "queue") {
         if (!existing) await api.initializeState(stateCode, stateName);
@@ -510,6 +526,22 @@ export default function AdminDashboard({
           is_active: false,
           is_waitlist: true,
           city: request.city,
+        });
+        setRegions((prev) => {
+          const idx = prev.findIndex(
+            (r) =>
+              r.id === stateCode ||
+              r.state.toLowerCase() === request.state.trim().toLowerCase(),
+          );
+          if (idx < 0) return prev;
+          const next = [...prev];
+          next[idx] = {
+            ...next[idx],
+            is_active: false,
+            is_waitlist: true,
+            city: request.city,
+          };
+          return next;
         });
         toast.success(`${request.city}, ${stateName} queued on waitlist`);
       } else {

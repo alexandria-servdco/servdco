@@ -1,6 +1,6 @@
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { fetchWithTimeout } from "../fetchWithTimeout.js";
-import { stateCodeToName, resolveStateCode, US_STATE_CODE_TO_NAME } from "@shared/location";
+import { stateCodeToName, resolveStateCode, US_STATE_CODE_TO_NAME } from "../../../shared/location.js";
 
 export type ReverseGeocodeResult = {
   zip: string;

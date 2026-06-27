@@ -58,11 +58,18 @@ await probe(
 );
 await probe("POST /api/stripe/webhook", "POST", "/api/stripe/webhook", {}, (s) => s === 400 || s === 401 || s === 405);
 await probe(
-  "POST /api/location/reverse",
+  "POST /api/location/reverse (invalid)",
   "POST",
   "/api/location/reverse",
   { latitude: 999, longitude: 999 },
   (s) => s === 400 || s === 422,
+);
+await probe(
+  "POST /api/location/reverse (Columbus)",
+  "POST",
+  "/api/location/reverse",
+  { latitude: 39.9612, longitude: -82.9988 },
+  (s, j) => s === 200 && j?.success === true,
 );
 await probe(
   "POST /api/location/update",

@@ -69,7 +69,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ error: "Unknown platform action." });
     }
   } catch (err) {
-    console.error(`[platform.${action}]`, err instanceof Error ? err.message : err);
+    console.error(
+      `[platform.${action}]`,
+      err instanceof Error ? err.stack ?? err.message : err,
+    );
     return res.status(500).json({ error: "Platform action failed." });
   }
 }

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
-import { sendResendEmail, ADMIN_NOTIFY_EMAIL } from "../_lib/email/resend.js";
-import { applySecurityMiddleware } from "../_lib/securityMiddleware.js";
+import { getServiceRoleClient } from "../supabase/serviceRole.js";
+import { sendResendEmail, ADMIN_NOTIFY_EMAIL } from "../email/resend.js";
+import { applySecurityMiddleware } from "../securityMiddleware.js";
 
 const contactSubmitSchema = z.object({
   turnstileToken: z.string().optional(),
@@ -12,7 +12,18 @@ const contactSubmitSchema = z.object({
   message: z.string().trim().min(10).max(5000),
 });
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export async function handleContactSubmit(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
   const ctx = await applySecurityMiddleware(req, res, {
     methods: ["POST"],
     route: "/api/contact/submit",
@@ -23,9 +34,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const parsed = contactSubmitSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    res.status(400).json({
       error: parsed.error.errors[0]?.message ?? "Invalid input",
     });
+    return;
   }
 
   const { name, email, subject, message } = parsed.data;
@@ -48,7 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (insertError) {
     console.error("[contact.submit]", insertError);
-    return res.status(500).json({ error: "Could not save message." });
+    res.status(500).json({ error: "Could not save message." });
+    return;
   }
 
   const emailResult = await sendResendEmail({
@@ -84,18 +97,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  return res.status(200).json({
+  res.status(200).json({
     success: true,
     message: "Thank you for reaching out. Our team will respond within 24 hours.",
     messageId: row.id,
     resendId: emailResult.id ?? null,
   });
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

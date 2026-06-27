@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
-import { sendResendEmail } from "../_lib/email/resend.js";
-import { enforceRateLimit } from "../_lib/rateLimit.js";
+import { getServiceRoleClient } from "../supabase/serviceRole.js";
+import { sendResendEmail } from "../email/resend.js";
+import { enforceRateLimit } from "../rateLimit.js";
 import {
   authorizeEmailEventRequest,
   canSendBookingEmail,
   canSendDocumentEmail,
-} from "../_lib/emailAuth.js";
+} from "../emailAuth.js";
 
 const bookingEvents = [
   "booking_requested",
@@ -55,9 +55,20 @@ const EVENT_SUBJECTS: Record<string, string> = {
   document_resubmission_requested: "Document Resubmission Requested",
 };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+export async function handleBookingEventEmail(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   if (!(await enforceRateLimit(req, res, "email_event", { route: "/api/emails/booking-event" }))) {
@@ -66,12 +77,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const auth = await authorizeEmailEventRequest(req);
   if (!auth) {
-    return res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
   const parsed = requestSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid request" });
+    res.status(400).json({ error: "Invalid request" });
+    return;
   }
 
   const { event } = parsed.data;
@@ -83,7 +96,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const allowed = await canSendDocumentEmail(auth.userId, documentId);
     if (!allowed) {
-      return res.status(403).json({ error: "Forbidden" });
+      res.status(403).json({ error: "Forbidden" });
+      return;
     }
 
     const { data: doc } = await client
@@ -93,7 +107,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .maybeSingle();
 
     if (!doc) {
-      return res.status(404).json({ error: "Document not found" });
+      res.status(404).json({ error: "Document not found" });
+      return;
     }
 
     const { data: chefProfile } = await client
@@ -103,7 +118,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .maybeSingle();
 
     if (!chefProfile?.user_id) {
-      return res.status(200).json({ ok: true, skipped: "no_chef" });
+      res.status(200).json({ ok: true, skipped: "no_chef" });
+      return;
     }
 
     const { data: profile } = await client
@@ -113,7 +129,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .maybeSingle();
 
     if (!profile?.email) {
-      return res.status(200).json({ ok: true, skipped: "no_email" });
+      res.status(200).json({ ok: true, skipped: "no_email" });
+      return;
     }
 
     const notesLine = doc.review_notes
@@ -131,18 +148,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `,
     });
 
-    return res.status(200).json({ ok: result.ok, id: result.id });
+    res.status(200).json({ ok: result.ok, id: result.id });
+    return;
   }
 
   if (!("bookingId" in parsed.data)) {
-    return res.status(400).json({ error: "Invalid request" });
+    res.status(400).json({ error: "Invalid request" });
+    return;
   }
 
   const { bookingId } = parsed.data;
 
   const allowed = await canSendBookingEmail(auth.userId, bookingId);
   if (!allowed) {
-    return res.status(403).json({ error: "Forbidden" });
+    res.status(403).json({ error: "Forbidden" });
+    return;
   }
 
   const { data: booking } = await client
@@ -152,7 +172,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .maybeSingle();
 
   if (!booking) {
-    return res.status(404).json({ error: "Booking not found" });
+    res.status(404).json({ error: "Booking not found" });
+    return;
   }
 
   const { data: familyProfile } = await client
@@ -163,7 +184,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const toEmail = familyProfile?.email;
   if (!toEmail) {
-    return res.status(200).json({ ok: true, skipped: "no_email" });
+    res.status(200).json({ ok: true, skipped: "no_email" });
+    return;
   }
 
   const mealLine = booking.meal_request
@@ -182,12 +204,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `,
   });
 
-  return res.status(200).json({ ok: result.ok, id: result.id });
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  res.status(200).json({ ok: result.ok, id: result.id });
 }

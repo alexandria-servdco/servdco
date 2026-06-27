@@ -94,13 +94,13 @@ const waitlistRoute = readSrc("api/_lib/handlers/waitlistSubmit.ts");
 if (waitlistRoute?.includes("rateLimit: \"waitlist\"")) pass("Waitlist API rate limited");
 else fail("Waitlist API rate limited");
 
-const emailRoute = readSrc("api/emails/booking-event.ts");
+const emailRoute = readSrc("api/_lib/handlers/bookingEventEmail.ts");
 if (emailRoute?.includes("authorizeEmailEventRequest")) pass("Email API requires authentication");
 else fail("Email API requires authentication");
 if (emailRoute?.includes("enforceRateLimit")) pass("Email API rate limited");
 else fail("Email API rate limited");
 
-const contactRoute = readSrc("api/contact/submit.ts");
+const contactRoute = readSrc("api/_lib/handlers/contactSubmit.ts");
 if (contactRoute?.includes("turnstile: true")) pass("Contact form Turnstile protected");
 else fail("Contact form Turnstile protected");
 if (contactRoute?.includes("rateLimit: \"contact\"")) pass("Contact form rate limited");

@@ -53,6 +53,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
         return handleLocationUpdate(req, res);
       }
+      case "contact-submit": {
+        const { handleContactSubmit } = await import(
+          "../_lib/handlers/contactSubmit.js"
+        );
+        return handleContactSubmit(req, res);
+      }
+      case "booking-event": {
+        const { handleBookingEventEmail } = await import(
+          "../_lib/handlers/bookingEventEmail.js"
+        );
+        return handleBookingEventEmail(req, res);
+      }
       default:
         return res.status(404).json({ error: "Unknown platform action." });
     }

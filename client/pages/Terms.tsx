@@ -4,6 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
+import {
+  COMPANY_ADDRESS_LINES,
+  COMPANY_LEGAL_EMAIL,
+} from "@shared/companyAddress";
 
 const TERMS_SECTIONS = [
   { id: "acceptance", label: "1. Acceptance of Terms" },
@@ -13,9 +17,10 @@ const TERMS_SECTIONS = [
   { id: "cancellations", label: "5. Cancellations & Refunds" },
   { id: "liability", label: "6. Limitation of Liability" },
   { id: "reviews", label: "7. User Content & Reviews" },
-  { id: "termination", label: "8. Account Suspension" },
-  { id: "governing-law", label: "9. Governing Law" },
-  { id: "contact", label: "10. Contact Information" },
+  { id: "platform-communication", label: "8. Platform Communication & Safety" },
+  { id: "termination", label: "9. Account Suspension" },
+  { id: "governing-law", label: "10. Governing Law" },
+  { id: "contact", label: "11. Contact Information" },
 ];
 
 export default function Terms() {
@@ -135,7 +140,7 @@ export default function Terms() {
     <LegalLayout
       title="Terms of Service"
       subtitle="Please review these platform rules and guidelines before creating your ServdCo account."
-      lastUpdated="May 23, 2026"
+      lastUpdated="June 12, 2026"
       activeDocName="Terms of Service"
       sidebarContent={sidebarContent}
     >
@@ -233,8 +238,34 @@ export default function Terms() {
           </p>
         </section>
 
+        <section id="platform-communication" className="scroll-mt-24 space-y-3">
+          <h2 className="text-2xl font-bold border-b border-white/5 pb-2">8. Platform Communication & Safety</h2>
+          <p className="text-sm leading-relaxed">
+            Communications sent through Servd Co&apos;s internal messaging system are intended to facilitate bookings, coordinate scheduled services, and provide platform support between families and independent cooks.
+          </p>
+          <p className="text-sm leading-relaxed">
+            Servd Co does <strong>not</strong> routinely monitor every conversation in real time. We may access, review, log, preserve, or disclose communications only when reasonably necessary to:
+          </p>
+          <ul className="list-disc pl-6 space-y-2 text-sm text-[#A8A8A8]">
+            <li>investigate fraud or suspicious activity;</li>
+            <li>investigate abuse, harassment, or safety concerns;</li>
+            <li>resolve booking or payment disputes;</li>
+            <li>enforce these Terms and platform policies;</li>
+            <li>protect users and platform integrity;</li>
+            <li>prevent off-platform transactions that bypass Servd Co protections;</li>
+            <li>comply with legal obligations; and</li>
+            <li>maintain platform security.</li>
+          </ul>
+          <p className="text-sm leading-relaxed">
+            Access occurs only when reasonably necessary for operational, safety, moderation, dispute-resolution, fraud-prevention, or legal purposes — not for general surveillance of private conversations.
+          </p>
+          <p className="text-sm leading-relaxed">
+            By using the Servd Co messaging system, you consent to these platform safety practices. Keep conversations on-platform and do not share passwords, payment card details, bank information, or other sensitive credentials in messages.
+          </p>
+        </section>
+
         <section id="termination" className="scroll-mt-24 space-y-3">
-          <h2 className="text-2xl font-bold border-b border-white/5 pb-2">8. Account Suspension & Administrative Deletion</h2>
+          <h2 className="text-2xl font-bold border-b border-white/5 pb-2">9. Account Suspension & Administrative Deletion</h2>
           <p className="text-sm leading-relaxed">
             ServdCo reserves the right, in its sole administrative discretion, to suspend or permanently terminate user accounts (both client and cook profiles) immediately, without notice, if we identify:
           </p>
@@ -247,22 +278,23 @@ export default function Terms() {
         </section>
 
         <section id="governing-law" className="scroll-mt-24 space-y-3">
-          <h2 className="text-2xl font-bold border-b border-white/5 pb-2">9. Governing Law & Dispute Resolution</h2>
+          <h2 className="text-2xl font-bold border-b border-white/5 pb-2">10. Governing Law & Dispute Resolution</h2>
           <p className="text-sm leading-relaxed">
             These Terms of Service and any transactional disputes shall be governed by and interpreted under the laws of the State of Ohio, United States, without regard to conflict of law principles. Any dispute arising out of or relating to this marketplace shall be resolved through binding arbitration in Columbus, Ohio.
           </p>
         </section>
 
         <section id="contact" className="scroll-mt-24 space-y-3">
-          <h2 className="text-2xl font-bold border-b border-white/5 pb-2">10. Contact Information</h2>
+          <h2 className="text-2xl font-bold border-b border-white/5 pb-2">11. Contact Information</h2>
           <p className="text-sm leading-relaxed">
             For inquiries regarding our terms, administrative rules, or billing disputes, please contact us at:
           </p>
           <div className="bg-[#1C1C1F] border border-white/5 rounded-2xl p-6 space-y-1 text-sm text-[#A8A8A8] w-fit">
             <p className="text-white font-bold font-serif">Servd Co. Legal Desk</p>
-            <p>1121 Worthington Woods Blvd, #6041</p>
-            <p>Columbus, OH 43085, United States</p>
-            <p>Email: <a href="mailto:alexandria@servdco.com" className="text-[#FF7A59] hover:underline font-semibold">alexandria@servdco.com</a></p>
+            {COMPANY_ADDRESS_LINES.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+            <p>Email: <a href={`mailto:${COMPANY_LEGAL_EMAIL}`} className="text-[#FF7A59] hover:underline font-semibold">{COMPANY_LEGAL_EMAIL}</a></p>
           </div>
         </section>
 

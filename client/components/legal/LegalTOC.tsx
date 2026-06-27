@@ -25,7 +25,7 @@ export default function LegalTOC() {
           </div>
           <div className="flex items-center justify-between border-b border-white/5 pb-2">
             <span>Total Sections</span>
-            <span className="text-white font-semibold">11 Sections</span>
+            <span className="text-white font-semibold">12 Sections</span>
           </div>
           <div className="flex items-center justify-between">
             <span>Vetting Status</span>

@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { openCookiePreferences } from "@/components/legal/CookieConsentBanner";
+import {
+  COMPANY_ADDRESS_MAP_URL,
+  COMPANY_ADDRESS_SHORT,
+  COMPANY_LEGAL_EMAIL,
+} from "@shared/companyAddress";
 import { api } from "@/lib/api";
 import { FormInput } from "@/components/ui/FormInput";
 import { Button } from "@/components/ui/button";
@@ -252,13 +257,13 @@ export default function Footer() {
 
             <div className="space-y-3.5 pt-2">
               <a
-                href="https://www.bing.com/maps/search?v=2&pc=FACEBK&mid=8100&mkt=en-GB&fbclid=IwY2xjawR-NMhleHRuA2FlbQIxMABicmlkETE3aXRmc0RKYkc1VGpyeGoyc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHnYAMxubfrpPP1Zcr2jFxJmrBriiAXW3fD0dAMe_0MltC9e7CLX8_UtgCvi8_aem_iaXe0qhYihyDRaBdisToWQ&FORM=FBKPL1&q=1121+Worthington+Woods+Blvd+%236041+%2C+Columbus%2C+OH%2C+United+States%2C+43085"
+                href={COMPANY_ADDRESS_MAP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2.5 text-xs text-[#A5A5A5] hover:text-[#FF7A59] transition-colors font-medium w-fit group"
               >
                 <MapPin size={14} className="text-[#FF7A59]" />
-                <span>Columbus, Ohio</span>
+                <span>{COMPANY_ADDRESS_SHORT}</span>
                 <ExternalLink
                   size={10}
                   className="opacity-0 group-hover:opacity-100 transition-opacity"
@@ -266,11 +271,11 @@ export default function Footer() {
               </a>
 
               <a
-                href="mailto:alexandria@servdco.com"
+                href={`mailto:${COMPANY_LEGAL_EMAIL}`}
                 className="flex items-center gap-2.5 text-xs text-[#A5A5A5] hover:text-[#FF7A59] transition-colors font-medium w-fit"
               >
                 <Mail size={14} className="text-[#FF7A59]" />
-                <span>alexandria@servdco.com</span>
+                <span>{COMPANY_LEGAL_EMAIL}</span>
               </a>
             </div>
 

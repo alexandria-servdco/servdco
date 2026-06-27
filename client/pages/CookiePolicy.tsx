@@ -1,9 +1,12 @@
 import LegalLayout from "@/components/legal/LegalLayout";
-import { ShieldCheck, Info, Ban, Cookie } from "lucide-react";
+import { ShieldCheck, Info, Ban, Cookie, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import {
+  COMPANY_ADDRESS_LINES,
+  COMPANY_LEGAL_EMAIL,
+} from "@shared/companyAddress";
 
 const COOKIE_SECTIONS = [
   { id: "what-are-cookies", label: "1. What Are Cookies" },
@@ -132,7 +135,7 @@ export default function CookiePolicy() {
     <LegalLayout
       title="Cookie Policy"
       subtitle="Learn how we use essential session cookies and performance analytics to power your marketplace."
-      lastUpdated="May 23, 2026"
+      lastUpdated="June 12, 2026"
       activeDocName="Cookie Policy"
       sidebarContent={sidebarContent}
     >
@@ -238,9 +241,10 @@ export default function CookiePolicy() {
           </p>
           <div className="bg-[#1C1C1F] border border-white/5 rounded-2xl p-6 space-y-1 text-sm text-[#A8A8A8] w-fit">
             <p className="text-white font-bold font-serif">Servd Co. Privacy Desk</p>
-            <p>1121 Worthington Woods Blvd, #6041</p>
-            <p>Columbus, OH 43085, United States</p>
-            <p>Email: <a href="mailto:alexandria@servdco.com" className="text-[#FF7A59] hover:underline font-semibold">alexandria@servdco.com</a></p>
+            {COMPANY_ADDRESS_LINES.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+            <p>Email: <a href={`mailto:${COMPANY_LEGAL_EMAIL}`} className="text-[#FF7A59] hover:underline font-semibold">{COMPANY_LEGAL_EMAIL}</a></p>
           </div>
         </section>
 

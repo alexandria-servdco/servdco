@@ -15,6 +15,7 @@ const SECTIONS: Section[] = [
   { id: "analytics", label: "Platform Analytics" },
   { id: "payment-info", label: "Payment Information" },
   { id: "data-sharing", label: "Data Sharing" },
+  { id: "platform-messaging", label: "Platform Messaging" },
   { id: "data-retention", label: "Data Retention" },
   { id: "security", label: "Security Measures" },
   { id: "minors", label: "Minors' Privacy" },

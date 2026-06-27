@@ -16,6 +16,7 @@ const privacyPolicyHTML = `
         <li><strong>Account Profile Data:</strong> Name, email address, password hash, physical address (city, state, ZIP code), and telephone number.</li>
         <li><strong>Cook Profiles:</strong> Experience, cuisine specialties, profile descriptions, location boundaries, and weekly scheduling availability.</li>
         <li><strong>Onboarding Credentials:</strong> Food handler certifications (e.g., ServSafe certificates), liability insurance documentation, and standard identification verification documents (for background audit logs).</li>
+        <li><strong>Platform Messages:</strong> Content and metadata from in-app conversations related to bookings and platform support.</li>
       </ul>
       <h3 class="text-lg font-bold text-white mb-2">B. Information Collected Automatically</h3>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
@@ -96,15 +97,42 @@ const privacyPolicyHTML = `
       </ul>
     </section>
 
+    <section id="platform-messaging" class="scroll-mt-24">
+      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">7. Platform Messaging</h2>
+      <p class="text-[#A8A8A8] text-sm leading-relaxed mb-3">
+        When you use Servd Co's internal messaging system, message content and related metadata (such as timestamps and booking context) are stored securely on our platform infrastructure.
+      </p>
+      <p class="text-[#A8A8A8] text-sm leading-relaxed mb-3">
+        Messages may contain booking coordination details, scheduling notes, and service-related information shared between families and cooks. Payment card numbers and full payment credentials are processed by Stripe — not stored in message threads.
+      </p>
+      <p class="text-[#A8A8A8] text-sm leading-relaxed mb-3">
+        Authorized Servd Co administrators may access message logs only when reasonably necessary for:
+      </p>
+      <ul class="list-disc pl-6 space-y-2 text-[#A8A8A8] text-sm mb-4">
+        <li>safety investigations;</li>
+        <li>fraud detection and prevention;</li>
+        <li>content moderation and policy enforcement;</li>
+        <li>dispute resolution;</li>
+        <li>legal compliance; and</li>
+        <li>platform integrity and security.</li>
+      </ul>
+      <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
+        Access is limited to authorized personnel on a need-to-know basis. Servd Co does not routinely read private conversations in real time.
+      </p>
+    </section>
+
     <section id="data-retention" class="scroll-mt-24">
-      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">7. Data Retention</h2>
+      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">8. Data Retention</h2>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
         We retain your personal details only for as long as your account remains active or as required to deliver our service. If you cancel your membership or request data deletion, we will purge your identification markers from active database directories within 30 days, except for data we are required to retain to meet legal, accounting, tax, or transaction auditing mandates.
+      </p>
+      <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
+        Internal messaging records may be retained for a reasonable period after a booking concludes to support dispute resolution, fraud prevention, and legal compliance. When retention is no longer necessary, message content is deleted or anonymized in accordance with our data minimization practices.
       </p>
     </section>
 
     <section id="security" class="scroll-mt-24">
-      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">8. Security</h2>
+      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">9. Security</h2>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
         We implement rigorous technical and administrative safeguards to secure your database credentials. All communication is routed over encrypted Transport Layer Security (TLS/HTTPS) channels. Access privileges are restricted internally to authorized administrative support teams on a strict need-to-know basis.
       </p>
@@ -114,14 +142,14 @@ const privacyPolicyHTML = `
     </section>
 
     <section id="minors" class="scroll-mt-24">
-      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">9. Protecting Minors' Privacy</h2>
+      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">10. Protecting Minors' Privacy</h2>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
         Servd Co. connects adult households with local cooks. Our platforms are strictly directed to individuals aged 18 and older. We do not knowingly compile or archive identification records from children under the age of 13. If you believe a child has submitted personal details to our waitlist, please contact us immediately so we can purge the information.
       </p>
     </section>
 
     <section id="privacy-rights" class="scroll-mt-24">
-      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">10. Your Privacy Rights</h2>
+      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">11. Your Privacy Rights</h2>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-3">
         Depending on your legal jurisdiction (such as California or other US states), you may possess specific rights regarding your personal information, including:
       </p>
@@ -137,14 +165,14 @@ const privacyPolicyHTML = `
     </section>
 
     <section id="contact" class="scroll-mt-24">
-      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">11. Contacting Us</h2>
+      <h2 class="text-2xl font-bold font-serif text-white mb-4 border-b border-white/5 pb-2">12. Contacting Us</h2>
       <p class="text-[#A8A8A8] text-sm leading-relaxed mb-4">
         For inquiries regarding our storage practices, compliance steps, or to request record modifications, please contact our team at:
       </p>
       <div class="bg-[#1C1C1F] border border-white/5 rounded-2xl p-6 space-y-2 text-sm text-[#A8A8A8]">
         <p class="text-white font-bold font-serif">Servd Co. Privacy Team</p>
-        <p>1121 Worthington Woods Blvd, #6041</p>
-        <p>Columbus, OH 43085, United States</p>
+        <p>106 Spring Street</p>
+        <p>Mechanicsburg, OH 43044, United States</p>
         <p>Email: <a href="mailto:alexandria@servdco.com" class="text-[#FF7A59] hover:underline font-semibold">alexandria@servdco.com</a></p>
       </div>
     </section>

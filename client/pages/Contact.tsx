@@ -7,6 +7,10 @@ import { contactSchema, safeParse } from "@shared/validation";
 import { trackEvent } from "@/lib/analytics";
 import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 import { getEffectiveTurnstileSiteKey } from "@/lib/turnstile/env";
+import {
+  COMPANY_ADDRESS_LINES,
+  COMPANY_LEGAL_EMAIL,
+} from "@shared/companyAddress";
 
 export default function Contact() {
   const [formState, setFormState] = useState({
@@ -101,7 +105,11 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Office</h3>
-                  <p className="text-[11px] text-[#A8A8A8] leading-snug mt-1">Atlanta, GA 30303, USA</p>
+                  <p className="text-[11px] text-[#A8A8A8] leading-snug mt-1">
+                    {COMPANY_ADDRESS_LINES[0]}
+                    <br />
+                    {COMPANY_ADDRESS_LINES[1]}
+                  </p>
                 </div>
               </div>
             </div>

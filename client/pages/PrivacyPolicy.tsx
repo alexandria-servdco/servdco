@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
     <LegalLayout
       title="Privacy Policy"
       subtitle="We value transparency and are committed to protecting your information and privacy."
-      lastUpdated="May 23, 2026"
+      lastUpdated="June 12, 2026"
       activeDocName="Privacy Policy"
       sidebarContent={<LegalSidebar />}
     >

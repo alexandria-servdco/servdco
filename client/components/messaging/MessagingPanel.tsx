@@ -10,6 +10,9 @@ import { AdminAuditService } from "@/services/supabase/admin-audit.service";
 import { Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { MessageBubble } from "@/components/messaging/MessageBubble";
+import { MessagingTrustNotice } from "@/components/messaging/MessagingTrustNotice";
+import { MessagingComposerGuidance } from "@/components/messaging/MessagingComposerGuidance";
+import { evaluateMessageModeration } from "@shared/messagingModeration";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 
@@ -30,6 +33,7 @@ export function MessagingPanel({
   const [draft, setDraft] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
+  const [moderationHint, setModerationHint] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +111,9 @@ export function MessagingPanel({
 
   const handleDraftChange = (value: string) => {
     setDraft(value);
+    const moderation = evaluateMessageModeration(value);
+    setModerationHint(moderation.hint);
+
     if (!value.trim()) return;
 
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
@@ -163,6 +170,10 @@ export function MessagingPanel({
         )}
       </div>
 
+      {!adminView && (
+        <MessagingTrustNotice conversationId={conversationId} userId={userId} />
+      )}
+
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 py-3 space-y-4"
@@ -213,6 +224,13 @@ export function MessagingPanel({
         )}
       </div>
 
+      <MessagingComposerGuidance />
+      {moderationHint && !adminView && (
+        <p className="px-3 sm:px-4 pb-1 text-[10px] text-amber-400/90 leading-relaxed">
+          {moderationHint}
+        </p>
+      )}
+
       <form
         onSubmit={handleSend}
         className="shrink-0 px-3 sm:px-4 py-3 border-t border-white/5 flex gap-2 items-center bg-[#161616]/95 safe-area-pb"
@@ -248,6 +266,7 @@ export function MessagingPanel({
             }
           }}
           placeholder="Type a message..."
+          aria-describedby="messaging-composer-guidance"
           className="flex-1 min-w-0 h-11 px-3 bg-[#161616] border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-[#FF7A59]"
         />
         <button

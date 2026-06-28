@@ -4,6 +4,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useBrowseChefs } from "@/hooks/useChefs";
 import { MarketplaceEmptyState } from "@/components/marketplace/MarketplaceEmptyState";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ChefGridSkeleton } from "@/components/ui/Skeletons";
 import { PaginationBar } from "@/components/ui/PaginationBar";
 import { BrandSelect } from "@/components/ui/BrandSelect";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -177,33 +179,22 @@ export default function BrowseChefs() {
           )}
 
           {loading ? (
-            <div className="text-center py-20 text-[#A8A8A8] text-sm">
-              Loading cooks...
-            </div>
+            <ChefGridSkeleton count={6} />
           ) : !hasLiveCooks ? (
             <MarketplaceEmptyState showWaitlistLink />
           ) : filteredChefs.length === 0 ? (
-            <div className="text-center py-20 bg-[#161616] rounded-[24px] border border-white/5">
-              <Star className="mx-auto text-white/10 mb-4" size={40} />
-              <h3 className="text-xl font-bold text-white mb-2">
-                No cooks match your filters
-              </h3>
-              <p className="text-[#A8A8A8] text-xs mb-4">
-                Try clearing search terms or selecting another city or specialty.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedSpecialty("All Specialties");
-                  setSelectedCity("All Cities");
-                  setSortBy("Recommended");
-                }}
-                className="text-[#FF7A59] text-xs font-bold hover:underline"
-              >
-                Clear all filters
-              </button>
-            </div>
+            <EmptyState
+              type="chefs"
+              title="No cooks match your filters"
+              description="Try clearing search terms or selecting another city or specialty."
+              actionLabel="Clear all filters"
+              onAction={() => {
+                setSearchQuery("");
+                setSelectedSpecialty("All Specialties");
+                setSelectedCity("All Cities");
+                setSortBy("Recommended");
+              }}
+            />
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

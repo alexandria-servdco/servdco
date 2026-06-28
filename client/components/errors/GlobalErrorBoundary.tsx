@@ -33,10 +33,10 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans flex items-center justify-center">
+        <div className="min-h-screen bg-[#111111] text-[#F5F5F5] font-sans flex flex-col">
           <ErrorFallback
             title="Application error"
-            message="ServdCo encountered an unexpected problem. Reloading usually fixes this."
+            message="Servd Co encountered an unexpected problem. Reloading usually fixes this."
             onRetry={this.handleRetry}
           />
         </div>

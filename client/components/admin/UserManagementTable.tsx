@@ -167,7 +167,11 @@ export function UserManagementTable({
             {paginated.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ padding: "24px 12px", textAlign: "center" }}>
-                  <EmptyState message="No users match your criteria." />
+                  <EmptyState
+                    type="requests"
+                    title="No users match your criteria"
+                    description="Try a different search term or role filter."
+                  />
                 </td>
               </tr>
             ) : (
@@ -332,7 +336,11 @@ export function UserManagementTable({
 
       <MobileCardStack>
         {paginated.length === 0 ? (
-          <EmptyState message="No users match your criteria." />
+          <EmptyState
+            type="requests"
+            title="No users match your criteria"
+            description="Try a different search term or role filter."
+          />
         ) : (
           paginated.map((usr) => (
             <MobileDataCard

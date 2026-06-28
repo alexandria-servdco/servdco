@@ -11,7 +11,11 @@
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPO = process.env.GITHUB_REPO ?? "kartik-singhhh03/servdco-saas";
+const REPO = process.env.GITHUB_REPO;
+if (!REPO) {
+  console.error("Set GITHUB_REPO to owner/repo (e.g. servdco-org/servdco).");
+  process.exit(1);
+}
 
 if (!VERCEL_TOKEN || !GITHUB_TOKEN) {
   console.error(

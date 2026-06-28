@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { useUpdatePlatformSettings } from "@/hooks/usePlatformSettings";
+import { AdminAccountSettings } from "@/components/admin/AdminAccountSettings";
 
-export function PlatformSettings() {
+export function PlatformSettings({ adminEmail }: { adminEmail?: string }) {
   const { platformFeePercentage, chefPremiumPrice, familyPlatformFeeDollars } =
     usePlatformStore();
   const updateSettings = useUpdatePlatformSettings();
@@ -323,6 +324,8 @@ export function PlatformSettings() {
           </button>
         </div>
       </div>
+
+      {adminEmail ? <AdminAccountSettings email={adminEmail} /> : null}
     </div>
   );
 }

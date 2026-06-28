@@ -24,6 +24,7 @@ import {
   handleTipPaymentIntentSucceeded,
 } from "./tip-webhooks";
 import { sendResendEmail } from "../email/resend";
+import { resolveSiteUrl } from "../../api/_lib/email/brandedTemplate";
 
 async function fetchChargeId(paymentIntentId: string): Promise<string | null> {
   try {
@@ -135,7 +136,7 @@ async function handleBookingCheckoutCompleted(session: Stripe.Checkout.Session) 
       html: `
         <p>Hi ${familyProfile.full_name ?? "there"},</p>
         <p>Your payment is confirmed and your booking is now confirmed.</p>
-        <p><a href="https://servdco-one.vercel.app/family-dashboard/bookings">View your dashboard</a></p>
+        <p><a href="${resolveSiteUrl()}/family-dashboard/bookings">View your dashboard</a></p>
       `,
     });
   }

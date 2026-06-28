@@ -5,8 +5,10 @@ export interface PageSeoConfig {
   ogType?: "website" | "article";
 }
 
-const SITE_URL = "https://servdco-one.vercel.app";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
+const SITE_URL =
+  (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") ||
+  (typeof window !== "undefined" ? window.location.origin : "");
+const DEFAULT_OG_IMAGE = SITE_URL ? `${SITE_URL}/og-default.png` : "/og-default.png";
 
 export const SEO_ROUTES: Record<string, PageSeoConfig> = {
   "/": {

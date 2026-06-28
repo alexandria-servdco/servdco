@@ -251,6 +251,7 @@ export default function AdminDashboard({
     (user?.user_metadata?.full_name as string | undefined) ??
     user?.email ??
     "Admin";
+  const adminEmail = user?.email ?? "";
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState(initialTab);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -3024,7 +3025,7 @@ export default function AdminDashboard({
             )}
             {/* ── Tab: SETTINGS ────────────────────────────────────────────── */}
             {activeNav === "settings" && (
-              <PlatformSettings />
+              <PlatformSettings adminEmail={adminEmail} />
             )}
           </div>
           </Suspense>

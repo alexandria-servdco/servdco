@@ -6,10 +6,8 @@
 import pg from "pg";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { loadDbUrl, root } from "./lib/loadDbUrl.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.join(__dirname, "..");
 const MIGRATION_VERSION = "20250612150029";
 const MIGRATION_FILE = "20250612150029_realtime_dashboard_tables.sql";
 const REQUIRED_TABLES = [
@@ -19,31 +17,6 @@ const REQUIRED_TABLES = [
   "payments",
   "transfers",
 ];
-
-function loadDbUrl() {
-  const envPath = path.join(root, ".env.local");
-  if (fs.existsSync(envPath)) {
-    for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
-      if (line.startsWith("SUPABASE_DB_URL=")) {
-        const raw = line.slice("SUPABASE_DB_URL=".length).trim();
-        if (raw) {
-          try {
-            return new URL(raw).toString();
-          } catch {
-            const match = raw.match(
-              /^postgresql:\/\/([^:]+):([^@]+)@([^/]+)\/(.+)$/,
-            );
-            if (match) {
-              const [, user, pass, host, db] = match;
-              return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}/${db}`;
-            }
-          }
-        }
-      }
-    }
-  }
-  return "postgresql://postgres:p%2FCc9uqcY%23F%5EFMt@db.onerrwpixumcablgyhzs.supabase.co:5432/postgres";
-}
 
 async function getPublicationTables(client) {
   const { rows } = await client.query(`

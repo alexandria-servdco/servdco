@@ -3,6 +3,8 @@ import { MessageSquare } from "lucide-react";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessagingEnabled } from "@/hooks/useMessagingEnabled";
 import { MessagingPanel } from "@/components/messaging/MessagingPanel";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { MessageListSkeleton } from "@/components/ui/Skeletons";
 
 /** Compact conversation list — embeds in existing dashboard tabs (no new routes). */
 export function ConversationInbox() {
@@ -13,13 +15,11 @@ export function ConversationInbox() {
   if (!enabled) return null;
 
   if (isLoading) {
-    return (
-      <div className="velvet-card p-4 text-xs text-[#A8A8A8]">Loading messages...</div>
-    );
+    return <MessageListSkeleton />;
   }
 
   if (conversations.length === 0 && !activeId) {
-    return null;
+    return <EmptyState type="messages" className="max-w-none" />;
   }
 
   return (
@@ -27,18 +27,20 @@ export function ConversationInbox() {
       {conversations.length > 0 && (
         <div className="velvet-card p-4 space-y-2">
           <h3 className="text-sm font-bold text-white font-serif flex items-center gap-2">
-            <MessageSquare size={14} className="text-[#FF7A59]" />
+            <MessageSquare size={14} className="text-[#FF7A59]" aria-hidden />
             Messages
           </h3>
-          <div className="space-y-1 max-h-40 overflow-y-auto">
+          <div className="space-y-1 max-h-40 overflow-y-auto" role="list">
             {conversations.map((conv) => (
               <button
                 key={conv.id}
                 type="button"
+                role="listitem"
+                aria-current={activeId === conv.id ? "true" : undefined}
                 onClick={() =>
                   setActiveId(activeId === conv.id ? null : conv.id)
                 }
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
+                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-colors min-h-[44px] ${
                   activeId === conv.id
                     ? "bg-[#FF7A59]/10 text-white"
                     : "hover:bg-white/5 text-[#A8A8A8]"

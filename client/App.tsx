@@ -23,6 +23,7 @@ import { SessionPolicyManager } from "@/hooks/useSessionPolicy";
 import { LegalReacceptanceModal } from "@/components/legal/LegalReacceptanceModal";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import { PlatformSettingsHydrator } from "./components/PlatformSettingsHydrator";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 const Login = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -38,6 +39,8 @@ const Careers = lazy(() => import("./pages/Careers"));
 const CareerJob = lazy(() => import("./pages/CareerJob"));
 const CareerApply = lazy(() => import("./pages/CareerApply"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ServerError = lazy(() => import("./pages/ServerError"));
+const OfflinePage = lazy(() => import("./pages/OfflinePage"));
 const ForChefs = lazy(() => import("./pages/ForChefs"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));
 const FAQ = lazy(() => import("./pages/FAQ"));
@@ -134,10 +137,11 @@ const App = () => (
         <PlatformSettingsHydrator />
         <TooltipProvider>
           <Toaster />
-          <Sonner />
+          <Sonner theme="dark" richColors closeButton position="top-center" />
           <BrowserRouter>
             <DeferredMonitoring />
             <PageMetaManager />
+            <OfflineBanner />
             <a
               href="#main-content"
               className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[#FF7A59] focus:text-white focus:rounded-md focus:font-bold focus:text-sm"
@@ -410,6 +414,22 @@ const App = () => (
                 </Route>
               </Route>
 
+              <Route
+                path="/error"
+                element={
+                  <LazyRoute label="server-error">
+                    <ServerError />
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path="/offline"
+                element={
+                  <LazyRoute label="offline">
+                    <OfflinePage />
+                  </LazyRoute>
+                }
+              />
               <Route
                 path="*"
                 element={

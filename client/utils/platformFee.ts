@@ -1,13 +1,14 @@
 import { usePlatformStore } from "@/store/usePlatformStore";
+import { splitSessionAmounts } from "@shared/pricing";
 
 export const calculatePlatformFee = (amount: number): number => {
   const feePercentage = usePlatformStore.getState().platformFeePercentage;
-  return parseFloat(((amount * feePercentage) / 100).toFixed(2));
+  return splitSessionAmounts(amount, feePercentage).platformFee;
 };
 
 export const calculateChefPayout = (amount: number): number => {
-  const fee = calculatePlatformFee(amount);
-  return parseFloat((amount - fee).toFixed(2));
+  const feePercentage = usePlatformStore.getState().platformFeePercentage;
+  return splitSessionAmounts(amount, feePercentage).cookPayout;
 };
 
 export const calculateBookingTotal = (
@@ -17,5 +18,5 @@ export const calculateBookingTotal = (
   return parseFloat((baseAmount + guestFee).toFixed(2));
 };
 
-// Aliased for backwards compatibility since it was named calculateCookPayout
+/** @deprecated Use calculateChefPayout — kept for backwards compatibility */
 export const calculateCookPayout = calculateChefPayout;

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { sendResendEmail } from "../email/resend.js";
+import { resolveSiteUrl } from "../email/brandedTemplate.js";
 import { enforceRateLimit } from "../rateLimit.js";
 import {
   authorizeEmailEventRequest,
@@ -144,7 +145,7 @@ export async function handleBookingEventEmail(
         <p>Hi ${escapeHtml(profile.full_name ?? "Chef")},</p>
         <p>${escapeHtml(subject)} for your ${escapeHtml(doc.document_type ?? "document")}.</p>
         ${notesLine}
-        <p><a href="https://servdco-one.vercel.app/chef-dashboard/verification">Open your Cook Dashboard</a></p>
+        <p><a href="${resolveSiteUrl()}/chef-dashboard/verification">Open your Cook Dashboard</a></p>
       `,
     });
 
@@ -200,7 +201,7 @@ export async function handleBookingEventEmail(
       <p>${escapeHtml(subject)} for booking on ${escapeHtml(booking.booking_date)}.</p>
       ${mealLine}
       <p>Status: ${escapeHtml(booking.status)}</p>
-      <p><a href="https://servdco-one.vercel.app/family-dashboard/bookings">View your dashboard</a></p>
+      <p><a href="${resolveSiteUrl()}/family-dashboard/bookings">View your dashboard</a></p>
     `,
   });
 

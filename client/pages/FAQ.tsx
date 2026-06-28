@@ -6,6 +6,11 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { VerificationResources } from "@/components/chef/VerificationResources";
+import {
+  formatUsd,
+  getExtraGuestPricingSentence,
+} from "@shared/pricingDisplay";
+import { BASE_RATES } from "@shared/pricing";
 
 const FAQS_FAMILY = [
   {
@@ -29,7 +34,7 @@ const FAQS_FAMILY = [
 const FAQS_CHEF = [
   {
     q: "How do cooks earn on Servd Co?",
-    a: "Cooks earn based on session rates: Breakfast ($40), Dinner ($60), and Meal Prep ($70). Breakfast and dinner include up to 4 guests (+$5 per additional guest). Meal prep includes 1 guest (+$10 per additional guest). You keep your session earnings minus the platform fee, and all tips are 100% yours!"
+    a: `Cooks earn based on session rates: Breakfast (${formatUsd(BASE_RATES.breakfast)}), Dinner (${formatUsd(BASE_RATES.dinner)}), and Meal Prep (${formatUsd(BASE_RATES.mealprep)}). ${getExtraGuestPricingSentence()} You keep your session earnings minus the platform fee, and all tips are 100% yours!`,
   },
   {
     q: "Who provides the cooking tools and equipment?",

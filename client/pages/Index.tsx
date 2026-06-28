@@ -15,15 +15,13 @@ import {
   MapPin,
   Star,
   BadgeCheck,
-  Plus,
-  Minus,
   ArrowRight,
   X,
   HelpCircle,
   ChevronRight,
   Gift,
 } from "lucide-react";
-import { calculateCookPayout } from "@/utils/platformFee";
+import { CookEarningsCalculator } from "@/components/CookEarningsCalculator";
 import { useBrowseChefs } from "@/hooks/useChefs";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resolveAvatarUrl } from "@/lib/avatar";
@@ -51,12 +49,6 @@ export default function Index() {
   });
   const homepageChefs = featuredChefs.slice(0, 4);
 
-  // Interactive Calculator State
-  const [breakfastSessions, setBreakfastSessions] = useState(2);
-  const [dinnerSessions, setDinnerSessions] = useState(3);
-  const [mealPrepSessions, setMealPrepSessions] = useState(2);
-  const [familyFees, setFamilyFees] = useState(false);
-
   // Bring Servd Co to Your City Modal State
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [cityForm, setCityForm] = useState({
@@ -67,14 +59,6 @@ export default function Index() {
     role: "family" as "family" | "chef" | "both",
   });
   const [citySubmitted, setCitySubmitted] = useState(false);
-
-  // Calculator Formulas
-  const sessionFeeMultiplier = familyFees ? 10 : 0;
-  const weeklyEarning =
-    breakfastSessions * calculateCookPayout(40 + sessionFeeMultiplier) +
-    dinnerSessions * calculateCookPayout(60 + sessionFeeMultiplier) +
-    mealPrepSessions * calculateCookPayout(70 + sessionFeeMultiplier);
-  const monthlyEarning = weeklyEarning * 4;
 
   const handleCitySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -599,146 +583,7 @@ export default function Index() {
                   </span>
                 </h3>
 
-                <div className="space-y-5">
-                  {/* Breakfast Stepper */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-baseline text-xs text-[#A8A8A8]">
-                      <span className="font-bold text-white">
-                        Breakfast Sessions / week
-                      </span>
-                      <span>$40 per session</span>
-                    </div>
-                    <div className="flex items-center justify-between bg-[#161616] rounded-xl px-4 py-2 border border-white/5">
-                      <button
-                        onClick={() =>
-                          setBreakfastSessions(
-                            Math.max(0, breakfastSessions - 1),
-                          )
-                        }
-                        className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
-                        style={{ borderRadius: "50%" }}
-                      >
-                        -
-                      </button>
-                      <span className="font-bold text-sm text-white">
-                        {breakfastSessions} sessions
-                      </span>
-                      <button
-                        onClick={() =>
-                          setBreakfastSessions(breakfastSessions + 1)
-                        }
-                        className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
-                        style={{ borderRadius: "50%" }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Dinner Stepper */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-baseline text-xs text-[#A8A8A8]">
-                      <span className="font-bold text-white">
-                        Dinner Sessions / week
-                      </span>
-                      <span>$60 per session</span>
-                    </div>
-                    <div className="flex items-center justify-between bg-[#161616] rounded-xl px-4 py-2 border border-white/5">
-                      <button
-                        onClick={() =>
-                          setDinnerSessions(Math.max(0, dinnerSessions - 1))
-                        }
-                        className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
-                        style={{ borderRadius: "50%" }}
-                      >
-                        -
-                      </button>
-                      <span className="font-bold text-sm text-white">
-                        {dinnerSessions} sessions
-                      </span>
-                      <button
-                        onClick={() => setDinnerSessions(dinnerSessions + 1)}
-                        className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
-                        style={{ borderRadius: "50%" }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Meal Prep Stepper */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-baseline text-xs text-[#A8A8A8]">
-                      <span className="font-bold text-white">
-                        Meal Prep Sessions / week
-                      </span>
-                      <span>$70 per session</span>
-                    </div>
-                    <div className="flex items-center justify-between bg-[#161616] rounded-xl px-4 py-2 border border-white/5">
-                      <button
-                        onClick={() =>
-                          setMealPrepSessions(Math.max(0, mealPrepSessions - 1))
-                        }
-                        className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
-                        style={{ borderRadius: "50%" }}
-                      >
-                        -
-                      </button>
-                      <span className="font-bold text-sm text-white">
-                        {mealPrepSessions} sessions
-                      </span>
-                      <button
-                        onClick={() =>
-                          setMealPrepSessions(mealPrepSessions + 1)
-                        }
-                        className="w-8 h-8 velvet-tactile text-white flex items-center justify-center font-bold"
-                        style={{ borderRadius: "50%" }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Family Guest Fee Toggle */}
-                  <div className="flex items-center justify-between bg-[#161616] rounded-xl px-4 py-3 border border-white/5">
-                    <div>
-                      <h4 className="text-xs font-bold text-white">
-                        Guest / Larger Family Toggle
-                      </h4>
-                      <p className="text-[10px] text-[#A8A8A8] mt-0.5">
-                        Adds flat +$10 to every session
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setFamilyFees(!familyFees)}
-                      className={`w-11 h-6 rounded-full transition-all relative border border-white/10 ${familyFees ? "bg-[#FF7A59]" : "bg-[#2A2A2A]"}`}
-                    >
-                      <span
-                        className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${familyFees ? "left-[22px]" : "left-1"}`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Results box */}
-                  <div className="pt-6 mt-4 border-t border-white/5 space-y-4">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-xs font-bold text-[#A8A8A8] uppercase tracking-wider">
-                        Weekly Potential:
-                      </span>
-                      <span className="text-3xl font-bold text-white font-serif">
-                        ${weeklyEarning}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-xs font-bold text-[#A8A8A8] uppercase tracking-wider">
-                        Monthly Potential:
-                      </span>
-                      <span className="text-3xl font-bold text-[#FF7A59] font-serif">
-                        ${monthlyEarning}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <CookEarningsCalculator variant="compact" showCta={false} />
               </div>
             </div>
           </div>

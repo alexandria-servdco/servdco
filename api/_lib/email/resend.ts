@@ -53,5 +53,15 @@ export async function sendResendEmail(
   }
 }
 
-export const ADMIN_NOTIFY_EMAIL =
-  process.env.ADMIN_NOTIFY_EMAIL ?? "alexandria@servdco.com";
+export function getAdminNotifyEmail(): string {
+  const email = process.env.ADMIN_NOTIFY_EMAIL?.trim();
+  if (!email) {
+    throw new Error(
+      "ADMIN_NOTIFY_EMAIL environment variable is required for admin notification emails.",
+    );
+  }
+  return email;
+}
+
+/** @deprecated Use getAdminNotifyEmail() — fails loudly when unset. */
+export const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL ?? "";

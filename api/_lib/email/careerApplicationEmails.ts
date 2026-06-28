@@ -1,4 +1,4 @@
-import { sendResendEmail, ADMIN_NOTIFY_EMAIL } from "./resend.js";
+import { sendResendEmail, getAdminNotifyEmail } from "./resend.js";
 import { brandedEmailHtml, escapeHtml, resolveSiteUrl } from "./brandedTemplate.js";
 
 export interface CareerApplicationEmailContext {
@@ -96,7 +96,7 @@ export async function sendCareerAdminNotificationEmail(
   });
 
   const result = await sendResendEmail({
-    to: ADMIN_NOTIFY_EMAIL,
+    to: getAdminNotifyEmail(),
     replyTo: ctx.applicantEmail,
     subject: `New application: ${ctx.applicantName} — ${ctx.jobTitle}`,
     html,

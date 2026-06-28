@@ -4,50 +4,11 @@
 import pg from "pg";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
+import { loadDbUrl, loadEnv, root } from "./lib/loadDbUrl.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.join(__dirname, "..");
 const VERSION = "20250620120030";
 const FILE = "20250620120030_realtime_replica_identity.sql";
-
-function loadDbUrl() {
-  const envPath = path.join(root, ".env.local");
-  if (fs.existsSync(envPath)) {
-    for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
-      if (line.startsWith("SUPABASE_DB_URL=")) {
-        const raw = line.slice("SUPABASE_DB_URL=".length).trim();
-        if (raw) {
-          try {
-            return new URL(raw).toString();
-          } catch {
-            const match = raw.match(
-              /^postgresql:\/\/([^:]+):([^@]+)@([^/]+)\/(.+)$/,
-            );
-            if (match) {
-              const [, user, pass, host, db] = match;
-              return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}/${db}`;
-            }
-          }
-        }
-      }
-    }
-  }
-  return "postgresql://postgres:p%2FCc9uqcY%23F%5EFMt@db.onerrwpixumcablgyhzs.supabase.co:5432/postgres";
-}
-
-function loadEnv() {
-  const env = {};
-  const envPath = path.join(root, ".env.local");
-  if (fs.existsSync(envPath)) {
-    for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
-      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-      if (m) env[m[1]] = m[2].trim();
-    }
-  }
-  return env;
-}
 
 async function applyMigration(client) {
   const { rowCount } = await client.query(
@@ -104,10 +65,10 @@ async function main() {
   let subscribeStatus = "SKIPPED";
 
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl =
-    env.VITE_SUPABASE_URL ||
-    env.SUPABASE_URL ||
-    "https://onerrwpixumcablgyhzs.supabase.co";
+  const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error("SUPABASE_URL or VITE_SUPABASE_URL is required.");
+  }
 
   if (serviceKey && bookingRows.length > 0) {
     const booking = bookingRows[0];

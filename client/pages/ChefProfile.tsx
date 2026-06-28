@@ -25,6 +25,7 @@ import { isUuid } from "@/lib/marketplaceTypes";
 import { AnalyticsSupabaseService } from "@/services/supabase/analytics.service";
 import { useReviews } from "@/hooks/useReviews";
 import { calculateSessionPrice, calculateFamilyTotalCharged } from "@/lib/bookingPricing";
+import { BOOKING_SERVICE_OPTIONS } from "@shared/pricingDisplay";
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { EmailService } from "@/services/email.service";
@@ -483,11 +484,7 @@ export default function ChefProfile() {
                         <BrandSelect
                           value={serviceType}
                           onValueChange={setServiceType}
-                          options={[
-                            { value: "breakfast", label: "Breakfast Cooking ($40)" },
-                            { value: "dinner", label: "Dinner Dining ($60)" },
-                            { value: "mealprep", label: "Weekly Meal Prep ($70)" },
-                          ]}
+                          options={BOOKING_SERVICE_OPTIONS}
                         />
                       </div>
 

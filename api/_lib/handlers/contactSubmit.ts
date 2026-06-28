@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
-import { sendResendEmail, ADMIN_NOTIFY_EMAIL } from "../email/resend.js";
+import { sendResendEmail, getAdminNotifyEmail } from "../email/resend.js";
 import { applySecurityMiddleware } from "../securityMiddleware.js";
 
 const contactSubmitSchema = z.object({
@@ -65,7 +65,7 @@ export async function handleContactSubmit(
   }
 
   const emailResult = await sendResendEmail({
-    to: ADMIN_NOTIFY_EMAIL,
+    to: getAdminNotifyEmail(),
     subject: "New Contact Form Submission",
     replyTo: email,
     html: `

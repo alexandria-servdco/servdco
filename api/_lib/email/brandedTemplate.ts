@@ -11,7 +11,17 @@ export function resolveSiteUrl(): string {
     process.env.SITE_URL ??
     process.env.VERCEL_PROJECT_PRODUCTION_URL ??
     process.env.VERCEL_URL;
-  if (!raw) return "https://servdco-one.vercel.app";
+  if (!raw) {
+    if (
+      process.env.NODE_ENV === "development" ||
+      process.env.VERCEL_ENV === "preview"
+    ) {
+      return "http://localhost:8080";
+    }
+    throw new Error(
+      "SITE_URL environment variable is required for production email links.",
+    );
+  }
   if (raw.startsWith("http")) return raw.replace(/\/$/, "");
   return `https://${raw.replace(/\/$/, "")}`;
 }

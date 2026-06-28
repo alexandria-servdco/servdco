@@ -85,3 +85,38 @@ export function BookingCardSkeleton() {
     </div>
   );
 }
+
+export function ChefGridSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+      role="status"
+      aria-label="Loading cooks"
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <CardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+export function MessageListSkeleton() {
+  return (
+    <div className="velvet-card p-4 space-y-3" role="status" aria-label="Loading messages">
+      <BasePulse className="h-4 w-24" />
+      <BasePulse className="h-10 w-full rounded-lg" />
+      <BasePulse className="h-10 w-full rounded-lg" />
+      <BasePulse className="h-10 w-full rounded-lg" />
+    </div>
+  );
+}
+
+export function TableRowsSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div className="space-y-2" role="status" aria-label="Loading table">
+      {Array.from({ length: rows }).map((_, i) => (
+        <BasePulse key={i} className="h-12 w-full rounded-lg" />
+      ))}
+    </div>
+  );
+}

@@ -404,9 +404,22 @@ export default function Footer() {
 
         {/* ── 4. SOCIAL & COPYRIGHT BOTTOM BAR ────────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-8 border-t border-white/5">
-          <p className="text-[11px] text-white/30 font-semibold uppercase tracking-wider text-center sm:text-left">
-            &copy; {new Date().getFullYear()} Servd Co. All rights reserved.
-          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
+            <p className="text-[11px] text-white/30 font-semibold uppercase tracking-wider">
+              &copy; {new Date().getFullYear()} Servd Co. All rights reserved.
+            </p>
+            <p className="text-[10px] text-white/25 font-medium">
+              Platform developed by{" "}
+              <a
+                href="https://www.linkedin.com/in/kartik-singh-879b6b288/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/40 hover:text-[#FF7A59] transition-colors underline-offset-2 hover:underline"
+              >
+                Kartik Singh
+              </a>
+            </p>
+          </div>
 
           {/* Circular Velvet Social Icons */}
           <div className="flex items-center gap-3">

@@ -46,7 +46,7 @@ export function getCurrentPosition(
             reject(
               new GeolocationError(
                 "denied",
-                "Location permission was denied. You can still enter your address manually.",
+                "Location access is blocked. Click “Allow location & try again” below, or enable location for this site in your browser settings.",
               ),
             );
             break;

@@ -1,16 +1,27 @@
-import { useCallback, useId, useState } from "react";
+import {
+  useCallback,
+  useId,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormInput } from "@/components/ui/FormInput";
 import { StateCitySelect } from "@/components/ui/StateCitySelect";
-import { GeolocationError, getCurrentPosition, isGeolocationSupported } from "@/lib/location/geolocation";
+import {
+  GeolocationError,
+  type GeolocationErrorCode,
+  getCurrentPosition,
+  isGeolocationSupported,
+} from "@/lib/location/geolocation";
 import { LocationApi } from "@/lib/location/locationApi";
 import type { LocationFormValue } from "@shared/location";
 import { cn } from "@/lib/utils";
 
 type LocationPickerProps = {
   value: LocationFormValue;
-  onChange: (value: LocationFormValue) => void;
+  onChange: Dispatch<SetStateAction<LocationFormValue>>;
   stateError?: string;
   cityError?: string;
   zipError?: string;
@@ -33,23 +44,27 @@ export function LocationPicker({
   const [detecting, setDetecting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<"info" | "error">("info");
+  const [geoErrorCode, setGeoErrorCode] = useState<GeolocationErrorCode | null>(
+    null,
+  );
 
   const markManual = useCallback(
     (patch: Partial<LocationFormValue>) => {
-      onChange({
-        ...value,
+      onChange((prev) => ({
+        ...prev,
         ...patch,
         locationSource: "manual",
         latitude: patch.latitude !== undefined ? patch.latitude : null,
         longitude: patch.longitude !== undefined ? patch.longitude : null,
-      });
+      }));
     },
-    [onChange, value],
+    [onChange],
   );
 
   const detectLocation = async () => {
     setDetecting(true);
     setStatusMessage(null);
+    setGeoErrorCode(null);
     try {
       if (!isGeolocationSupported()) {
         throw new GeolocationError(
@@ -79,6 +94,7 @@ export function LocationPicker({
     } catch (err) {
       setStatusTone("error");
       if (err instanceof GeolocationError) {
+        setGeoErrorCode(err.code);
         setStatusMessage(err.message);
       } else if (err instanceof Error) {
         setStatusMessage(err.message);
@@ -126,15 +142,41 @@ export function LocationPicker({
       </Button>
 
       {statusMessage && (
-        <p
+        <div
           role="status"
           className={cn(
-            "text-[11px] leading-relaxed px-1",
+            "space-y-2 px-1",
             statusTone === "error" ? "text-amber-300" : "text-[#A8A8A8]",
           )}
         >
-          {statusMessage}
-        </p>
+          <p className="text-[11px] leading-relaxed">{statusMessage}</p>
+          {statusTone === "error" &&
+            (geoErrorCode === "denied" ||
+              geoErrorCode === "timeout" ||
+              geoErrorCode === "unavailable") && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-[#FF7A59]/40 text-[#FF7A59] hover:bg-[#FF7A59]/10 min-h-[40px] touch-target"
+                  onClick={() => void detectLocation()}
+                  disabled={detecting}
+                >
+                  {geoErrorCode === "denied"
+                    ? "Allow location & try again"
+                    : "Try again"}
+                </Button>
+                {geoErrorCode === "denied" && (
+                  <p className="text-[10px] text-[#A8A8A8] leading-snug sm:self-center">
+                    If the browser does not ask again, open site settings
+                    (lock icon in the address bar) and allow location for this
+                    site.
+                  </p>
+                )}
+              </div>
+            )}
+        </div>
       )}
 
       <div className="relative flex items-center gap-3 py-1">

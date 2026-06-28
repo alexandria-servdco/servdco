@@ -59,6 +59,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
         return handleContactSubmit(req, res);
       }
+      case "document-submit-notify": {
+        const { handleDocumentSubmitNotify } = await import(
+          "../_lib/handlers/documentSubmitNotify.js"
+        );
+        return handleDocumentSubmitNotify(req, res);
+      }
       case "booking-event": {
         const { handleBookingEventEmail } = await import(
           "../_lib/handlers/bookingEventEmail.js"

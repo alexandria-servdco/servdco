@@ -23,6 +23,7 @@ import {
 } from "@/services/supabase/admin-moderation.service";
 import type { ChefDocument } from "@/lib/launchOpsTypes";
 import { DocumentPreviewModal } from "@/components/admin/DocumentPreviewModal";
+import { useDocumentModeration } from "@/hooks/useDocumentModeration";
 import { cn } from "@/lib/utils";
 
 type ModerationTab = "reviews" | "documents" | "portfolio";
@@ -61,22 +62,7 @@ export function ContentModeration() {
     },
   });
 
-  const moderateDocument = useMutation({
-    mutationFn: ({
-      id,
-      status,
-      notes,
-    }: {
-      id: string;
-      status: ChefDocument["status"];
-      notes?: string;
-    }) => DocumentsSupabaseService.updateStatus(id, status, notes),
-    onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: documentQueryKeys.all });
-      setPreviewDoc(updated);
-    },
-    onSettled: () => setPendingDocAction(null),
-  });
+  const moderateDocument = useDocumentModeration();
 
   const hidePortfolio = useMutation({
     mutationFn: (id: string) => AdminModerationSupabaseService.hidePortfolioImage(id),
@@ -90,25 +76,30 @@ export function ContentModeration() {
 
   const handleDocumentApprove = (id: string) => {
     setPendingDocAction("approved");
-    moderateDocument.mutate({ id, status: "approved" });
+    moderateDocument.mutate(
+      { id, action: "approved" },
+      { onSettled: () => setPendingDocAction(null) },
+    );
   };
 
   const handleDocumentReject = (id: string) => {
     const reason = window.prompt("Reason for rejection (shared with cook):");
     if (!reason?.trim()) return;
     setPendingDocAction("rejected");
-    moderateDocument.mutate({ id, status: "rejected", notes: reason.trim() });
+    moderateDocument.mutate(
+      { id, action: "rejected", reason: reason.trim() },
+      { onSettled: () => setPendingDocAction(null) },
+    );
   };
 
   const handleDocumentResubmit = (id: string) => {
     const instructions = window.prompt("Instructions for resubmission:");
     if (!instructions?.trim()) return;
     setPendingDocAction("resubmit");
-    moderateDocument.mutate({
-      id,
-      status: "pending",
-      notes: instructions.trim(),
-    });
+    moderateDocument.mutate(
+      { id, action: "resubmit", reason: instructions.trim() },
+      { onSettled: () => setPendingDocAction(null) },
+    );
   };
 
   return (

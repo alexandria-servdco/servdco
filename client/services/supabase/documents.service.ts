@@ -1,6 +1,17 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { ChefDocument } from "@/lib/launchOpsTypes";
 import { SupabaseQueryError } from "./fallback";
+import { EmailService } from "@/services/email.service";
+
+type DocumentDbStatus = "pending" | "approved" | "rejected";
+
+function normalizeDocumentStatus(status: string): DocumentDbStatus {
+  if (status === "resubmit") return "pending";
+  if (status === "pending" || status === "approved" || status === "rejected") {
+    return status;
+  }
+  throw new SupabaseQueryError(`Invalid document status: ${status}`);
+}
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   servsafe_certificate: "ServSafe Certificate",
@@ -173,7 +184,9 @@ export const DocumentsSupabaseService = {
 
     if (error) throw new SupabaseQueryError(error.message, error);
     const chefNames = await resolveChefNames([data.chef_profile_id]);
-    return mapRow(data, chefNames);
+    const mapped = await mapRow(data, chefNames);
+    void EmailService.sendDocumentSubmitNotify([data.id], true);
+    return mapped;
   },
 
   async listOrphaned(): Promise<
@@ -301,22 +314,29 @@ export const DocumentsSupabaseService = {
       .eq("verification_status", "rejected");
 
     const chefNames = await resolveChefNames([params.chefProfileId]);
-    return Promise.all((data ?? []).map((row) => mapRow(row, chefNames)));
+    const mapped = await Promise.all((data ?? []).map((row) => mapRow(row, chefNames)));
+    void EmailService.sendDocumentSubmitNotify(
+      mapped.map((d) => d.id),
+      false,
+    );
+    return mapped;
   },
 
   async updateStatus(
     id: string,
-    status: "pending" | "approved" | "rejected",
+    status: DocumentDbStatus | "resubmit",
     reviewNotes?: string,
   ): Promise<ChefDocument> {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
+    const normalizedStatus = normalizeDocumentStatus(status);
+
     const { data: authData } = await client.auth.getUser();
     const { data, error } = await client
       .from("chef_documents")
       .update({
-        status,
+        status: normalizedStatus,
         review_notes: reviewNotes ?? null,
         reviewed_by: authData.user?.id ?? null,
         reviewed_at: new Date().toISOString(),

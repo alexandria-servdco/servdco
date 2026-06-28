@@ -161,22 +161,24 @@ export function VerificationCenter({
                           background:
                             doc.status === "approved"
                               ? "rgba(46,125,102,0.15)"
+                              : doc.status === "pending" && doc.review_notes
+                                ? "rgba(59,130,246,0.15)"
                               : doc.status === "pending"
                                 ? "rgba(245,158,11,0.15)"
-                                : doc.status === "resubmit"
-                                  ? "rgba(59,130,246,0.15)"
-                                  : "rgba(239,68,68,0.15)",
+                                : "rgba(239,68,68,0.15)",
                           color:
                             doc.status === "approved"
                               ? "#34D399"
+                              : doc.status === "pending" && doc.review_notes
+                                ? "#3B82F6"
                               : doc.status === "pending"
                                 ? "#F59E0B"
-                                : doc.status === "resubmit"
-                                  ? "#3B82F6"
-                                  : "#EF4444",
+                                : "#EF4444",
                         }}
                       >
-                        {doc.status === "resubmit" ? "resubmit requested" : doc.status}
+                        {doc.status === "pending" && doc.review_notes
+                          ? "resubmit requested"
+                          : doc.status}
                       </span>
                     </td>
                     <td className="px-3 py-3.5 text-xs text-[#A8A8A8] admin-cell-wrap max-w-[220px]">

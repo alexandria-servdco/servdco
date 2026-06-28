@@ -63,6 +63,10 @@
       "destination": "/api/platform/careers-application-notify"
     },
     {
+      "source": "/api/documents/submit-notify",
+      "destination": "/api/platform/document-submit-notify"
+    },
+    {
       "source": "/api/waitlist/submit",
       "destination": "/api/platform/waitlist"
     },

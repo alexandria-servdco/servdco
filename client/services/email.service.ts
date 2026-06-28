@@ -59,6 +59,22 @@ export const EmailService = {
     }
   },
 
+  async sendDocumentSubmitNotify(
+    documentIds: string[],
+    isResubmission = false,
+  ): Promise<void> {
+    if (documentIds.length === 0) return;
+    try {
+      await fetch("/api/documents/submit-notify", {
+        method: "POST",
+        headers: await authHeaders(),
+        body: JSON.stringify({ documentIds, isResubmission }),
+      });
+    } catch (err) {
+      console.warn("[email] document submit notify failed", err);
+    }
+  },
+
   async sendCareerApplicationNotify(applicationId: string): Promise<void> {
     try {
       await fetch("/api/careers/application-notify", {

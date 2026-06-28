@@ -135,9 +135,9 @@
 | Contact bad input → 400 | PASS |
 | Stripe unauthenticated → 401 | PASS |
 | Health → 200 | PASS |
-| Email API live 401 | FAIL (404 — pre-deploy) |
+| Email API live 401 | PASS (HTTP 401 — post-deploy `bf747b6`) |
 
-**Post-deploy expectation:** 16/16 PASS
+**Result:** 16/16 PASS (June 21, 2026)
 
 ---
 
@@ -158,7 +158,7 @@
 
 ## Recommendations
 
-1. Deploy security hardening commit and re-run E2E script
+1. ~~Deploy security hardening commit and re-run E2E script~~ **Done** — 16/16 PASS
 2. Schedule external pentest before marketing launch
 3. Enable Supabase MFA for admin accounts
 4. Implement CAPTCHA on public forms
@@ -171,6 +171,6 @@
 | Role | Status |
 |------|--------|
 | Critical vulnerabilities | Remediated in code + migration |
-| E2E verification | 15/16 pass (1 pending deploy) |
+| E2E verification | **16/16 PASS** (production) |
 | External pentest | Recommended — not yet performed |
-| Production ready (security) | **Conditional** — deploy + retest required |
+| Production ready (security) | **Phase 1 complete** — Phase 2 items in hardening plan |

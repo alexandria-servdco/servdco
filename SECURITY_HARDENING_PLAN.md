@@ -31,7 +31,7 @@
 
 | Item | Effort | Notes |
 |------|--------|-------|
-| Distributed rate limiting (Upstash Redis / Vercel KV) | M | Replace in-memory `rateLimit.ts` |
+| Cloudflare edge rate limiting (dashboard) | M | IP-based abuse — Pro+ rules |
 | CAPTCHA on contact + waitlist (Turnstile/hCaptcha) | S | Prevent automated spam |
 | Booking PII column split or status-gated RLS | L | Chef pending bookings — mask gate code at DB |
 | Magic-byte file validation on upload | M | Server-side or Edge Function |

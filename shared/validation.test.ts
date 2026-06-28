@@ -57,7 +57,7 @@ describe("registration validation", () => {
       state: "Ohio",
       city: "Columbus",
       zip: "43215",
-      phone: "kartik.2327csit1113@kiet.edu",
+      phone: "developer@example.com",
     });
     expect(result.success).toBe(false);
     if (result.success === false) {

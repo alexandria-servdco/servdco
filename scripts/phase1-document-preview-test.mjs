@@ -51,7 +51,9 @@ function loadDbUrl(env) {
       /* use fallback */
     }
   }
-  return "postgresql://postgres:p%2FCc9uqcY%23F%5EFMt@db.onerrwpixumcablgyhzs.supabase.co:5432/postgres";
+  throw new Error(
+    "SUPABASE_DB_URL is required. Set it in .env.local or the environment before running this script.",
+  );
 }
 
 function detectType(pathStr) {

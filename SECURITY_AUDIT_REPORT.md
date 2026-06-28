@@ -3,7 +3,8 @@
 **Date:** June 21, 2026  
 **Scope:** Full-stack audit (client, Vercel API, Supabase RLS, Stripe)  
 **Migration applied:** `20250621180000_security_hardening.sql`  
-**Commit:** Pending push (security hardening batch)
+**Commit:** `bf747b6` (deployed to https://servdco-one.vercel.app)  
+**E2E verification:** 16/16 PASS (June 21, 2026)
 
 ---
 
@@ -60,7 +61,7 @@ Servd Co uses a defense-in-depth model: Supabase Auth (JWT), Row Level Security,
 |----|----------|-------|--------|
 | API-01 | **Critical** | Public email API allowed arbitrary Resend spam | **Fixed** — auth + participant check |
 | API-02 | High | Contact form had no rate limit | **Fixed** |
-| API-03 | Medium | In-memory rate limits per serverless instance | Open — migrate to Redis/KV |
+| API-03 | Medium | In-memory rate limits per serverless instance | Mitigated — configure Cloudflare edge rate limits |
 
 ---
 

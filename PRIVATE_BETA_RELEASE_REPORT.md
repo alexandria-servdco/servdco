@@ -95,4 +95,15 @@ No new migrations required for this sprint. Existing `launch_regions.city` + `zi
 
 ## Deployment
 
+**Production URL:** https://servdco-one.vercel.app  
+**Commits:** `dae55ba` (sprint features) + `92dfce9` (Vercel Hobby 12-function consolidation)  
+**Verified:** Health commit `92dfce9`, signup/waitlist 400, enforce 401, E2E 27/27 PASS
+
+### Deploy fix (`92dfce9`)
+Vercel Hobby plan limits deployments to 12 serverless functions. Sprint added 4 routes (15 total), blocking deploy. Consolidated into dynamic routers:
+- `api/auth/[action].ts` — login + signup
+- `api/platform/[action].ts` — waitlist + security enforce (legacy URLs via `vercel.json` rewrites)
+- `api/stripe/connect/[action].ts` — onboarding + dashboard-link
+- `api/_lib/supabaseAuthApi.ts` — Vercel-safe Supabase auth typings
+
 Push to `main` → Vercel auto-deploy → smoke test signup, login, reset password, messaging, admin region editor.

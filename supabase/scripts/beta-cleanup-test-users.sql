@@ -37,7 +37,7 @@ DECLARE
   v_explicit_only boolean := false;
 
   v_extra_delete_emails text[] := ARRAY[
-    'kartik.2327csit1113@kiet.edu',
+    'developer@example.com',
     'tolakas482@divahd.com',
     'siwige8057@divahok.com'
   ];
@@ -123,7 +123,7 @@ DECLARE
   v_explicit_only boolean := false;
 
   v_extra_delete_emails text[] := ARRAY[
-    'kartik.2327csit1113@kiet.edu',
+    'developer@example.com',
     'tolakas482@divahd.com',
     'siwige8057@divahok.com'
   ];

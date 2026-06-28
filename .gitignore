@@ -44,3 +44,35 @@ data/uszips-source.csv
 
 .vercel
 .env*.local
+
+# Generated script outputs (keep scripts, ignore their output)
+scripts/*-results.json
+scripts/*-output.json
+scripts/*-audit.json
+scripts/*-verification.json
+scripts/*-smoke.json
+scripts/lc1-*.json
+
+# Root-level generated test/audit output
+phase*-results.json
+phase*.json
+connect-*.json
+testH-*.json
+vercel-phase*.json
+
+# Temporary scratch files
+git-status-out.txt
+git-diff-names.txt
+inspect-output.txt
+phase*-err.txt
+testH-err.txt
+vercel-phase*-err.txt
+scratch.cjs
+
+# Production backups — contain PII, never commit
+backups/
+
+# Test coverage and screenshots
+coverage/
+playwright/
+screenshots/

@@ -1,5 +1,5 @@
 /**
- * Generated from cloud Supabase (project: onerrwpixumcablgyhzs).
+ * Generated from cloud Supabase project.
  * Regenerate: SUPABASE_DB_URL=... node supabase/scripts/generate-types.mjs
  */
 export type Json =

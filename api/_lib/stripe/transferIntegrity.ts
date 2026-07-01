@@ -7,6 +7,7 @@ export const TRANSFER_CLAIMABLE_STATUSES = [
   "scheduled",
   "pending",
   "failed",
+  "retry_scheduled",
 ] as const;
 
 export type ClaimableTransferStatus = (typeof TRANSFER_CLAIMABLE_STATUSES)[number];

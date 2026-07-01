@@ -1,6 +1,6 @@
 -- Transfer retry scheduling and action-required status for payout pipeline resilience
-
-ALTER TYPE public.transfer_status ADD VALUE IF NOT EXISTS 'action_required';
+-- NOTE: enum values (action_required, retry_scheduled) must be committed in a separate
+-- transaction before this file runs — see scripts/apply-production-migration.mjs
 
 ALTER TABLE public.transfers
   ADD COLUMN IF NOT EXISTS retry_count integer NOT NULL DEFAULT 0,
@@ -8,9 +8,11 @@ ALTER TABLE public.transfers
   ADD COLUMN IF NOT EXISTS last_retry_at timestamptz,
   ADD COLUMN IF NOT EXISTS last_retry_reason text;
 
+DROP INDEX IF EXISTS idx_transfers_retry;
+
 CREATE INDEX IF NOT EXISTS idx_transfers_retry
   ON public.transfers (status, next_retry_at)
-  WHERE status IN ('failed', 'action_required') AND next_retry_at IS NOT NULL;
+  WHERE status IN ('failed', 'retry_scheduled', 'action_required') AND next_retry_at IS NOT NULL;
 
 INSERT INTO public.platform_settings (key, value, description)
 VALUES (

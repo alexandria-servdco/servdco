@@ -24,11 +24,12 @@ describe("cookTransferIdempotencyKey", () => {
 });
 
 describe("atomic claim statuses", () => {
-  it("only allows scheduled, pending, and failed", () => {
+  it("allows scheduled, pending, failed, and retry_scheduled", () => {
     expect(TRANSFER_CLAIMABLE_STATUSES).toEqual([
       "scheduled",
       "pending",
       "failed",
+      "retry_scheduled",
     ]);
     expect(TRANSFER_CLAIMABLE_STATUSES).not.toContain("processing");
     expect(TRANSFER_CLAIMABLE_STATUSES).not.toContain("paid");

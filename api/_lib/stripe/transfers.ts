@@ -249,6 +249,7 @@ async function scheduleTransferRetry(
   transfer: TransferRow,
   message: string,
   maxRetries: number,
+  failureCategory = "unknown",
 ): Promise<void> {
   const client = getServiceRoleClient();
   const now = new Date();
@@ -280,13 +281,13 @@ async function scheduleTransferRetry(
   }
 
   const nextRetryAt = new Date(
-    now.getTime() + getRetryDelayMs(nextRetryCount - 1),
+    now.getTime() + getRetryDelayMs(nextRetryCount - 1, failureCategory),
   );
 
   await client
     .from("transfers")
     .update({
-      status: "failed",
+      status: "retry_scheduled",
       failure_reason: message,
       retry_count: nextRetryCount,
       last_retry_at: now.toISOString(),
@@ -488,7 +489,12 @@ export async function executeSingleTransfer(
     const classification = classifyTransferFailure(message);
 
     if (classification.retryable) {
-      await scheduleTransferRetry(transfer, message, maxRetries);
+      await scheduleTransferRetry(
+        transfer,
+        message,
+        maxRetries,
+        classification.category,
+      );
     } else {
       assertSupabaseWrite(
         await client
@@ -615,7 +621,7 @@ export async function retryTransferById(
       await client
         .from("transfers")
         .update({
-          status: "failed",
+          status: "retry_scheduled",
           failure_reason: "Recovered from stuck processing state",
           next_retry_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -665,7 +671,7 @@ export async function processEligibleTransfers(): Promise<{
   const { data: retryRows } = await client
     .from("transfers")
     .select("*")
-    .eq("status", "failed")
+    .in("status", ["failed", "retry_scheduled"])
     .not("next_retry_at", "is", null)
     .lte("next_retry_at", now)
     .limit(25);

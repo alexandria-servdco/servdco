@@ -6,6 +6,7 @@ import { useAdminTransfers, usePremiumStats } from "@/hooks/useTransfers";
 import { useAdminTips } from "@/hooks/useTips";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
 import { PayoutDiagnosticsPanel } from "@/components/admin/PayoutDiagnosticsPanel";
+import { TransferFinancialDashboard } from "@/components/admin/TransferFinancialDashboard";
 import { StripeAdminService } from "@/services/stripe-admin.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
 import type { PaymentStatus } from "@/lib/paymentTypes";
@@ -78,6 +79,8 @@ export function PayoutControl() {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {stripeEnabled && (
         <>
+          <TransferFinancialDashboard />
+
           <div
             className="admin-stats-mobile-2 grid grid-cols-2 lg:grid-cols-3 gap-4"
             style={{

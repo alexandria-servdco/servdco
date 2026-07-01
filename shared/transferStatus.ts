@@ -4,6 +4,7 @@ export type TransferPipelineStatus =
   | "processing"
   | "paid"
   | "failed"
+  | "retry_scheduled"
   | "cancelled"
   | "action_required";
 
@@ -72,19 +73,22 @@ export function getTransferStatusPresentation(
   }
 
   if (transfer.status === "failed") {
-    if (transfer.next_retry_at) {
-      return {
-        label: "Retry Scheduled",
-        description: `We will retry automatically on ${new Date(transfer.next_retry_at).toLocaleString()}. ${transfer.last_retry_reason ?? transfer.failure_reason ?? ""}`.trim(),
-        tone: "warning",
-      };
-    }
     return {
       label: "Transfer Failed",
       description:
         transfer.failure_reason ??
         "We could not complete this transfer. Our team has been notified.",
       tone: "error",
+    };
+  }
+
+  if (transfer.status === "retry_scheduled") {
+    return {
+      label: "Retry Scheduled",
+      description: transfer.next_retry_at
+        ? `We will retry automatically on ${new Date(transfer.next_retry_at).toLocaleString()}. ${transfer.last_retry_reason ?? transfer.failure_reason ?? ""}`.trim()
+        : (transfer.failure_reason ?? "Automatic retry is scheduled."),
+      tone: "warning",
     };
   }
 
@@ -149,7 +153,9 @@ export function buildTransferTimeline(
   const presentation = getTransferStatusPresentation(transfer);
   const isPaid = transfer.status === "paid";
   const isFailed =
-    transfer.status === "failed" || transfer.status === "action_required";
+    transfer.status === "failed" ||
+    transfer.status === "retry_scheduled" ||
+    transfer.status === "action_required";
   const isProcessing = transfer.status === "processing";
   const isScheduled =
     transfer.status === "scheduled" ||
@@ -273,11 +279,17 @@ export function classifyTransferFailure(message: string): {
   return { retryable: true, category: "unknown" };
 }
 
-export function getRetryDelayMs(retryCount: number): number {
+export function getRetryDelayMs(
+  retryCount: number,
+  category: string = "unknown",
+): number {
+  if (category === "temporary") {
+    return 24 * 60 * 60 * 1000;
+  }
   const delays = [
-    1 * 60 * 60 * 1000,
-    6 * 60 * 60 * 1000,
     24 * 60 * 60 * 1000,
+    48 * 60 * 60 * 1000,
+    72 * 60 * 60 * 1000,
   ];
   return delays[Math.min(retryCount, delays.length - 1)] ?? delays[delays.length - 1];
 }

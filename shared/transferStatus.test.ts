@@ -15,10 +15,10 @@ describe("transfer status presentation", () => {
     expect(result.label).toBe("Waiting for Bank Setup");
   });
 
-  it("describes retry scheduled failed state", () => {
+  it("describes retry scheduled state", () => {
     const result = getTransferStatusPresentation({
       id: "t2",
-      status: "failed",
+      status: "retry_scheduled",
       next_retry_at: new Date(Date.now() + 3600000).toISOString(),
       failure_reason: "Insufficient funds",
     });
@@ -51,10 +51,14 @@ describe("transfer failure classification", () => {
 });
 
 describe("retry delay schedule", () => {
-  it("uses 1h, 6h, 24h backoff", () => {
-    expect(getRetryDelayMs(0)).toBe(3600000);
-    expect(getRetryDelayMs(1)).toBe(6 * 3600000);
-    expect(getRetryDelayMs(2)).toBe(24 * 3600000);
+  it("uses 24h for temporary failures (e.g. insufficient balance)", () => {
+    expect(getRetryDelayMs(0, "temporary")).toBe(24 * 3600000);
+  });
+
+  it("uses 24h, 48h, 72h backoff for other failures", () => {
+    expect(getRetryDelayMs(0)).toBe(24 * 3600000);
+    expect(getRetryDelayMs(1)).toBe(48 * 3600000);
+    expect(getRetryDelayMs(2)).toBe(72 * 3600000);
   });
 });
 

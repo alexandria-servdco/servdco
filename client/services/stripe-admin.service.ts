@@ -69,4 +69,24 @@ export const StripeAdminService = {
       diagnostics?: Record<string, unknown>;
     };
   },
+
+  async getTransferFinancials() {
+    const headers = await authHeaders();
+    const res = await fetch("/api/admin/transfer-financials", {
+      method: "GET",
+      headers,
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Failed to load financial summary");
+    return body as {
+      pendingTransfers: { count: number; totalCents: number };
+      retryScheduled: { count: number; totalCents: number };
+      failedTransfers: { count: number; totalCents: number };
+      actionRequired: { count: number; totalCents: number };
+      completedToday: { count: number; totalCents: number };
+      platformBalance: { availableCents: number; pendingCents: number; currency: string };
+      outstandingLiabilityCents: number;
+      generatedAt: string;
+    };
+  },
 };

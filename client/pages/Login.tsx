@@ -202,7 +202,7 @@ export default function Login() {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59] overflow-hidden">
+    <div className="flex min-h-full w-full flex-col lg:flex-row bg-[#111111] text-[#F5F5F5] font-sans selection:bg-[#FF7A59]/20 selection:text-[#FF7A59] overflow-x-hidden">
       
       {/* Left Side - Image Section */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#161616] border-r border-white/5 h-full">
@@ -253,11 +253,11 @@ export default function Login() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 md:px-20 py-8 relative h-full overflow-y-auto lg:overflow-hidden">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-8 md:px-12 lg:px-20 py-6 sm:py-8 pb-safe relative flex-1 min-h-0">
         {/* Glow effect */}
         <div className="absolute top-0 right-0 w-[250px] h-[250px] rounded-full bg-[#FF7A59]/3 blur-[80px] pointer-events-none" />
 
-        <div className="max-w-md mx-auto w-full space-y-6">
+        <div className="max-w-md mx-auto w-full space-y-5 sm:space-y-6 py-2">
           
           {/* Mobile Logo */}
           <div className="lg:hidden">

@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { getStripe } from "./server";
 import { getServiceRoleClient } from "../supabase/serviceRole";
-import { syncConnectAccountFromStripe } from "./connect";
+import { syncConnectAccountFromStripe } from "../../api/_lib/stripe/connect.js";
 import { markStripeEventProcessed } from "./events";
 import { createUserNotification, writePaymentAuditLog } from "./ledger";
 import {

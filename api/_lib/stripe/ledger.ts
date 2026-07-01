@@ -23,6 +23,29 @@ export async function writePaymentAuditLog(params: {
   });
 }
 
+export async function writeAdminAuditLog(params: {
+  action: string;
+  adminUserId: string;
+  entityType: string;
+  entityId: string;
+  result: string;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  const client = getServiceRoleClient();
+  await client.from("audit_logs").insert({
+    actor_id: params.adminUserId,
+    action: params.action,
+    entity_type: params.entityType,
+    entity_id: params.entityId,
+    new_values: { result: params.result },
+    metadata: {
+      admin_action: true,
+      ...params.metadata,
+    },
+    created_at: new Date().toISOString(),
+  });
+}
+
 export async function createUserNotification(params: {
   userId: string;
   title: string;

@@ -573,7 +573,7 @@ export default function Index() {
 
             {/* Right: Income calculator built directly on page */}
             <div className="lg:col-span-6">
-              <div className="bg-[#2A2A2A] rounded-[32px] p-8 border border-white/5 shadow-2xl relative overflow-hidden">
+              <div className="bg-[#2A2A2A] rounded-[20px] sm:rounded-[32px] p-4 sm:p-6 lg:p-8 border border-white/5 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#FF7A59]/10 blur-2xl" />
 
                 <h3 className="font-bold text-white text-lg font-serif mb-6 pb-3 border-b border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

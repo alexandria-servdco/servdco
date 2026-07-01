@@ -27,4 +27,46 @@ export const StripeAdminService = {
     if (!res.ok) throw new Error(body.error ?? "Refund failed");
     return body as { refundId: string; status: string };
   },
+
+  async getConnectDiagnostics(chefProfileId: string) {
+    const headers = await authHeaders();
+    const res = await fetch("/api/admin/stripe-connect-diagnostics", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ chefProfileId }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Diagnostics failed");
+    return body;
+  },
+
+  async syncConnectAccount(chefProfileId: string) {
+    const headers = await authHeaders();
+    const res = await fetch("/api/admin/stripe-connect-sync", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ chefProfileId }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Sync failed");
+    return body;
+  },
+
+  async retryTransfer(transferId: string) {
+    const headers = await authHeaders();
+    const res = await fetch("/api/admin/transfers-retry", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ transferId }),
+    });
+    const body = await res.json();
+    if (!res.ok && res.status !== 422) {
+      throw new Error(body.error ?? "Transfer retry failed");
+    }
+    return body as {
+      success: boolean;
+      reason?: string;
+      diagnostics?: Record<string, unknown>;
+    };
+  },
 };

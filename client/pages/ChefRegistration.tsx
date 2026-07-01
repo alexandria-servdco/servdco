@@ -273,7 +273,7 @@ export default function ChefRegistration() {
   };
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-hidden">
+    <div className="min-h-full w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-x-hidden">
       <header className="flex justify-between items-center px-8 py-3 border-b border-white/5 flex-shrink-0">
         <Link to="/">
           <ServdLogo />
@@ -292,8 +292,8 @@ export default function ChefRegistration() {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row px-4 sm:px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full min-h-0 overflow-hidden">
-        <div className="flex-1 flex flex-col max-w-2xl min-h-0 pr-2 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row px-4 sm:px-8 py-4 gap-6 sm:gap-8 max-w-[1600px] mx-auto w-full min-h-0">
+        <div className="flex-1 flex flex-col max-w-2xl min-h-0 pr-0 sm:pr-2 overflow-y-auto pb-safe">
           <div className="mb-4">
             <h1 className="text-3xl lg:text-4xl font-bold text-white font-serif tracking-tight mb-1">
               Join as a Cook

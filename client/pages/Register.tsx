@@ -46,44 +46,40 @@ function RegistrationCard({
   return (
     <div
       className={cn(
-        "group relative flex flex-col rounded-[24px] overflow-hidden border border-white/5 bg-[#1A1A1A] transition-all duration-300 ease-out h-full",
-        "hover:-translate-y-1.5 hover:scale-[1.01] hover:border-[#FF7A59]/30 hover:shadow-[0_15px_35px_rgba(0,0,0,0.4),0_0_20px_rgba(255,122,89,0.06)] shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+        "group relative flex flex-col rounded-[20px] sm:rounded-[24px] overflow-hidden border border-white/5 bg-[#1A1A1A] transition-all duration-300 ease-out h-full",
+        "hover:-translate-y-1 hover:border-[#FF7A59]/30 hover:shadow-[0_15px_35px_rgba(0,0,0,0.4),0_0_20px_rgba(255,122,89,0.06)] shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
       )}
     >
-      {/* Floating heart decoration */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none text-[#FF7A59]/40 group-hover:text-[#FF7A59] transition-colors">
         <Heart size={16} />
       </div>
 
-      {/* Image */}
-      <div className="relative w-full h-36 overflow-hidden bg-black/10">
+      <div className="relative w-full h-28 sm:h-32 md:h-36 overflow-hidden bg-black/10">
         <img
           src={imageSrc}
           alt={imageAlt}
-          className="w-full h-full object-cover opacity-70 transition-transform duration-500 group-hover:scale-102"
+          className="w-full h-full object-cover opacity-70 transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent" />
       </div>
 
-      {/* Icon badge */}
-      <div className="flex justify-center -mt-6 relative z-10">
+      <div className="flex justify-center -mt-5 sm:-mt-6 relative z-10">
         <div className="w-10 h-10 rounded-full bg-[#111111] border border-white/10 flex items-center justify-center shadow-md">
           {icon}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex flex-col flex-1 p-5 gap-4 justify-between">
-        <div className="text-center space-y-1">
-          <h2 className="text-xl font-bold font-serif text-white">{title}</h2>
-          <p className="text-[11px] text-[#A8A8A8] leading-relaxed font-medium">{description}</p>
+      <div className="flex flex-col flex-1 px-5 sm:px-6 pt-2 pb-5 sm:pb-6 gap-4 sm:gap-5">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl sm:text-2xl font-bold font-serif text-white">{title}</h2>
+          <p className="text-xs sm:text-sm text-[#A8A8A8] leading-relaxed font-medium px-1">{description}</p>
         </div>
 
-        <ul className="space-y-2">
+        <ul className="space-y-2.5 flex-1">
           {features.map((feature, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-[11px] text-[#A8A8A8]">
-              <CheckCircle size={13} className="text-[#FF7A59] flex-shrink-0 mt-0.5" strokeWidth={2.5} />
-              <span className="font-medium">{feature}</span>
+            <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#A8A8A8]">
+              <CheckCircle size={14} className="text-[#FF7A59] flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+              <span className="font-medium leading-snug">{feature}</span>
             </li>
           ))}
         </ul>
@@ -91,12 +87,12 @@ function RegistrationCard({
         <Link
           to={ctaHref}
           className={cn(
-            "flex items-center justify-center gap-2 py-3 rounded-3xl text-white font-bold text-xs transition-all duration-200 shadow-md hover:scale-[1.01] active:scale-[0.98]",
+            "flex items-center justify-center gap-2 min-h-11 px-6 py-3.5 sm:py-4 rounded-3xl text-white font-bold text-sm transition-all duration-200 shadow-md hover:scale-[1.01] active:scale-[0.98] touch-manipulation mx-1",
             ctaBgClass
           )}
         >
           {ctaLabel}
-          <ArrowRight size={12} strokeWidth={2.5} />
+          <ArrowRight size={14} strokeWidth={2.5} />
         </Link>
       </div>
     </div>
@@ -105,32 +101,27 @@ function RegistrationCard({
 
 export default function Register() {
   return (
-    <div className="h-screen w-screen bg-[#111111] text-[#F5F5F5] font-sans flex flex-col selection:bg-[#FF7A59]/20 selection:text-[#FF7A59] overflow-hidden">
+    <div className="min-h-full w-full bg-[#111111] text-[#F5F5F5] font-sans flex flex-col selection:bg-[#FF7A59]/20 selection:text-[#FF7A59] overflow-x-hidden">
       
-      {/* Header */}
-      <header className="flex justify-center py-6 relative z-10">
+      <header className="flex justify-center py-5 sm:py-6 pt-safe relative z-10 shrink-0">
         <Link to="/">
           <ServdLogo />
         </Link>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-8 relative z-10 max-w-4xl mx-auto w-full max-h-[85vh]">
-        {/* Glow effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-[#FF7A59]/3 blur-[120px] pointer-events-none" />
+      <main className="flex-1 flex flex-col items-center px-4 sm:px-6 pb-8 pb-safe relative z-10 max-w-4xl mx-auto w-full">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(400px,90vw)] h-[min(400px,90vw)] rounded-full bg-[#FF7A59]/3 blur-[120px] pointer-events-none" />
 
-        {/* Heading */}
-        <div className="text-center mb-8 max-w-lg space-y-2 relative z-10">
-          <h1 className="text-3xl md:text-4xl font-bold font-serif text-white leading-tight">
+        <div className="text-center mb-6 sm:mb-8 max-w-lg space-y-2 relative z-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold font-serif text-white leading-tight">
             Let's get you started!
           </h1>
-          <p className="text-[11px] text-[#A8A8A8] font-medium leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#A8A8A8] font-medium leading-relaxed px-2">
             Choose the option that best describes you to create your secure private dining account.
           </p>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 w-full max-w-2xl relative z-10">
           <RegistrationCard
             type="family"
             imageSrc="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&fit=crop"
@@ -166,19 +157,18 @@ export default function Register() {
           />
         </div>
 
-        {/* Trust Badges */}
-        <div className="flex flex-wrap justify-center gap-6 md:gap-10 mt-8 text-[10px] text-[#A8A8A8] text-center font-bold uppercase tracking-wider relative z-10">
-          <div className="flex items-center gap-2">
-            <Shield size={14} className="text-[#FF7A59]" />
-            <span>Trusted & vetted<br />local private cooks</span>
+        <div className="flex flex-wrap justify-center gap-5 sm:gap-8 md:gap-10 mt-8 sm:mt-10 text-[10px] sm:text-xs text-[#A8A8A8] text-center font-bold uppercase tracking-wider relative z-10">
+          <div className="flex items-center gap-2 max-w-[140px]">
+            <Shield size={14} className="text-[#FF7A59] shrink-0" />
+            <span>Trusted & vetted local private cooks</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Lock size={14} className="text-[#FF7A59]" />
-            <span>Secure platform<br />transacting rails</span>
+          <div className="flex items-center gap-2 max-w-[140px]">
+            <Lock size={14} className="text-[#FF7A59] shrink-0" />
+            <span>Secure platform transacting rails</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Heart size={14} className="text-[#FF7A59]" />
-            <span>Built for families.<br />Powered by cooks.</span>
+          <div className="flex items-center gap-2 max-w-[140px]">
+            <Heart size={14} className="text-[#FF7A59] shrink-0" />
+            <span>Built for families. Powered by cooks.</span>
           </div>
         </div>
       </main>

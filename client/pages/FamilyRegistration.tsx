@@ -246,7 +246,7 @@ export default function FamilyRegistration() {
   };
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-hidden">
+    <div className="min-h-full w-full bg-[#111111] text-[#F5F5F5] flex flex-col font-sans overflow-x-hidden">
       {/* Navigation */}
       <header className="flex justify-between items-center px-8 py-3 border-b border-white/5 flex-shrink-0">
         <Link to="/">
@@ -264,9 +264,9 @@ export default function FamilyRegistration() {
       </header>
 
       {/* Split Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row px-8 py-4 gap-8 max-w-[1600px] mx-auto w-full min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row px-4 sm:px-8 py-4 gap-6 sm:gap-8 max-w-[1600px] mx-auto w-full min-h-0">
         {/* Form Container */}
-        <div className="flex-1 flex flex-col max-w-2xl min-h-0 overflow-hidden pr-2">
+        <div className="flex-1 flex flex-col max-w-2xl min-h-0 overflow-y-auto pr-0 sm:pr-2 pb-safe">
           
           {/* Header Title */}
           <div className="mb-4 flex-shrink-0">

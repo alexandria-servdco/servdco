@@ -4,6 +4,7 @@ import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { syncConnectAccountFromStripe } from "./connect.js";
 import { markStripeEventProcessed } from "./events.js";
 import { createUserNotification, writePaymentAuditLog } from "./ledger.js";
+import { apiLogger } from "../logger.js";
 import {
   notifyPremiumRenewed,
   syncChefPremiumFromSubscription,
@@ -273,7 +274,42 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {
-  await syncConnectAccountFromStripe(account.id);
+  const startedAt = Date.now();
+  const syncResult = await syncConnectAccountFromStripe(account.id);
+
+  apiLogger.info("account.updated webhook synchronized", {
+    eventAccountId: account.id,
+    chefProfileId: syncResult.chefProfileId,
+    rowsUpdated: syncResult.rowsUpdated,
+    durationMs: Date.now() - startedAt,
+    onboarding_status: syncResult.onboarding_status,
+    payouts_enabled: syncResult.payouts_enabled,
+    processingResult: "success",
+  });
+
+  if (syncResult.payouts_enabled && !syncResult.wasAlreadySynced) {
+    const client = getServiceRoleClient();
+    const { data: chef } = await client
+      .from("chef_profiles")
+      .select("user_id")
+      .eq("id", syncResult.chefProfileId)
+      .maybeSingle();
+
+    if (chef?.user_id) {
+      await createUserNotification({
+        userId: chef.user_id,
+        title: "Bank Account Connected",
+        message:
+          "Your bank account is connected through Stripe. Future earnings will be deposited securely.",
+        type: "success",
+        metadata: {
+          event: "connect_onboarding_complete",
+          chef_profile_id: syncResult.chefProfileId,
+          stripe_account_id: syncResult.stripeAccountId,
+        },
+      });
+    }
+  }
 }
 
 async function handleSubscriptionEvent(
@@ -384,6 +420,76 @@ async function handleTransferPaid(transfer: Stripe.Transfer) {
     .eq("id", transferId);
 }
 
+async function handleTransferFailed(transfer: Stripe.Transfer) {
+  const client = getServiceRoleClient();
+  const transferId = transfer.metadata?.transfer_id;
+  if (!transferId) return;
+
+  const failureMessage =
+    (transfer as Stripe.Transfer & { failure_message?: string }).failure_message ??
+    "Stripe transfer failed";
+
+  await client
+    .from("transfers")
+    .update({
+      status: "failed",
+      failure_reason: failureMessage,
+      last_retry_at: new Date().toISOString(),
+      last_retry_reason: failureMessage,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", transferId)
+    .neq("status", "paid");
+
+  const { data: row } = await client
+    .from("transfers")
+    .select("payment_id, booking_id, chef_profile_id")
+    .eq("id", transferId)
+    .maybeSingle();
+
+  if (row?.chef_profile_id) {
+    const { data: chef } = await client
+      .from("chef_profiles")
+      .select("user_id")
+      .eq("id", row.chef_profile_id)
+      .maybeSingle();
+
+    if (chef?.user_id) {
+      await createUserNotification({
+        userId: chef.user_id,
+        title: "Transfer Failed",
+        message: failureMessage,
+        type: "error",
+        metadata: {
+          event: "transfer_failed_webhook",
+          transfer_id: transferId,
+          stripe_transfer_id: transfer.id,
+        },
+      });
+    }
+  }
+
+  if (row?.payment_id) {
+    await writePaymentAuditLog({
+      action: "transfer.failed",
+      paymentId: row.payment_id,
+      bookingId: row.booking_id,
+      newValues: { failure_reason: failureMessage },
+      metadata: {
+        stripe_event: "transfer.failed",
+        stripe_transfer_id: transfer.id,
+        cook_transfer_id: transferId,
+      },
+    });
+  }
+
+  apiLogger.warn("transfer.failed webhook processed", {
+    transferId,
+    stripeTransferId: transfer.id,
+    failureMessage,
+  });
+}
+
 async function handlePayoutPaid(payout: Stripe.Payout) {
   const client = getServiceRoleClient();
   const chefProfileId = payout.metadata?.chef_profile_id;
@@ -403,13 +509,99 @@ async function handlePayoutPaid(payout: Stripe.Payout) {
     },
     { onConflict: "stripe_payout_id" },
   );
+
+  const { data: chef } = await client
+    .from("chef_profiles")
+    .select("user_id")
+    .eq("id", chefProfileId)
+    .maybeSingle();
+
+  if (chef?.user_id) {
+    await createUserNotification({
+      userId: chef.user_id,
+      title: "Bank Deposit Completed",
+      message: `Stripe deposited $${(payout.amount / 100).toFixed(2)} into your bank account.`,
+      type: "success",
+      metadata: {
+        event: "payout_paid",
+        chef_profile_id: chefProfileId,
+        stripe_payout_id: payout.id,
+      },
+    });
+  }
+}
+
+async function handlePayoutFailed(payout: Stripe.Payout) {
+  const client = getServiceRoleClient();
+  const chefProfileId = payout.metadata?.chef_profile_id;
+  const failureMessage =
+    payout.failure_message ??
+    (payout as Stripe.Payout & { failure_code?: string }).failure_code ??
+    "Stripe bank payout failed";
+
+  if (chefProfileId) {
+    await client.from("cook_payouts").upsert(
+      {
+        chef_profile_id: chefProfileId,
+        stripe_payout_id: payout.id,
+        amount_cents: payout.amount,
+        currency: (payout.currency ?? "usd").toUpperCase(),
+        status: "failed",
+        metadata: {
+          failure_message: failureMessage,
+          stripe_account: payout.destination,
+        },
+      },
+      { onConflict: "stripe_payout_id" },
+    );
+
+    const { data: chef } = await client
+      .from("chef_profiles")
+      .select("user_id")
+      .eq("id", chefProfileId)
+      .maybeSingle();
+
+    if (chef?.user_id) {
+      await createUserNotification({
+        userId: chef.user_id,
+        title: "Bank Deposit Failed",
+        message: failureMessage,
+        type: "error",
+        metadata: {
+          event: "payout_failed",
+          chef_profile_id: chefProfileId,
+          stripe_payout_id: payout.id,
+        },
+      });
+    }
+
+    await client.from("audit_logs").insert({
+      actor_id: null,
+      action: "payout.failed",
+      entity_type: "cook_payouts",
+      entity_id: chefProfileId,
+      new_values: { failure_message: failureMessage },
+      metadata: {
+        stripe_event: "payout.failed",
+        stripe_payout_id: payout.id,
+      },
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  apiLogger.warn("payout.failed webhook processed", {
+    chefProfileId: chefProfileId ?? null,
+    stripePayoutId: payout.id,
+    failureMessage,
+  });
 }
 
 export async function processStripeWebhookEvent(
   event: Stripe.Event,
 ): Promise<void> {
   try {
-    switch (event.type) {
+    const eventType = event.type as Stripe.Event.Type | "transfer.failed" | "payout.failed";
+    switch (eventType) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(
           event.data.object as Stripe.Checkout.Session,
@@ -434,8 +626,14 @@ export async function processStripeWebhookEvent(
       case "transfer.created":
         await handleTransferPaid(event.data.object as Stripe.Transfer);
         break;
+      case "transfer.failed":
+        await handleTransferFailed(event.data.object as Stripe.Transfer);
+        break;
       case "payout.paid":
         await handlePayoutPaid(event.data.object as Stripe.Payout);
+        break;
+      case "payout.failed":
+        await handlePayoutFailed(event.data.object as Stripe.Payout);
         break;
       case "customer.subscription.created":
         await handleSubscriptionEvent(

@@ -5,6 +5,7 @@ import { useAdminPayments, useStripeCheckoutEnabled } from "@/hooks/usePayments"
 import { useAdminTransfers, usePremiumStats } from "@/hooks/useTransfers";
 import { useAdminTips } from "@/hooks/useTips";
 import { useAdminSubscriptions } from "@/hooks/useAdminSubscriptions";
+import { PayoutDiagnosticsPanel } from "@/components/admin/PayoutDiagnosticsPanel";
 import { StripeAdminService } from "@/services/stripe-admin.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
 import type { PaymentStatus } from "@/lib/paymentTypes";
@@ -49,6 +50,9 @@ export function PayoutControl() {
     .filter((p) => p.status === "succeeded")
     .reduce((s, p) => s + p.platformFee, 0);
   const transfersPaid = transfers.filter((t) => t.status === "paid").length;
+  const diagnosticChefs = [...new Map(
+    transfers.map((t) => [t.chef_profile_id, t.chef_name ?? "Cook"]),
+  ).entries()].slice(0, 5);
 
   const handleRefund = async (paymentId: string) => {
     if (!window.confirm("Issue a full refund for this payment?")) return;
@@ -307,6 +311,14 @@ export function PayoutControl() {
               </table>
             )}
           </div>
+
+          {diagnosticChefs.map(([chefProfileId, chefName]) => (
+            <PayoutDiagnosticsPanel
+              key={chefProfileId}
+              chefProfileId={chefProfileId}
+              chefName={chefName}
+            />
+          ))}
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Gift size={16} color="#FF7A59" />

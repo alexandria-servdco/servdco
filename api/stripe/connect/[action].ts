@@ -8,6 +8,7 @@ import {
   createOnboardingLink,
   createDashboardLink,
   ensureConnectAccount,
+  syncConnectAccountByChefProfileId,
 } from "../../_lib/stripe/connect.js";
 import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
 import { apiLogger } from "../../_lib/logger.js";
@@ -146,9 +147,84 @@ async function handleDashboardLink(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+const syncBodySchema = z.object({
+  chefProfileId: z.string().uuid().optional(),
+});
+
+async function handleSync(req: VercelRequest, res: VercelResponse) {
+  if (!(await enforceRateLimit(req, res, "stripe_default", { route: "/api/stripe/connect/sync" }))) {
+    return;
+  }
+
+  if (!(await isStripeCheckoutEnabled())) {
+    json(res, 503, { error: "Stripe checkout is disabled." });
+    return;
+  }
+
+  const token = readBearerToken(req);
+  if (!token) {
+    json(res, 401, { error: "Unauthorized" });
+    return;
+  }
+
+  const user = await verifySupabaseUser(token);
+  if (!user) {
+    json(res, 401, { error: "Invalid session" });
+    return;
+  }
+
+  const chef = await requireChefProfile(user.id);
+  if (!chef) {
+    json(res, 403, { error: "Chef profile required" });
+    return;
+  }
+
+  const parsed = syncBodySchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    json(res, 400, { error: "Invalid request", details: parsed.error.flatten() });
+    return;
+  }
+
+  const chefProfileId = parsed.data.chefProfileId ?? chef.chefProfileId;
+  if (chefProfileId !== chef.chefProfileId) {
+    json(res, 403, { error: "Cannot sync another chef profile." });
+    return;
+  }
+
+  try {
+    const result = await syncConnectAccountByChefProfileId(chefProfileId);
+    apiLogger.info("Connect account manually synced", {
+      route: "/api/stripe/connect/sync",
+      userId: user.id,
+      chefProfileId,
+      stripeAccountId: result.stripeAccountId,
+      rowsUpdated: result.rowsUpdated,
+      durationMs: result.durationMs,
+    });
+    json(res, 200, {
+      onboarding_status: result.onboarding_status,
+      charges_enabled: result.charges_enabled,
+      payouts_enabled: result.payouts_enabled,
+      details_submitted: result.details_submitted,
+      stripe_account_id: result.stripeAccountId,
+      last_synced_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Sync failed";
+    apiLogger.error("Connect account sync failed", {
+      route: "/api/stripe/connect/sync",
+      userId: user.id,
+      chefProfileId,
+      message,
+    });
+    json(res, 500, { error: message });
+  }
+}
+
 const ACTIONS = {
   onboarding: handleOnboarding,
   "dashboard-link": handleDashboardLink,
+  sync: handleSync,
 } as const;
 
 type ConnectAction = keyof typeof ACTIONS;

@@ -11,6 +11,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
         return handleAdminPermanentDelete(req, res);
       }
+      case "stripe-connect-diagnostics": {
+        const { handleAdminStripeConnectDiagnostics } = await import(
+          "../_lib/handlers/adminStripeConnect.js"
+        );
+        return handleAdminStripeConnectDiagnostics(req, res);
+      }
+      case "stripe-connect-sync": {
+        const { handleAdminStripeConnectSync } = await import(
+          "../_lib/handlers/adminStripeConnect.js"
+        );
+        return handleAdminStripeConnectSync(req, res);
+      }
+      case "transfers-retry": {
+        const { handleAdminTransferRetry } = await import(
+          "../_lib/handlers/adminTransferRetry.js"
+        );
+        return handleAdminTransferRetry(req, res);
+      }
       default:
         return res.status(404).json({ error: "Unknown admin action." });
     }

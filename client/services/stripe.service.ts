@@ -17,6 +17,9 @@ export interface StripeConnectStatus {
   charges_enabled: boolean;
   payouts_enabled: boolean;
   stripe_account_id: string | null;
+  details_submitted?: boolean;
+  updated_at?: string | null;
+  last_synced_at?: string | null;
 }
 
 export const StripeService = {
@@ -31,7 +34,7 @@ export const StripeService = {
     const { data } = await client
       .from("stripe_accounts")
       .select(
-        "stripe_account_id, onboarding_status, charges_enabled, payouts_enabled",
+        "stripe_account_id, onboarding_status, charges_enabled, payouts_enabled, updated_at, metadata",
       )
       .eq("chef_profile_id", chefProfileId)
       .maybeSingle();
@@ -42,10 +45,34 @@ export const StripeService = {
         charges_enabled: false,
         payouts_enabled: false,
         stripe_account_id: null,
+        details_submitted: false,
       };
     }
 
-    return data;
+    const metadata = data.metadata as { details_submitted?: boolean } | null;
+
+    return {
+      ...data,
+      details_submitted: metadata?.details_submitted ?? false,
+      last_synced_at: data.updated_at,
+    };
+  },
+
+  async syncConnectAccount(chefProfileId?: string) {
+    const headers = await authHeaders();
+    const res = await fetch("/api/stripe/connect/sync", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(
+        chefProfileId ? { chefProfileId } : {},
+      ),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Connect sync failed");
+    return body as StripeConnectStatus & {
+      stripe_account_id: string;
+      last_synced_at: string;
+    };
   },
 
   async startConnectOnboarding(returnUrl: string, refreshUrl: string) {

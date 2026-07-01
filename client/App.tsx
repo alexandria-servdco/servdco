@@ -104,8 +104,8 @@ function PageWrapper({
         className={cn(
           "w-full flex flex-col outline-none animate-page-in",
           viewportLocked
-            ? "h-[100dvh] max-h-[100dvh] overflow-hidden"
-            : "min-h-screen",
+            ? "min-h-[100dvh] h-[100dvh] max-h-[100dvh] overflow-y-auto overflow-x-hidden overscroll-y-contain"
+            : "min-h-screen overflow-x-hidden",
         )}
       >
         {children}

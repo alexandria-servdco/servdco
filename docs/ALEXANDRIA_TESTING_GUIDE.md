@@ -1,6 +1,6 @@
 # ServdCo — Simple Testing Guide for Alexandria
 
-**Site:** https://servdco-one.vercel.app  
+**Site:** https://servdco.vercel.app  
 **Mode:** Stripe **test mode** only — no real money is charged.
 
 This guide walks you through testing the full platform in order: cook signup → your admin access → approve the cook → family booking → test payment.
@@ -54,7 +54,7 @@ Use the **cook test email** (not your admin email).
 
 ### Step 1.1 — Register as a cook
 
-1. Go to https://servdco-one.vercel.app/register  
+1. Go to https://servdco.vercel.app/register  
 2. Choose **Cook / Chef** registration.  
 3. Fill in the form with **fake but realistic** details:
 
@@ -97,7 +97,7 @@ Use **`alexandria@servdco.com`** (or the email Kartik will promote to admin).
 
 There is **no admin signup page**. You register like a normal family:
 
-1. Go to https://servdco-one.vercel.app/register  
+1. Go to https://servdco.vercel.app/register  
 2. Choose **Family** registration.  
 3. Example details:
 
@@ -125,7 +125,7 @@ WHERE email = 'alexandria@servdco.com';
 ### Step 2.3 — Log in as admin
 
 1. **Sign out** completely.  
-2. Sign in again at https://servdco-one.vercel.app/login with `alexandria@servdco.com`.  
+2. Sign in again at https://servdco.vercel.app/login with `alexandria@servdco.com`.  
 3. You should be redirected to **Admin Dashboard** (`/admin-dashboard`).
 
 If you still see the family dashboard, sign out/in again or ask Kartik to confirm the SQL ran.
@@ -150,7 +150,7 @@ Logged in as admin:
 
 ### Step 3.3 — Confirm cook is live on the website
 
-1. Open https://servdco-one.vercel.app/browse-chefs in a **new tab** (or incognito).  
+1. Open https://servdco.vercel.app/browse-chefs in a **new tab** (or incognito).  
 2. You should see the approved cook’s card.  
 3. Homepage **“Explore local cooks”** section should also show the cook (no “join waitlist” empty state).
 
@@ -164,7 +164,7 @@ Use the **family test email** (third account).
 
 ### Step 4.1 — Register family
 
-1. Incognito/private window → https://servdco-one.vercel.app/register  
+1. Incognito/private window → https://servdco.vercel.app/register  
 2. **Family** registration:
 
 | Field | Example |

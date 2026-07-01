@@ -1,6 +1,7 @@
 import { getStripe } from "./server.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { apiLogger } from "../logger.js";
+import { mapOnboardingStatus } from "../../../shared/payoutStatus.js";
 
 export class StripeAccountNotFoundError extends Error {
   readonly stripeAccountId: string;
@@ -44,16 +45,6 @@ export interface ConnectAccountDiagnostics {
   } | null;
   mismatches: string[];
   stripeRetrieveError: string | null;
-}
-
-function mapOnboardingStatus(account: {
-  details_submitted: boolean;
-  charges_enabled: boolean;
-  payouts_enabled: boolean;
-}): "not_started" | "pending" | "complete" | "restricted" {
-  if (account.payouts_enabled && account.charges_enabled) return "complete";
-  if (account.details_submitted) return "pending";
-  return "not_started";
 }
 
 export async function ensureConnectAccount(params: {

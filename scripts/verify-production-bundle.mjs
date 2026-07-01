@@ -1,8 +1,11 @@
 /**
  * Verify production bundle contains Phase 1 markers and health is OK.
  */
-const HEALTH_URL = "https://servdco-one.vercel.app/api/health";
-const SITE_URL = "https://servdco-one.vercel.app/";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const BASE = resolveBaseUrl();
+const HEALTH_URL = `${BASE}/api/health`;
+const SITE_URL = `${BASE}/`;
 const EXPECTED_COMMIT = "e855146";
 const PHASE1_CHUNKS = [
   "/assets/index-DpBWQRzV.js",

@@ -7,6 +7,7 @@ export interface PageSeoConfig {
 
 const SITE_URL =
   (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") ||
+  (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") ||
   (typeof window !== "undefined" ? window.location.origin : "");
 const DEFAULT_OG_IMAGE = SITE_URL ? `${SITE_URL}/og-default.png` : "/og-default.png";
 

@@ -8,7 +8,8 @@ export type TransferStatus =
   | "paid"
   | "failed"
   | "cancelled"
-  | "action_required";
+  | "action_required"
+  | "retry_scheduled";
 
 export interface CookTransferRow {
   id: string;

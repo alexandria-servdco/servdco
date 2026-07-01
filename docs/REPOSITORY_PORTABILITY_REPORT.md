@@ -11,7 +11,7 @@
 |------|--------|-------|
 | Application code | **PASS** | No hardcoded Supabase/Stripe IDs in runtime paths |
 | Environment variables | **PASS** | `.env.example` documents all required vars |
-| Email / URLs | **PASS** | `SITE_URL` required in production; no `servdco-one.vercel.app` fallbacks in API |
+| Email / URLs | **PASS** | `SITE_URL` required in production; no `servdco.vercel.app` fallbacks in API |
 | Admin notify email | **PASS** | `getAdminNotifyEmail()` throws if unset |
 | Pricing | **PASS** | Centralized in `shared/pricing.ts` |
 | Migrations | **PASS** | 48 SQL migrations; `supabase db push` sufficient |

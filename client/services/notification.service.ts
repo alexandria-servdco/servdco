@@ -1,6 +1,10 @@
 import { api } from "@/lib/api";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import { NotificationsSupabaseService } from "@/services/supabase/notifications.service";
+import {
+  isStaleOnboardingNotification,
+  type StripeAccountLike,
+} from "@shared/payoutStatus";
 
 export const NotificationService = {
   async getRegionAlerts() {
@@ -8,9 +12,16 @@ export const NotificationService = {
     return notifications ?? [];
   },
 
-  async syncUserNotifications(_userId: string) {
+  async syncUserNotifications(
+    _userId: string,
+    connectStatus?: StripeAccountLike | null,
+  ) {
     const rows = await NotificationsSupabaseService.listOwn();
     const notifications = rows
+      .filter(
+        (n) =>
+          !isStaleOnboardingNotification(n.title, n.message, connectStatus),
+      )
       .map((n) => ({
         id: n.id,
         title: n.title,

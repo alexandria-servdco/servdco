@@ -9,6 +9,7 @@ export function escapeHtml(value: string): string {
 export function resolveSiteUrl(): string {
   const raw =
     process.env.SITE_URL ??
+    process.env.APP_URL ??
     process.env.VERCEL_PROJECT_PRODUCTION_URL ??
     process.env.VERCEL_URL;
   if (!raw) {

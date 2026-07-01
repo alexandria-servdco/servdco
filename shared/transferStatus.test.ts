@@ -5,8 +5,8 @@ import {
   getTransferStatusPresentation,
 } from "./transferStatus";
 
-describe("transfer status presentation", () => {
-  it("describes onboarding incomplete pending state", () => {
+describe("transfer status presentation (legacy wrapper)", () => {
+  it("describes onboarding incomplete pending state without account context", () => {
     const result = getTransferStatusPresentation({
       id: "t1",
       status: "pending",
@@ -31,7 +31,7 @@ describe("transfer status presentation", () => {
       status: "paid",
       stripe_transfer_id: "tr_123",
     });
-    expect(result.label).toBe("Transferred to Stripe");
+    expect(result.label).toBe("Paid");
     expect(result.tone).toBe("success");
   });
 });

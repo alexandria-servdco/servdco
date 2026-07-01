@@ -3,7 +3,9 @@
  * Phase 1 production smoke tests — extended API surface.
  * Usage: node scripts/phase1-production-smoke.mjs [baseUrl]
  */
-const BASE = process.argv[2] ?? "https://servdco-one.vercel.app";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const BASE = resolveBaseUrl();
 const results = [];
 
 function record(name, status, detail = "") {

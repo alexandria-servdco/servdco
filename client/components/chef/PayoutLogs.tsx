@@ -48,7 +48,7 @@ export function PayoutLogs({ chefProfileId }: PayoutLogsProps) {
               isSyncing={isSyncing}
             />
           )}
-          <UpcomingPayoutCard transfers={transfers} />
+          <UpcomingPayoutCard transfers={transfers} connectStatus={status} />
           <PayoutTransparencyCard />
         </div>
 
@@ -64,7 +64,11 @@ export function PayoutLogs({ chefProfileId }: PayoutLogsProps) {
             </p>
           ) : (
             transfers.slice(0, 5).map((transfer) => (
-              <TransferTimeline key={transfer.id} transfer={transfer} />
+              <TransferTimeline
+                key={transfer.id}
+                transfer={transfer}
+                connectStatus={status}
+              />
             ))
           )}
         </div>
@@ -77,7 +81,7 @@ export function PayoutLogs({ chefProfileId }: PayoutLogsProps) {
             <Loader2 className="animate-spin text-[#FF7A59]" size={24} />
           </div>
         ) : (
-          <PaymentHistoryTable transfers={transfers} />
+          <PaymentHistoryTable transfers={transfers} connectStatus={status} />
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 /**
  * Phase 5 — Vercel test environment validation (Stripe test mode).
- * Target: https://servdco-one.vercel.app
+ * Target: pass base URL via argv or SITE_URL env
  */
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
@@ -9,7 +9,9 @@ import { loadEnvLocal, applyEnvLocal } from "./load-env-local.mjs";
 
 applyEnvLocal();
 const { env, path: envPath } = loadEnvLocal();
-const API = process.env.V5_API_BASE ?? "https://servdco-one.vercel.app";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const API = process.env.V5_API_BASE ?? resolveBaseUrl();
 const PASSWORD = "V5Test!2026";
 const ts = Date.now();
 const CONNECT_ACCOUNT = "acct_1ThOh8PMaZP2oyIt";

@@ -7,9 +7,11 @@ import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const BASE = process.argv[2] ?? "https://servdco-one.vercel.app";
+const BASE = resolveBaseUrl();
 
 const results = [];
 

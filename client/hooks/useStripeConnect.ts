@@ -3,10 +3,33 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { StripeService } from "@/services/stripe.service";
+import {
+  isBankConnected,
+  isOnboardingIncomplete,
+  isStaleOnboardingNotification,
+  resolveCookPayoutState,
+} from "@shared/payoutStatus";
+import { useNotificationStore } from "@/store/useNotificationStore";
 
 export const stripeConnectQueryKeys = {
   status: (chefProfileId: string) => ["stripe_connect", chefProfileId] as const,
 };
+
+function purgeStaleOnboardingNotifications(
+  account: Parameters<typeof isBankConnected>[0],
+) {
+  if (!isBankConnected(account)) return;
+  useNotificationStore.setState((state) => {
+    const kept = state.notifications.filter(
+      (n) => !isStaleOnboardingNotification(n.title, n.message, account),
+    );
+    if (kept.length === state.notifications.length) return state;
+    return {
+      notifications: kept,
+      unreadCount: kept.filter((n) => !n.read).length,
+    };
+  });
+}
 
 export function useStripeConnect(chefProfileId: string | undefined) {
   const enabled = Boolean(chefProfileId);
@@ -20,6 +43,12 @@ export function useStripeConnect(chefProfileId: string | undefined) {
     enabled,
   });
 
+  useEffect(() => {
+    if (statusQuery.data) {
+      purgeStaleOnboardingNotifications(statusQuery.data);
+    }
+  }, [statusQuery.data]);
+
   const syncMutation = useMutation({
     mutationFn: () => StripeService.syncConnectAccount(chefProfileId),
     onSuccess: (data) => {
@@ -28,6 +57,7 @@ export function useStripeConnect(chefProfileId: string | undefined) {
         data,
       );
       queryClient.invalidateQueries({ queryKey: ["transfers", "chef"] });
+      purgeStaleOnboardingNotifications(data);
     },
   });
 
@@ -72,23 +102,22 @@ export function useStripeConnect(chefProfileId: string | undefined) {
           data,
         );
         await queryClient.invalidateQueries({ queryKey: ["transfers", "chef"] });
+        purgeStaleOnboardingNotifications(data);
 
-        if (data.payouts_enabled) {
+        const payoutState = resolveCookPayoutState(data, []);
+
+        if (isBankConnected(data)) {
           toast.success("Bank account successfully connected.", {
             description:
               "Your future earnings will be deposited securely through Stripe.",
           });
         } else if (data.onboarding_status === "pending") {
           toast.info("Stripe verification in progress.", {
-            description:
-              "Stripe is reviewing your account. We will update this page automatically.",
+            description: payoutState.description,
           });
-        } else {
+        } else if (isOnboardingIncomplete(data)) {
           toast.warning("Stripe setup incomplete.", {
-            description:
-              data.details_submitted === false
-                ? "Please finish connecting your bank account in Stripe."
-                : "Additional verification may be required in Stripe.",
+            description: payoutState.description,
           });
         }
       } catch (err) {

@@ -11,7 +11,9 @@ import { loadEnvLocal, applyEnvLocal } from "./load-env-local.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
-const PRODUCTION_URL = "https://servdco-one.vercel.app";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const PRODUCTION_URL = resolveBaseUrl();
 
 applyEnvLocal();
 

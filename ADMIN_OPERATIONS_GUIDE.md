@@ -1,7 +1,7 @@
 # Admin Operations Guide
 
 **For:** Alexandria  
-**Platform:** https://servdco-one.vercel.app/admin-dashboard
+**Platform:** https://servdco.vercel.app/admin-dashboard
 
 ---
 

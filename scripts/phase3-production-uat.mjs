@@ -9,13 +9,15 @@ import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnvLocal, applyEnvLocal } from "./load-env-local.mjs";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 applyEnvLocal();
 delete process.env.STRIPE_WEBHOOK_SECRET_LOCAL;
 
 const { env } = loadEnvLocal();
-const API = process.env.P3_UAT_BASE ?? "https://servdco-one.vercel.app";
+
+const API = process.env.P3_UAT_BASE ?? resolveBaseUrl();
 const PASSWORD = `UAT3!${Date.now().toString(36)}`;
 const ts = Date.now();
 const CONNECT_ACCOUNT = process.env.UAT_CONNECT_ACCOUNT ?? "acct_1ThOh8PMaZP2oyIt";

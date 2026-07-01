@@ -1,6 +1,6 @@
 /**
  * Phase 5.1 — Webhook + cron validation on Vercel (Stripe test mode).
- * Target: https://servdco-one.vercel.app
+ * Target: pass base URL via argv or SITE_URL env
  */
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
@@ -11,7 +11,9 @@ applyEnvLocal();
 delete process.env.STRIPE_WEBHOOK_SECRET_LOCAL;
 
 const { env } = loadEnvLocal();
-const API = process.env.V51_API_BASE ?? "https://servdco-one.vercel.app";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const API = process.env.V51_API_BASE ?? resolveBaseUrl();
 const PASSWORD = "V51Test!2026";
 const ts = Date.now();
 const CONNECT_ACCOUNT = "acct_1ThOh8PMaZP2oyIt";

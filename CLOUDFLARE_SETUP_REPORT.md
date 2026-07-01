@@ -54,7 +54,7 @@ That is all you need outside Cloudflare itself.
 
 1. [Cloudflare Dashboard](https://dash.cloudflare.com) → **Turnstile**
 2. Add widget → type **Managed**
-3. Domains: production domain, `servdco-one.vercel.app`, `localhost` (dev)
+3. Domains: production domain, `servdco.vercel.app`, `localhost` (dev)
 4. **Site Key** → `VITE_TURNSTILE_SITE_KEY` (Vercel)
 5. **Secret Key** → `TURNSTILE_SECRET_KEY` (Vercel, server only)
 
@@ -124,5 +124,5 @@ No application redesign required.
 pnpm typecheck
 pnpm test
 pnpm build
-node scripts/security-e2e-verify.mjs https://servdco-one.vercel.app
+node scripts/security-e2e-verify.mjs https://servdco.vercel.app
 ```

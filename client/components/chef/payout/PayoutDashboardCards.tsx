@@ -1,5 +1,7 @@
 import { CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import type { StripeConnectStatus } from "@/services/stripe.service";
+import { resolveCookPayoutState } from "@shared/payoutStatus";
+import type { TransferWithAmount } from "@shared/payoutStatus";
 
 interface ConnectedBankAccountProps {
   status: StripeConnectStatus;
@@ -18,14 +20,18 @@ export function ConnectedBankAccount({
   isOnboarding,
   isSyncing,
 }: ConnectedBankAccountProps) {
-  const connected = status.payouts_enabled && status.charges_enabled;
+  const payoutState = resolveCookPayoutState(status, []);
 
-  if (!connected) {
+  if (!payoutState.bankConnected) {
     return (
       <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6 space-y-3">
-        <h4 className="text-sm font-bold text-white">Connect Your Bank Account</h4>
+        <h4 className="text-sm font-bold text-white">
+          {payoutState.showResumeOnboarding
+            ? "Resume Stripe Onboarding"
+            : "Connect Your Bank Account"}
+        </h4>
         <p className="text-xs text-[#A8A8A8] leading-relaxed">
-          Securely connect your bank account through Stripe to receive payouts.
+          {payoutState.description}
         </p>
         <button
           type="button"
@@ -33,7 +39,11 @@ export function ConnectedBankAccount({
           disabled={isOnboarding}
           className="px-4 py-2 rounded-full bg-[#FF7A59] text-white text-[10px] font-bold uppercase tracking-wider disabled:opacity-60"
         >
-          {isOnboarding ? "Redirecting to Stripe…" : "Connect Bank Account"}
+          {isOnboarding
+            ? "Redirecting to Stripe…"
+            : payoutState.showResumeOnboarding
+              ? "Resume Onboarding"
+              : "Connect Bank Account"}
         </button>
       </div>
     );
@@ -59,17 +69,25 @@ export function ConnectedBankAccount({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <div>
           <p className="text-[#A8A8A8] uppercase tracking-wider text-[10px] font-bold">Provider</p>
-          <p className="text-white mt-1">Connected through Stripe</p>
+          <p className="text-white mt-1">Stripe Connect</p>
         </div>
         <div>
-          <p className="text-[#A8A8A8] uppercase tracking-wider text-[10px] font-bold">Payouts</p>
-          <p className="text-[#2E7D66] mt-1 font-semibold">Enabled</p>
+          <p className="text-[#A8A8A8] uppercase tracking-wider text-[10px] font-bold">Status</p>
+          <p className="text-[#2E7D66] mt-1 font-semibold">Connected</p>
         </div>
         <div>
-          <p className="text-[#A8A8A8] uppercase tracking-wider text-[10px] font-bold">Transfers</p>
-          <p className="text-[#2E7D66] mt-1 font-semibold">Enabled</p>
+          <p className="text-[#A8A8A8] uppercase tracking-wider text-[10px] font-bold">Transfer Capability</p>
+          <p className="text-[#2E7D66] mt-1 font-semibold">
+            {payoutState.transfersEnabled ? "Enabled" : "Disabled"}
+          </p>
         </div>
         <div>
+          <p className="text-[#A8A8A8] uppercase tracking-wider text-[10px] font-bold">Payout Capability</p>
+          <p className="text-[#2E7D66] mt-1 font-semibold">
+            {payoutState.payoutsEnabled ? "Enabled" : "Disabled"}
+          </p>
+        </div>
+        <div className="sm:col-span-2">
           <p className="text-[#A8A8A8] uppercase tracking-wider text-[10px] font-bold">Last Synced</p>
           <p className="text-white mt-1">
             {status.last_synced_at
@@ -94,13 +112,7 @@ export function ConnectedBankAccount({
 
 interface PayoutHealthCardProps {
   status: StripeConnectStatus | null | undefined;
-  transfers: Array<{
-    status: string;
-    net_amount_cents: number;
-    scheduled_at?: string | null;
-    transferred_at?: string | null;
-    failure_reason?: string | null;
-  }>;
+  transfers: TransferWithAmount[];
 }
 
 function healthDot(ok: boolean) {
@@ -108,84 +120,67 @@ function healthDot(ok: boolean) {
 }
 
 export function PayoutHealthCard({ status, transfers }: PayoutHealthCardProps) {
-  const connected = Boolean(status?.payouts_enabled);
-  const verified =
-    status?.onboarding_status === "complete" ||
-    (status?.charges_enabled && status?.payouts_enabled);
-
-  const pendingEarnings = transfers
-    .filter((t) => ["pending", "scheduled", "processing", "failed"].includes(t.status))
-    .reduce((sum, t) => sum + t.net_amount_cents, 0);
-
-  const nextTransfer = transfers
-    .filter((t) => ["scheduled", "pending"].includes(t.status))
-    .sort((a, b) =>
-      (a.scheduled_at ?? "").localeCompare(b.scheduled_at ?? ""),
-    )[0];
-
-  const lastPaid = transfers
-    .filter((t) => t.status === "paid")
-    .sort((a, b) =>
-      (b.transferred_at ?? "").localeCompare(a.transferred_at ?? ""),
-    )[0];
-
-  const actionRequired = transfers.some(
-    (t) =>
-      t.status === "action_required" ||
-      (t.status === "pending" &&
-        t.failure_reason?.includes("onboarding incomplete")),
-  );
+  const payoutState = resolveCookPayoutState(status, transfers);
 
   return (
     <div className="velvet-card p-6 space-y-4">
-      <h3 className="text-lg font-bold text-white font-serif">Payout Health</h3>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-lg font-bold text-white font-serif">Payout Health</h3>
+        {payoutState.currentTransferStatus && (
+          <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border border-white/10 text-[#FF7A59]">
+            {payoutState.currentTransferStatus}
+          </span>
+        )}
+      </div>
       <div className="space-y-2 text-sm">
+        {payoutState.healthLines.map((line) => (
+          <p key={line.key} className="text-white">
+            {healthDot(line.ok)} {line.label}:{" "}
+            <span className={line.ok ? "text-[#2E7D66]" : "text-amber-400"}>
+              {line.value}
+            </span>
+          </p>
+        ))}
         <p className="text-white">
-          {healthDot(connected)} Bank Account:{" "}
-          <span className={connected ? "text-[#2E7D66]" : "text-amber-400"}>
-            {connected ? "Connected" : "Not Connected"}
-          </span>
-        </p>
-        <p className="text-white">
-          {healthDot(verified)} Stripe Verification:{" "}
-          <span className={verified ? "text-[#2E7D66]" : "text-amber-400"}>
-            {verified ? "Complete" : "Needs Action"}
-          </span>
-        </p>
-        <p className="text-white">
-          {healthDot(Boolean(nextTransfer))} Next Payout:{" "}
+          {healthDot(Boolean(payoutState.nextTransferAmountCents))} Next Payout:{" "}
           <span className="text-[#FF7A59]">
-            {nextTransfer
-              ? `$${(nextTransfer.net_amount_cents / 100).toFixed(2)} on ${new Date(nextTransfer.scheduled_at!).toLocaleDateString()}`
+            {payoutState.nextTransferAmountCents && payoutState.nextTransferDate
+              ? `$${(payoutState.nextTransferAmountCents / 100).toFixed(2)} on ${new Date(payoutState.nextTransferDate).toLocaleDateString()}`
               : "None scheduled"}
           </span>
         </p>
         <p className="text-white">
-          {healthDot(pendingEarnings > 0)} Current Earnings:{" "}
+          {healthDot(payoutState.pendingEarningsCents > 0)} Current Earnings:{" "}
           <span className="text-[#FF7A59]">
-            ${(pendingEarnings / 100).toFixed(2)} pending
+            ${(payoutState.pendingEarningsCents / 100).toFixed(2)} pending
           </span>
         </p>
+        {payoutState.estimatedDepositDate && (
+          <p className="text-white">
+            {healthDot(true)} Estimated Deposit:{" "}
+            <span className="text-white/90">{payoutState.estimatedDepositDate}</span>
+          </p>
+        )}
         <p className="text-white">
-          {healthDot(Boolean(lastPaid))} Last Payout:{" "}
+          {healthDot(Boolean(payoutState.lastPaidAmountCents))} Last Payout:{" "}
           <span className="text-white/90">
-            {lastPaid
-              ? `$${(lastPaid.net_amount_cents / 100).toFixed(2)} on ${new Date(lastPaid.transferred_at!).toLocaleDateString()}`
+            {payoutState.lastPaidAmountCents && payoutState.lastPaidDate
+              ? `$${(payoutState.lastPaidAmountCents / 100).toFixed(2)} on ${new Date(payoutState.lastPaidDate).toLocaleDateString()}`
               : "None yet"}
           </span>
         </p>
         <p className="text-white flex items-start gap-2">
-          {actionRequired ? (
+          {payoutState.showGlobalWarning ? (
             <>
               <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
-              <span className="text-amber-400">
-                Action required — connect your bank account or contact support.
-              </span>
+              <span className="text-amber-400">{payoutState.globalWarningMessage}</span>
             </>
           ) : (
             <>
               {healthDot(true)}
-              <span className="text-[#2E7D66]">No action required</span>
+              <span className="text-[#2E7D66]">
+                {payoutState.currentTransferDescription ?? "No action required"}
+              </span>
             </>
           )}
         </p>

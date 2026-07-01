@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://servdco-one.vercel.app/sitemap.xml
+# Set VITE_SITE_URL at build time for absolute sitemap URL

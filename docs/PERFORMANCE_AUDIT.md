@@ -2,7 +2,7 @@
 
 **Date:** June 12, 2026  
 **Scope:** Audit only — no fixes applied at time of capture  
-**Production URL:** https://servdco-one.vercel.app  
+**Production URL:** https://servdco.vercel.app  
 **Baseline commit:** `a2013b1` (Phase 2/3 certification)  
 **Build command:** `pnpm build`  
 **Lighthouse source:** `scripts/phase2-lighthouse-home.json` (mobile emulation, production)

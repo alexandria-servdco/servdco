@@ -8,7 +8,9 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
-const PRODUCTION_URL = "https://servdco-one.vercel.app";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const PRODUCTION_URL = resolveBaseUrl();
 
 function loadDbUrl() {
   const envPath = path.join(root, ".env.local");

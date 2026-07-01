@@ -3,7 +3,9 @@
  * Production runtime API probe — Phase 8 deploy verification.
  * Usage: node scripts/deploy-runtime-verify.mjs [baseUrl]
  */
-const BASE = process.argv[2] ?? "https://servdco-one.vercel.app";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const BASE = resolveBaseUrl();
 const results = [];
 
 function record(name, status, detail = "") {

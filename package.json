@@ -6,7 +6,7 @@
     "dev": "vite",
     "dev:api": "node --import tsx scripts/local-api-dev.mjs --listen 3000",
     "dev:api:vercel": "node scripts/vercel-dev.mjs --listen 3000",
-    "build": "vite build",
+    "build": "node scripts/generate-seo-files.mjs && vite build",
     "preview": "vite preview",
     "test": "vitest --run",
     "test:auth-e2e": "node scripts/auth-e2e-verify.mjs",

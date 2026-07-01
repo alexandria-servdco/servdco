@@ -3,6 +3,10 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { StripeAdminService } from "@/services/stripe-admin.service";
 import { useAdminTransfers } from "@/hooks/useTransfers";
+import {
+  resolveTransferPresentation,
+  resolveAdminConnectSyncView,
+} from "@shared/payoutStatus";
 
 interface PayoutDiagnosticsPanelProps {
   chefProfileId: string;
@@ -22,6 +26,29 @@ export function PayoutDiagnosticsPanel({
 
   const cookTransfers = transfers.filter((t) => t.chef_profile_id === chefProfileId);
   const currentTransfer = cookTransfers[0];
+  const transferPresentation = currentTransfer
+    ? resolveTransferPresentation(currentTransfer)
+    : null;
+
+  const syncView =
+    diagnostics &&
+    typeof diagnostics === "object" &&
+    "database" in diagnostics
+      ? resolveAdminConnectSyncView({
+          database: diagnostics.database as {
+            onboarding_status?: string | null;
+            charges_enabled?: boolean;
+            payouts_enabled?: boolean;
+          } | null,
+          stripe: diagnostics.stripe as {
+            charges_enabled?: boolean;
+            payouts_enabled?: boolean;
+          } | null,
+          mismatches: Array.isArray(diagnostics.mismatches)
+            ? (diagnostics.mismatches as string[])
+            : [],
+        })
+      : null;
 
   const runDiagnostics = async () => {
     setLoading(true);
@@ -118,6 +145,27 @@ export function PayoutDiagnosticsPanel({
         </div>
       </div>
 
+      {syncView && (
+        <div style={{ marginTop: "12px", fontSize: "12px", color: "#A8A8A8", display: "grid", gap: "4px" }}>
+          <p style={{ margin: 0, color: syncView.syncHealthy ? "#10B981" : "#F59E0B" }}>
+            Sync health: {syncView.syncHealthy ? "Healthy" : "Mismatch detected"}
+          </p>
+          <p style={{ margin: 0 }}>
+            Live Stripe — payouts: {String(syncView.stripePayoutsEnabled)}, charges:{" "}
+            {String(syncView.stripeChargesEnabled)}
+          </p>
+          <p style={{ margin: 0 }}>
+            DB — onboarding: {syncView.dbOnboardingStatus}, payouts:{" "}
+            {String(syncView.dbPayoutsEnabled)}, charges: {String(syncView.dbChargesEnabled)}
+          </p>
+          {syncView.mismatches.length > 0 && (
+            <p style={{ margin: 0, color: "#F59E0B" }}>
+              Mismatches: {syncView.mismatches.join(", ")}
+            </p>
+          )}
+        </div>
+      )}
+
       {diagnostics && (
         <pre
           style={{
@@ -142,11 +190,15 @@ export function PayoutDiagnosticsPanel({
       {currentTransfer && (
         <div style={{ marginTop: "12px", fontSize: "12px", color: "#A8A8A8" }}>
           <p>
-            Current transfer: {currentTransfer.status} — $
+            Transfer status: {transferPresentation?.label ?? currentTransfer.status} — $
             {(currentTransfer.net_amount_cents / 100).toFixed(2)}
           </p>
           <p>Retry count: {currentTransfer.retry_count ?? 0}</p>
-          <p>Last error: {currentTransfer.failure_reason ?? "None"}</p>
+          {currentTransfer.failure_reason && (
+            <p title="Historical detail — not used for bank connection status">
+              Last error (detail): {currentTransfer.failure_reason}
+            </p>
+          )}
           {["failed", "action_required", "pending"].includes(currentTransfer.status) && (
             <button
               type="button"

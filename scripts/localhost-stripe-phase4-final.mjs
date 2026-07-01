@@ -131,7 +131,7 @@ async function completeConnectTestAccount(stripeAccountId, email) {
     await stripe.accounts.update(stripeAccountId, {
       business_type: "individual",
       business_profile: {
-        url: "https://servdco.com",
+        url: process.env.SITE_URL?.replace(/\/$/, "") || "http://localhost:8080",
         mcc: "5812",
       },
       individual: {

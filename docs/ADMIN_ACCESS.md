@@ -22,7 +22,7 @@ WHERE email = 'alexandria@servdco.com';
 
 ## 2. How the owner logs in
 
-1. Open [https://servdco-one.vercel.app/login](https://servdco-one.vercel.app/login)
+1. Open [https://servdco.vercel.app/login](https://servdco.vercel.app/login)
 2. Sign in with email + password using **Supabase Auth** (`VITE_USE_SUPABASE_AUTH=true`)
 3. After login, `profiles.role` is read from the database
 4. If `role = 'admin'` and `status = 'active'`, the app redirects to `/admin-dashboard`

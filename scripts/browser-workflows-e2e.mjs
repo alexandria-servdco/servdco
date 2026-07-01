@@ -10,7 +10,9 @@ import { chromium } from "playwright";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const BASE = process.argv[2] ?? "https://servdco-one.vercel.app";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const BASE = resolveBaseUrl();
 
 const results = [];
 
@@ -32,7 +34,7 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   viewport: { width: 1280, height: 900 },
   userAgent:
-    "ServdCo-E2E/1.0 (Playwright; +https://servdco-one.vercel.app)",
+    `ServdCo-E2E/1.0 (Playwright; +${BASE})`,
 });
 const page = await context.newPage();
 

@@ -10,6 +10,7 @@ import { TransferFinancialDashboard } from "@/components/admin/TransferFinancial
 import { StripeAdminService } from "@/services/stripe-admin.service";
 import { AdminAuditService } from "@/services/supabase/admin-audit.service";
 import type { PaymentStatus } from "@/lib/paymentTypes";
+import { resolveTransferPresentation } from "@shared/payoutStatus";
 
 const STATUS_STYLES: Record<PaymentStatus, { bg: string; color: string; label: string }> = {
   pending: { bg: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", label: "Pending" },
@@ -299,8 +300,29 @@ export function PayoutControl() {
                       <td style={{ padding: "16px", fontSize: "13px", color: "#FF7A59", fontWeight: 600 }}>
                         {formatUsd(t.net_amount_cents / 100)}
                       </td>
-                      <td style={{ padding: "16px", fontSize: "12px", color: "#F5F5F5", textTransform: "capitalize" }}>
-                        {t.status}
+                      <td style={{ padding: "16px", fontSize: "12px", color: "#F5F5F5" }}>
+                        {(() => {
+                          const presentation = resolveTransferPresentation({
+                            id: t.id,
+                            status: t.status,
+                            failure_reason: t.failure_reason,
+                            scheduled_at: t.scheduled_at,
+                            transferred_at: t.transferred_at,
+                            payout_date: t.payout_date,
+                            stripe_transfer_id: t.stripe_transfer_id,
+                            retry_count: t.retry_count,
+                            next_retry_at: t.next_retry_at,
+                            last_retry_at: t.last_retry_at,
+                            last_retry_reason: t.last_retry_reason,
+                            created_at: t.created_at,
+                            metadata: t.metadata,
+                          });
+                          return (
+                            <span title={presentation.description}>
+                              {presentation.label}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: "16px", fontSize: "12px", color: "#A8A8A8" }}>
                         {t.scheduled_at ? new Date(t.scheduled_at).toLocaleDateString() : "—"}

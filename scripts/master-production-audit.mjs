@@ -8,6 +8,7 @@ import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { loadEnvLocal, applyEnvLocal } from "./load-env-local.mjs";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
 
 function calculateSessionPrice(serviceType, guestsCount) {
   const type =
@@ -29,7 +30,7 @@ function totalChargedCents(sessionTotal, familyFeeDollars) {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
-const PRODUCTION = "https://servdco-one.vercel.app";
+const PRODUCTION = resolveBaseUrl();
 
 applyEnvLocal();
 

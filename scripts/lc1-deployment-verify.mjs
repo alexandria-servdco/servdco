@@ -6,7 +6,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PRODUCTION_URL = "https://servdco-one.vercel.app";
+import { resolveBaseUrl } from "./lib/resolve-base-url.mjs";
+
+const PRODUCTION_URL = resolveBaseUrl();
 
 const report = {
   timestamp: new Date().toISOString(),

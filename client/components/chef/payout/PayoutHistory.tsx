@@ -1,8 +1,11 @@
 import type { CookTransferRow } from "@/services/supabase/transfers.service";
+import type { StripeConnectStatus } from "@/services/stripe.service";
 import {
   buildTransferTimeline,
-  getTransferStatusPresentation,
-} from "@shared/transferStatus";
+  resolveTransferPresentation,
+  resolveCookPayoutState,
+  IN_PIPELINE_TRANSFER_STATUSES,
+} from "@shared/payoutStatus";
 
 const TONE_STYLES = {
   neutral: "bg-white/5 text-[#A8A8A8] border-white/10",
@@ -14,11 +17,14 @@ const TONE_STYLES = {
 
 export function UpcomingPayoutCard({
   transfers,
+  connectStatus,
 }: {
   transfers: CookTransferRow[];
+  connectStatus?: StripeConnectStatus | null;
 }) {
+  const payoutState = resolveCookPayoutState(connectStatus, transfers);
   const pending = transfers.filter((t) =>
-    ["pending", "scheduled", "processing", "failed"].includes(t.status),
+    IN_PIPELINE_TRANSFER_STATUSES.includes(t.status),
   );
   const pendingTotal = pending.reduce((s, t) => s + t.net_amount_cents, 0);
   const platformFees = transfers.reduce((s, t) => s + t.platform_fee_cents, 0);
@@ -29,12 +35,6 @@ export function UpcomingPayoutCard({
   const next = pending.sort((a, b) =>
     (a.scheduled_at ?? a.created_at).localeCompare(b.scheduled_at ?? b.created_at),
   )[0];
-
-  const estimatedDeposit = next?.scheduled_at
-    ? new Date(
-        new Date(next.scheduled_at).getTime() + 3 * 24 * 60 * 60 * 1000,
-      ).toLocaleDateString()
-    : null;
 
   return (
     <div className="velvet-card p-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -48,7 +48,7 @@ export function UpcomingPayoutCard({
         },
         {
           label: "Estimated Deposit",
-          value: estimatedDeposit ?? "—",
+          value: payoutState.estimatedDepositDate ?? "—",
         },
         {
           label: "Available Balance",
@@ -76,9 +76,15 @@ export function UpcomingPayoutCard({
   );
 }
 
-export function TransferTimeline({ transfer }: { transfer: CookTransferRow }) {
-  const stages = buildTransferTimeline(transfer);
-  const presentation = getTransferStatusPresentation(transfer);
+export function TransferTimeline({
+  transfer,
+  connectStatus,
+}: {
+  transfer: CookTransferRow;
+  connectStatus?: StripeConnectStatus | null;
+}) {
+  const stages = buildTransferTimeline(transfer, connectStatus);
+  const presentation = resolveTransferPresentation(transfer, connectStatus);
 
   return (
     <details className="rounded-lg border border-white/5 bg-white/[0.01] p-4">
@@ -122,8 +128,10 @@ export function TransferTimeline({ transfer }: { transfer: CookTransferRow }) {
 
 export function PaymentHistoryTable({
   transfers,
+  connectStatus,
 }: {
   transfers: CookTransferRow[];
+  connectStatus?: StripeConnectStatus | null;
 }) {
   if (transfers.length === 0) {
     return (
@@ -132,6 +140,8 @@ export function PaymentHistoryTable({
       </p>
     );
   }
+
+  const payoutState = resolveCookPayoutState(connectStatus, transfers);
 
   return (
     <div className="overflow-x-auto">
@@ -157,18 +167,20 @@ export function PaymentHistoryTable({
         </thead>
         <tbody>
           {transfers.map((pay) => {
-            const presentation = getTransferStatusPresentation(pay);
-            const estDeposit = pay.transferred_at
-              ? new Date(
-                  new Date(pay.transferred_at).getTime() +
-                    2 * 24 * 60 * 60 * 1000,
-                ).toLocaleDateString()
-              : pay.scheduled_at
+            const presentation = resolveTransferPresentation(pay, connectStatus);
+            const estDeposit = pay.payout_date
+              ? new Date(pay.payout_date).toLocaleDateString()
+              : pay.transferred_at
                 ? new Date(
-                    new Date(pay.scheduled_at).getTime() +
-                      3 * 24 * 60 * 60 * 1000,
+                    new Date(pay.transferred_at).getTime() +
+                      2 * 24 * 60 * 60 * 1000,
                   ).toLocaleDateString()
-                : "—";
+                : pay.scheduled_at
+                  ? new Date(
+                      new Date(pay.scheduled_at).getTime() +
+                        3 * 24 * 60 * 60 * 1000,
+                    ).toLocaleDateString()
+                  : "—";
 
             return (
               <tr
@@ -190,7 +202,14 @@ export function PaymentHistoryTable({
                 <td className="p-3">
                   <span
                     className={`inline-block px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${TONE_STYLES[presentation.tone]}`}
-                    title={presentation.description}
+                    title={
+                      presentation.description +
+                      (pay.failure_reason &&
+                      payoutState.bankConnected &&
+                      pay.failure_reason.toLowerCase().includes("onboarding")
+                        ? ` (Historical: ${pay.failure_reason})`
+                        : "")
+                    }
                   >
                     {presentation.label}
                   </span>

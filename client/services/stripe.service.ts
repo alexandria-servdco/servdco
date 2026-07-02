@@ -114,8 +114,36 @@ export const StripeService = {
       }),
     });
     const body = await res.json();
-    if (!res.ok) throw new Error(body.error ?? "Checkout failed");
-    return body as { sessionId: string; url: string };
+    if (!res.ok) {
+      const err = new Error(body.error ?? "Checkout failed") as Error & {
+        code?: string;
+        bookingId?: string;
+        status?: number;
+      };
+      err.code = body.code;
+      err.bookingId = body.bookingId;
+      (err as { status?: number }).status = res.status;
+      throw err;
+    }
+    return body as { sessionId: string; url: string; paymentId?: string };
+  },
+
+  async reconcileBookingPayment(bookingId: string) {
+    const headers = await authHeaders();
+    const res = await fetch("/api/stripe/payments/reconcile", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ bookingId }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Reconciliation failed");
+    return body as {
+      bookingId: string;
+      repaired: boolean;
+      bookingConfirmed: boolean;
+      duplicateDetected: boolean;
+      message: string;
+    };
   },
 
   async createTipCheckout(params: {
@@ -148,5 +176,21 @@ export const StripeService = {
     const body = await res.json();
     if (!res.ok) throw new Error(body.error ?? "Premium checkout failed");
     return body as { sessionId: string; url: string };
+  },
+
+  async reconcilePremiumSubscription() {
+    const headers = await authHeaders();
+    const res = await fetch("/api/stripe/subscription/reconcile", {
+      method: "POST",
+      headers,
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Subscription reconcile failed");
+    return body as {
+      chefProfileId: string;
+      repaired: boolean;
+      isPremium: boolean;
+      message: string;
+    };
   },
 };

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { UiBooking } from "@/lib/bookingTypes";
 import { BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
 import type { BookingStatus } from "@shared/booking";
+import { resolveBookingPaymentStatus } from "@shared/bookingPaymentStatus";
 import { BookingProgressTimeline } from "@/components/booking/BookingProgressTimeline";
 import { BookingMessaging } from "@/components/messaging/BookingMessaging";
 import {
@@ -10,9 +12,13 @@ import {
   useFamilyCancelBooking,
   useFamilyConfirmCompletion,
 } from "@/hooks/useBookings";
-import { useStripeCheckoutEnabled } from "@/hooks/usePayments";
+import { useStripeCheckoutEnabled, useBookingPayment } from "@/hooks/usePayments";
 import { StripeService } from "@/services/stripe.service";
-import { MapPin, Phone, Mail, Users, Clock, AlertCircle } from "lucide-react";
+import { bookingQueryKeys } from "@/services/supabase/bookings.service";
+import { paymentQueryKeys } from "@/services/supabase/payments.service";
+import { useQueryClient } from "@tanstack/react-query";
+import { MapPin, Phone, Mail, Users, Clock, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface BookingOperationalPanelProps {
   booking: UiBooking;
@@ -30,21 +36,67 @@ export function BookingOperationalPanel({
   booking,
   role,
 }: BookingOperationalPanelProps) {
+  const queryClient = useQueryClient();
   const acceptBooking = useCookAcceptBooking();
   const rejectBooking = useCookRejectBooking();
   const progressBooking = useCookProgressBooking();
   const cancelBooking = useFamilyCancelBooking();
   const confirmCompletion = useFamilyConfirmCompletion();
   const { data: stripeEnabled = false } = useStripeCheckoutEnabled();
+  const { data: payments = [] } = useBookingPayment(booking.id);
+  const [paying, setPaying] = useState(false);
+
+  const paymentStatus = resolveBookingPaymentStatus({
+    bookingStatus: booking.status,
+    payments: payments.map((p) => ({
+      id: p.id,
+      status: p.status,
+      stripe_payment_intent_id: p.stripe_payment_intent_id,
+      stripe_checkout_session_id: p.stripe_checkout_session_id,
+      metadata: p.metadata,
+    })),
+  });
 
   const handlePay = async () => {
-    const origin = window.location.origin;
-    const checkout = await StripeService.createCheckoutSession({
-      bookingId: booking.id,
-      successUrl: `${origin}/family-dashboard/bookings?booking=success`,
-      cancelUrl: `${origin}/family-dashboard/bookings?booking=payment_cancelled`,
-    });
-    window.location.href = checkout.url;
+    if (paying || !paymentStatus.canCreateCheckout) return;
+    setPaying(true);
+    try {
+      const origin = window.location.origin;
+      const checkout = await StripeService.createCheckoutSession({
+        bookingId: booking.id,
+        successUrl: `${origin}/family-dashboard/bookings?booking=success&bookingId=${booking.id}`,
+        cancelUrl: `${origin}/family-dashboard/bookings?booking=payment_cancelled`,
+      });
+      window.location.href = checkout.url;
+    } catch (err) {
+      const error = err as Error & { code?: string; status?: number };
+      if (error.code === "ALREADY_PAID" || error.status === 409) {
+        try {
+          const result = await StripeService.reconcileBookingPayment(booking.id);
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: bookingQueryKeys.all }),
+            queryClient.invalidateQueries({
+              queryKey: paymentQueryKeys.byBooking(booking.id),
+            }),
+          ]);
+          if (result.bookingConfirmed) {
+            toast.success("Payment already received — booking confirmed.");
+          } else {
+            toast.info("This booking is already paid.");
+          }
+        } catch (reconcileErr) {
+          toast.error(
+            reconcileErr instanceof Error
+              ? reconcileErr.message
+              : "Could not verify payment status.",
+          );
+        }
+      } else {
+        toast.error(error.message ?? "Could not start checkout.");
+      }
+    } finally {
+      setPaying(false);
+    }
   };
 
   const nextCookAction = COOK_NEXT[booking.status];
@@ -52,6 +104,21 @@ export function BookingOperationalPanel({
   return (
     <div className="space-y-4 border-t border-white/5 pt-4">
       <BookingProgressTimeline status={booking.status} />
+
+      {paymentStatus.showPaidBadge && role === "family" && (
+        <div className="flex items-center gap-2 rounded-xl border border-[#2E7D66]/30 bg-[#2E7D66]/10 px-3 py-2">
+          <CheckCircle2 size={16} className="text-[#2E7D66]" />
+          <span className="text-xs font-bold text-[#2E7D66]">{paymentStatus.label}</span>
+          <span className="text-[10px] text-[#A8A8A8]">{paymentStatus.description}</span>
+        </div>
+      )}
+
+      {paymentStatus.status === "duplicate_payment" && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+          <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-300">{paymentStatus.description}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <div className="flex items-center gap-2 text-[#A8A8A8]">
@@ -188,15 +255,30 @@ export function BookingOperationalPanel({
 
         {role === "family" &&
           stripeEnabled &&
-          (booking.status === "accepted" ||
-            booking.status === "awaiting_payment") && (
+          paymentStatus.showPayNow && (
             <button
               type="button"
-              onClick={handlePay}
-              className="px-4 py-2 bg-[#FF7A59] hover:bg-[#e96a49] text-white text-[11px] font-bold rounded-xl"
+              disabled={paying}
+              onClick={() => void handlePay()}
+              className="px-4 py-2 bg-[#FF7A59] hover:bg-[#e96a49] text-white text-[11px] font-bold rounded-xl disabled:opacity-60 inline-flex items-center gap-2"
             >
-              Pay Now
+              {paying ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Processing…
+                </>
+              ) : (
+                "Pay Now"
+              )}
             </button>
+          )}
+
+        {role === "family" &&
+          paymentStatus.status === "payment_processing" && (
+            <span className="text-xs text-[#FF7A59] inline-flex items-center gap-1">
+              <Loader2 size={12} className="animate-spin" />
+              Payment processing…
+            </span>
           )}
 
         {role === "family" &&

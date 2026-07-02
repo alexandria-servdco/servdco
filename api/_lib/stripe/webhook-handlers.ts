@@ -16,7 +16,6 @@ import {
 } from "./payment-resolve.js";
 import {
   isBookingPaymentMetadata,
-  verifyCheckoutAmountCents,
 } from "./helpers.js";
 import {
   handleTipChargeRefunded,
@@ -24,8 +23,9 @@ import {
   handleTipPaymentIntentFailed,
   handleTipPaymentIntentSucceeded,
 } from "./tip-webhooks.js";
-import { sendResendEmail } from "../email/resend.js";
-import { resolveSiteUrl } from "../email/brandedTemplate.js";
+import {
+  confirmBookingFromPayment,
+} from "./paymentIntegrity.js";
 
 async function fetchChargeId(paymentIntentId: string): Promise<string | null> {
   try {
@@ -50,11 +50,17 @@ async function handleBookingCheckoutCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  const client = getServiceRoleClient();
   const payment = await resolvePaymentFromCheckoutSession(session);
   if (!payment) return;
 
-  verifyCheckoutAmountCents(session.amount_total, payment.amount_cents);
+  const sessionAmount = session.amount_total ?? payment.amount_cents;
+  if (sessionAmount !== payment.amount_cents) {
+    apiLogger.warn("Checkout amount differs from payment row — syncing to Stripe", {
+      paymentId: payment.id,
+      expected: payment.amount_cents,
+      actual: sessionAmount,
+    });
+  }
 
   const paymentIntentId =
     typeof session.payment_intent === "string"
@@ -65,40 +71,37 @@ async function handleBookingCheckoutCompleted(session: Stripe.Checkout.Session) 
     ? await fetchChargeId(paymentIntentId)
     : null;
 
-  const amountCents = session.amount_total ?? payment.amount_cents;
+  const amountCents = sessionAmount;
   const currency = (session.currency ?? payment.currency ?? "usd").toUpperCase();
 
+  const client = getServiceRoleClient();
   await client
     .from("payments")
     .update({
       stripe_checkout_session_id: session.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", payment.id);
+
+  await confirmBookingFromPayment({
+    payment: {
+      ...payment,
+      stripe_checkout_session_id: session.id,
       stripe_payment_intent_id: paymentIntentId ?? null,
       stripe_charge_id: chargeId,
-      amount_cents: amountCents,
-      currency,
-      status: "succeeded",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", payment.id)
-    .in("status", ["pending", "processing"]);
-
-  const bookingId = session.metadata?.booking_id ?? payment.booking_id;
-
-  await client
-    .from("bookings")
-    .update({
-      payment_id: payment.id,
-      status: "confirmed",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", bookingId)
-    .in("status", ["awaiting_payment", "accepted"]);
+    },
+    source: "checkout.session.completed",
+    paymentIntentId: paymentIntentId ?? null,
+    chargeId,
+    amountCents,
+    currency,
+  });
 
   await writePaymentAuditLog({
     action: "payment.checkout_completed",
     paymentId: payment.id,
     actorId: payment.family_id,
-    bookingId,
+    bookingId: session.metadata?.booking_id ?? payment.booking_id,
     newValues: {
       status: "succeeded",
       amount_cents: amountCents,
@@ -111,36 +114,6 @@ async function handleBookingCheckoutCompleted(session: Stripe.Checkout.Session) 
       chef_profile_id: session.metadata?.chef_profile_id ?? payment.chef_profile_id,
     },
   });
-
-  await createUserNotification({
-    userId: payment.family_id,
-    title: "Payment Successful",
-    message: "Your booking is confirmed. Your cook will arrive at the scheduled time.",
-    type: "success",
-    metadata: {
-      booking_id: bookingId,
-      payment_id: payment.id,
-      event: "payment_successful",
-    },
-  });
-
-  const { data: familyProfile } = await client
-    .from("profiles")
-    .select("email, full_name")
-    .eq("id", payment.family_id)
-    .maybeSingle();
-
-  if (familyProfile?.email) {
-    await sendResendEmail({
-      to: familyProfile.email,
-      subject: "Servd Co — Payment Confirmed",
-      html: `
-        <p>Hi ${familyProfile.full_name ?? "there"},</p>
-        <p>Your payment is confirmed and your booking is now confirmed.</p>
-        <p><a href="${resolveSiteUrl()}/family-dashboard/bookings">View your dashboard</a></p>
-      `,
-    });
-  }
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
@@ -149,6 +122,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
   if (session.mode === "subscription") {
+    const subRef = session.subscription;
+    const subId =
+      typeof subRef === "string" ? subRef : subRef?.id ?? null;
+    if (subId) {
+      const stripe = getStripe();
+      const sub = await stripe.subscriptions.retrieve(subId);
+      await handleSubscriptionEvent(sub);
+    }
     return;
   }
   await handleBookingCheckoutCompleted(session);
@@ -156,6 +137,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
 async function handlePaymentIntentSucceeded(intent: Stripe.PaymentIntent) {
   if (await handleTipPaymentIntentSucceeded(intent)) return;
+
+  if (intent.metadata?.payment_type !== "booking" && !intent.metadata?.booking_id) {
+    return;
+  }
 
   const payment = await resolvePaymentFromIntent(intent);
   if (!payment) return;
@@ -165,19 +150,18 @@ async function handlePaymentIntentSucceeded(intent: Stripe.PaymentIntent) {
       ? intent.latest_charge
       : intent.latest_charge?.id;
 
-  const client = getServiceRoleClient();
-  await client
-    .from("payments")
-    .update({
+  await confirmBookingFromPayment({
+    payment: {
+      ...payment,
       stripe_payment_intent_id: intent.id,
       stripe_charge_id: chargeId ?? null,
-      amount_cents: intent.amount_received ?? payment.amount_cents,
-      currency: (intent.currency ?? payment.currency).toUpperCase(),
-      status: "succeeded",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", payment.id)
-    .in("status", ["pending", "processing"]);
+    },
+    source: "payment_intent.succeeded",
+    paymentIntentId: intent.id,
+    chargeId: chargeId ?? null,
+    amountCents: intent.amount_received ?? payment.amount_cents,
+    currency: (intent.currency ?? payment.currency).toUpperCase(),
+  });
 }
 
 async function handlePaymentIntentFailed(intent: Stripe.PaymentIntent) {

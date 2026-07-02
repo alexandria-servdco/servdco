@@ -2,8 +2,12 @@ import { z } from "zod";
 import { getStripe } from "./server.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { getPlatformFeePercentage, splitPaymentAmounts } from "./fees.js";
-import { stripeIdempotencyKey } from "./helpers.js";
 import { resolveProfileRegion } from "../launch/regionResolve.js";
+import {
+  reconcileBookingPayment,
+  bookingHasSuccessfulPayment,
+  bookingPaymentIntentIdempotencyKey,
+} from "./paymentIntegrity.js";
 
 export const checkoutSessionRequestSchema = z.object({
   bookingId: z.string().uuid(),
@@ -15,11 +19,24 @@ export const checkoutSessionSchema = checkoutSessionRequestSchema.extend({
   familyId: z.string().uuid(),
 });
 
+export class BookingAlreadyPaidError extends Error {
+  readonly code = "ALREADY_PAID" as const;
+  readonly bookingId: string;
+
+  constructor(bookingId: string) {
+    super("Booking already has a successful payment.");
+    this.name = "BookingAlreadyPaidError";
+    this.bookingId = bookingId;
+  }
+}
+
 export async function createBookingCheckoutSession(
   input: z.infer<typeof checkoutSessionSchema>,
 ): Promise<{ sessionId: string; url: string; paymentId: string }> {
   const client = getServiceRoleClient();
   const stripe = getStripe();
+
+  await reconcileBookingPayment(input.bookingId);
 
   const { data: booking, error } = await client
     .from("bookings")
@@ -48,11 +65,15 @@ export async function createBookingCheckoutSession(
   }
 
   if (booking.status === "confirmed" || booking.status === "completed") {
-    throw new Error("Booking is already confirmed.");
+    throw new BookingAlreadyPaidError(booking.id);
   }
 
   if (booking.status !== "awaiting_payment" && booking.status !== "accepted") {
     throw new Error("Payment is only available after the cook accepts your request.");
+  }
+
+  if (await bookingHasSuccessfulPayment(booking.id)) {
+    throw new BookingAlreadyPaidError(booking.id);
   }
 
   const { data: succeededPayment } = await client
@@ -63,7 +84,7 @@ export async function createBookingCheckoutSession(
     .maybeSingle();
 
   if (succeededPayment) {
-    throw new Error("Booking already has a successful payment.");
+    throw new BookingAlreadyPaidError(booking.id);
   }
 
   const { data: chef, error: chefError } = await client
@@ -96,7 +117,7 @@ export async function createBookingCheckoutSession(
 
   const { data: pendingPayment } = await client
     .from("payments")
-    .select("id, stripe_checkout_session_id")
+    .select("id, stripe_checkout_session_id, stripe_payment_intent_id")
     .eq("booking_id", booking.id)
     .eq("status", "pending")
     .maybeSingle();
@@ -108,6 +129,10 @@ export async function createBookingCheckoutSession(
         const existing = await stripe.checkout.sessions.retrieve(
           pendingPayment.stripe_checkout_session_id,
         );
+        if (existing.payment_status === "paid") {
+          await reconcileBookingPayment(booking.id, { notify: true });
+          throw new BookingAlreadyPaidError(booking.id);
+        }
         if (existing.url && existing.status === "open") {
           return {
             sessionId: existing.id,
@@ -115,8 +140,22 @@ export async function createBookingCheckoutSession(
             paymentId,
           };
         }
-      } catch {
+      } catch (err) {
+        if (err instanceof BookingAlreadyPaidError) throw err;
         // Create a fresh session below
+      }
+    }
+    if (pendingPayment.stripe_payment_intent_id) {
+      try {
+        const intent = await stripe.paymentIntents.retrieve(
+          pendingPayment.stripe_payment_intent_id,
+        );
+        if (intent.status === "succeeded") {
+          await reconcileBookingPayment(booking.id, { notify: true });
+          throw new BookingAlreadyPaidError(booking.id);
+        }
+      } catch (err) {
+        if (err instanceof BookingAlreadyPaidError) throw err;
       }
     }
   } else {
@@ -181,7 +220,7 @@ export async function createBookingCheckoutSession(
       },
     },
     {
-      idempotencyKey: stripeIdempotencyKey("booking_checkout", paymentId),
+      idempotencyKey: bookingPaymentIntentIdempotencyKey(booking.id),
     },
   );
 

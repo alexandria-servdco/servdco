@@ -89,4 +89,29 @@ export const StripeAdminService = {
       generatedAt: string;
     };
   },
+
+  async getPaymentLedger(bookingId: string, repair = false) {
+    const headers = await authHeaders();
+    const res = await fetch(
+      `/api/admin/payment-ledger?bookingId=${encodeURIComponent(bookingId)}`,
+      {
+        method: repair ? "POST" : "GET",
+        headers,
+      },
+    );
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Failed to load payment ledger");
+    return body as {
+      booking: Record<string, unknown>;
+      payments: Record<string, unknown>[];
+      ledger: Array<{
+        id: string;
+        label: string;
+        status: string;
+        timestamp: string | null;
+        detail: string | null;
+      }>;
+      reconcileResult?: Record<string, unknown> | null;
+    };
+  },
 };

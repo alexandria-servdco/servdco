@@ -1,6 +1,10 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Json } from "@/lib/supabase/types";
 import { SupabaseQueryError } from "./fallback";
+import {
+  validateAvailabilitySlots,
+  AvailabilityValidationError,
+} from "@shared/availabilityValidation";
 
 export const availabilityQueryKeys = {
   all: ["chef_availability"] as const,
@@ -41,24 +45,6 @@ function parseTimeSlots(value: Json): string[] {
   return value.filter((slot): slot is string => typeof slot === "string");
 }
 
-const DEFAULT_SLOTS: AvailabilitySlot[] = [
-  {
-    day: "Monday",
-    timeSlots: ["09:00 AM - 12:00 PM", "04:00 PM - 07:00 PM"],
-    recurring: true,
-  },
-  {
-    day: "Wednesday",
-    timeSlots: ["01:00 PM - 04:00 PM", "05:00 PM - 08:00 PM"],
-    recurring: true,
-  },
-  {
-    day: "Friday",
-    timeSlots: ["09:00 AM - 12:00 PM", "04:00 PM - 07:00 PM"],
-    recurring: true,
-  },
-];
-
 export const AvailabilitySupabaseService = {
   async getAvailability(chefProfileId: string): Promise<AvailabilitySlot[]> {
     const client = getSupabaseClient();
@@ -72,7 +58,7 @@ export const AvailabilitySupabaseService = {
       .order("day_of_week", { ascending: true });
 
     if (error) throw new SupabaseQueryError(error.message, error);
-    if (!data?.length) return DEFAULT_SLOTS;
+    if (!data?.length) return [];
 
     return data.map((row) => ({
       day: dayIndexToName(row.day_of_week),
@@ -85,6 +71,15 @@ export const AvailabilitySupabaseService = {
     chefProfileId: string,
     slots: AvailabilitySlot[],
   ): Promise<boolean> {
+    try {
+      validateAvailabilitySlots(slots);
+    } catch (err) {
+      if (err instanceof AvailabilityValidationError) {
+        throw new SupabaseQueryError(err.message);
+      }
+      throw err;
+    }
+
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 

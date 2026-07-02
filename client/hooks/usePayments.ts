@@ -17,7 +17,7 @@ export function useAdminPayments() {
 export function useBookingPayment(bookingId: string | undefined) {
   return useQuery({
     queryKey: paymentQueryKeys.byBooking(bookingId ?? ""),
-    queryFn: () => PaymentsSupabaseService.getByBookingId(bookingId!),
+    queryFn: () => PaymentsSupabaseService.listByBookingId(bookingId!),
     enabled: Boolean(bookingId),
   });
 }

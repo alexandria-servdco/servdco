@@ -92,6 +92,8 @@ import { useRealtimeConversations } from "@/hooks/useRealtimeConversations";
 import { useRealtimeDashboard, resolveDashboardRole } from "@/hooks/useRealtimeDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsPremiumChef } from "@/hooks/useSubscription";
+import { usePremiumCheckout } from "@/hooks/usePremiumCheckout";
+import { useChefTransfers } from "@/hooks/useTransfers";
 import { usePlatformStore } from "@/store/usePlatformStore";
 import { NotificationSettingsForm } from "@/components/settings/NotificationSettingsForm";
 import { LocationSettingsPanel } from "@/components/location/LocationSettingsPanel";
@@ -101,26 +103,26 @@ import {
 } from "@/components/location/LocationPromptBanner";
 import type { LocationFormValue, ServiceRadiusMiles } from "@shared/location";
 import { toast } from "sonner";
-import { StripeService } from "@/services/stripe.service";
 import { useOwnDocuments, useSubmitChefDocuments } from "@/hooks/useOwnDocuments";
 import { useChefAnalytics } from "@/hooks/useChefAnalytics";
 import type { BookingStatus } from "@shared/booking";
-import {
-  calculateChefProfileCompletion,
-  getChefProfileCompletionDetail,
-  profileCompletionLabel,
-} from "@shared/profileCompletion";
+import { resolveProfileCompletion } from "@shared/profileCompletion";
+import { canAddAvailabilitySlot } from "@shared/availabilityValidation";
 import { BookingStatusFilterBar } from "@/components/booking/BookingStatusFilterBar";
 import { VerificationResources } from "@/components/chef/VerificationResources";
 import { BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
 
-const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
+const UPCOMING_BOOKING_STATUSES: BookingStatus[] = [
   "accepted",
   "awaiting_payment",
   "confirmed",
   "en_route",
   "arrived",
   "cooking",
+];
+
+const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
+  ...UPCOMING_BOOKING_STATUSES,
   "awaiting_family_confirmation",
 ];
 
@@ -173,18 +175,21 @@ export default function ChefDashboard() {
     role: resolveDashboardRole(profile?.role, user?.user_metadata?.role),
   });
   const resolvedChefId = ownChefProfile?.id ?? chefProfileId;
+  const { data: isPremium = false } = useIsPremiumChef(ownChefProfile?.id);
   const { data: reviews = [], isLoading: reviewsLoading } =
     useReviews(resolvedChefId || undefined);
-  const { data: chefAnalytics } = useChefAnalytics(resolvedChefId || undefined);
+  const { data: chefAnalytics } = useChefAnalytics(
+    isPremium ? resolvedChefId || undefined : undefined,
+  );
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [availabilitySlots, setAvailabilitySlots] = useState<
     AvailabilitySlot[]
   >([]);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
-  const { data: isPremium = false } = useIsPremiumChef(ownChefProfile?.id);
   const chefPremiumPrice = usePlatformStore((s) => s.chefPremiumPrice);
-  const [premiumLoading, setPremiumLoading] = useState(false);
+  const premiumCheckout = usePremiumCheckout(ownChefProfile?.id);
+  const { data: transfers = [] } = useChefTransfers(resolvedChefId || undefined);
   const { data: ownDocuments = [] } = useOwnDocuments(ownChefProfile?.id);
   const submitChefDocuments = useSubmitChefDocuments();
   const verificationStatus = ownChefProfile?.verification_status ?? "pending";
@@ -237,25 +242,24 @@ export default function ChefDashboard() {
   });
   const [profileSuccess, setProfileSuccess] = useState(false);
 
-  const profileProgress = useMemo(
-    () =>
-      calculateChefProfileCompletion({
-        avatar_url: profile?.avatar_url ?? profileData.avatarUrl,
-        city: profile?.city,
-        state: profile?.state,
-        bio: ownChefProfile?.bio ?? profileData.bio,
-        cuisines: ownChefProfile?.cuisine
-          ? ownChefProfile.cuisine
-              .split(/[\/,]/)
-              .map((s) => s.trim())
-              .filter(Boolean)
-          : profileData.cuisines,
-        availabilityCount: availabilitySlots.length,
-        servSafeSubmitted: docStatus("ServSafe Certificate") !== "missing",
-        insuranceSubmitted: docStatus("Insurance") !== "missing",
-        backgroundCheckSubmitted: docStatus("Background Check") !== "missing",
-        verification_status: verificationStatus,
-      }),
+  const chefCompletionInput = useMemo(
+    () => ({
+      avatar_url: profile?.avatar_url ?? profileData.avatarUrl,
+      city: profile?.city,
+      state: profile?.state,
+      bio: ownChefProfile?.bio ?? profileData.bio,
+      cuisines: ownChefProfile?.cuisine
+        ? ownChefProfile.cuisine
+            .split(/[\/,]/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : profileData.cuisines,
+      availabilityCount: availabilitySlots.length,
+      servSafeSubmitted: docStatus("ServSafe Certificate") !== "missing",
+      insuranceSubmitted: docStatus("Insurance") !== "missing",
+      backgroundCheckSubmitted: docStatus("Background Check") !== "missing",
+      verification_status: verificationStatus,
+    }),
     [
       profile,
       profileData.avatarUrl,
@@ -268,38 +272,33 @@ export default function ChefDashboard() {
       verificationStatus,
     ],
   );
-  const chefCompletionDetail = useMemo(
+
+  const profileCompletion = useMemo(
     () =>
-      getChefProfileCompletionDetail({
-        avatar_url: profile?.avatar_url ?? profileData.avatarUrl,
-        city: profile?.city,
-        state: profile?.state,
-        bio: ownChefProfile?.bio ?? profileData.bio,
-        cuisines: ownChefProfile?.cuisine
-          ? ownChefProfile.cuisine
-              .split(/[\/,]/)
-              .map((s) => s.trim())
-              .filter(Boolean)
-          : profileData.cuisines,
-        availabilityCount: availabilitySlots.length,
-        servSafeSubmitted: docStatus("ServSafe Certificate") !== "missing",
-        insuranceSubmitted: docStatus("Insurance") !== "missing",
-        backgroundCheckSubmitted: docStatus("Background Check") !== "missing",
-        verification_status: verificationStatus,
+      resolveProfileCompletion({
+        role: "chef",
+        chef: chefCompletionInput,
       }),
-    [
-      profile,
-      profileData.avatarUrl,
-      profileData.bio,
-      profileData.cuisines,
-      ownChefProfile?.bio,
-      ownChefProfile?.cuisine,
-      availabilitySlots.length,
-      ownDocuments,
-      verificationStatus,
-    ],
+    [chefCompletionInput],
   );
-  const profileProgressLabel = profileCompletionLabel(profileProgress);
+  const profileProgress = profileCompletion.percent;
+  const profileProgressLabel = profileCompletion.label;
+  const chefCompletionDetail = profileCompletion.detail;
+
+  const totalPayoutDollars = useMemo(() => {
+    const paid = transfers
+      .filter((t) => t.status === "paid")
+      .reduce((sum, t) => sum + (t.net_amount_cents ?? 0), 0);
+    return paid / 100;
+  }, [transfers]);
+
+  const completedGrossRevenue = useMemo(
+    () =>
+      bookings
+        .filter((b) => b.status === "completed")
+        .reduce((sum, b) => sum + (b.price ?? 0), 0),
+    [bookings],
+  );
 
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
@@ -426,6 +425,12 @@ export default function ChefDashboard() {
 
 
   const handleAddAvailability = async () => {
+    const check = canAddAvailabilitySlot(availabilitySlots, newDay, newTime);
+    if (check.ok === false) {
+      toast.error(check.message);
+      return;
+    }
+
     const exist = availabilitySlots.find((s) => s.day === newDay);
     let updated: AvailabilitySlot[] = [];
     if (exist) {
@@ -441,13 +446,19 @@ export default function ChefDashboard() {
         { day: newDay, timeSlots: [newTime], recurring: true },
       ];
     }
-    setAvailabilitySlots(updated);
-    await AvailabilityService.saveAvailability(chefProfileId, updated);
-    await queryClient.invalidateQueries({
-      queryKey: availabilityQueryKeys.byChef(chefProfileId),
-    });
-    setAvailabilitySuccess(true);
-    setTimeout(() => setAvailabilitySuccess(false), 2500);
+    try {
+      await AvailabilityService.saveAvailability(chefProfileId, updated);
+      setAvailabilitySlots(updated);
+      await queryClient.invalidateQueries({
+        queryKey: availabilityQueryKeys.byChef(chefProfileId),
+      });
+      setAvailabilitySuccess(true);
+      setTimeout(() => setAvailabilitySuccess(false), 2500);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not save availability.",
+      );
+    }
   };
 
   const handleDeleteAvailabilitySlot = async (
@@ -848,14 +859,18 @@ export default function ChefDashboard() {
                   icon={TrendingUp}
                   label="Total Earnings"
                   value={
-                    chefAnalytics && chefAnalytics.earningsLifetime > 0
-                      ? `$${chefAnalytics.earningsLifetime.toFixed(2)}`
-                      : "—"
+                    totalPayoutDollars > 0
+                      ? `$${totalPayoutDollars.toFixed(2)}`
+                      : completedGrossRevenue > 0
+                        ? `$${completedGrossRevenue.toFixed(2)}`
+                        : "—"
                   }
                   subtext={
-                    chefAnalytics && chefAnalytics.earningsLifetime > 0
-                      ? "lifetime payouts"
-                      : "No payouts yet"
+                    totalPayoutDollars > 0
+                      ? "transferred to your bank"
+                      : completedGrossRevenue > 0
+                        ? "completed — payout pending"
+                        : "No payouts yet"
                   }
                 />
                 <StatItem
@@ -912,7 +927,11 @@ export default function ChefDashboard() {
 
                     <div className="space-y-6">
                       {bookings
-                        .filter((b) => b.status === "confirmed")
+                        .filter((b) =>
+                          UPCOMING_BOOKING_STATUSES.includes(
+                            b.status as BookingStatus,
+                          ),
+                        )
                         .slice(0, 2)
                         .map((booking) => (
                           <div
@@ -946,10 +965,13 @@ export default function ChefDashboard() {
                           </div>
                         ))}
 
-                      {bookings.filter((b) => b.status === "confirmed")
-                        .length === 0 && (
+                      {bookings.filter((b) =>
+                        UPCOMING_BOOKING_STATUSES.includes(
+                          b.status as BookingStatus,
+                        ),
+                      ).length === 0 && (
                         <div className="text-center text-white/30 text-sm font-bold uppercase py-4">
-                          No confirmed bookings yet.
+                          No upcoming bookings yet.
                         </div>
                       )}
                     </div>
@@ -1036,17 +1058,13 @@ export default function ChefDashboard() {
                       Profile Completion
                     </h3>
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full border-4 border-[#FF7A59] border-t-transparent flex items-center justify-center font-bold text-white text-sm font-serif">
-                        {profileProgress}%
-                      </div>
+                      <CircularProgress value={profileProgress} size={64} />
                       <div>
                         <p className="text-xs font-bold text-white">
                           {profileProgressLabel}
                         </p>
                         <p className="text-[10px] text-[#A8A8A8] mt-0.5">
-                          {profileProgress >= 100
-                            ? "Your profile is ready for bookings."
-                            : `${chefCompletionDetail.completed} of ${chefCompletionDetail.total} completed — add bio, cuisines, availability, avatar, and verification documents.`}
+                          {profileCompletion.statusMessage}
                         </p>
                       </div>
                     </div>
@@ -1405,7 +1423,7 @@ export default function ChefDashboard() {
 
               <div className="velvet-card p-6 space-y-6">
                 <h4 className="font-bold text-white font-serif">
-                  Approval Progress
+                  Document Approval Progress
                 </h4>
                 <div className="flex justify-center">
                   <CircularProgress value={verificationDocPercent} size={112} />
@@ -1548,21 +1566,10 @@ export default function ChefDashboard() {
                   ) : (
                     <Button
                       className="px-8 font-bold"
-                      disabled={premiumLoading}
-                      onClick={async () => {
-                        setPremiumLoading(true);
-                        try {
-                          const res = await StripeService.createPremiumCheckout({
-                            successUrl: `${window.location.origin}/chef-dashboard/premium?subscribed=1`,
-                            cancelUrl: `${window.location.origin}/chef-dashboard/premium`,
-                          });
-                          window.location.href = res.url;
-                        } catch {
-                          setPremiumLoading(false);
-                        }
-                      }}
+                      disabled={premiumCheckout.isBusy}
+                      onClick={() => void premiumCheckout.startCheckout()}
                     >
-                      {premiumLoading ? "Redirecting…" : "Upgrade to Premium"}
+                      {premiumCheckout.buttonLabel}
                     </Button>
                   )}
                 </div>

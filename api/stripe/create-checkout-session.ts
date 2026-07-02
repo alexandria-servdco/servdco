@@ -6,6 +6,7 @@ import { isStripeCheckoutEnabled } from "../_lib/stripe/featureFlag.js";
 import {
   checkoutSessionRequestSchema,
   createBookingCheckoutSession,
+  BookingAlreadyPaidError,
 } from "../_lib/stripe/checkout.js";
 import { validateStripeEnvOnStartup } from "../_lib/stripe/env.js";
 import { apiLogger } from "../_lib/logger.js";
@@ -60,6 +61,14 @@ export default async function handler(
     });
     json(res, 200, session);
   } catch (err) {
+    if (err instanceof BookingAlreadyPaidError) {
+      json(res, 409, {
+        error: err.message,
+        code: err.code,
+        bookingId: err.bookingId,
+      });
+      return;
+    }
     const message = err instanceof Error ? err.message : "Checkout failed";
     apiLogger.error("Checkout session failed", {
       route: "/api/stripe/create-checkout-session",

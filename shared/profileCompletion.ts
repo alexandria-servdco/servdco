@@ -105,3 +105,41 @@ export function calculateChefProfileCompletion(
 export function profileCompletionLabel(percent: number): string {
   return percent >= 100 ? "Profile Complete" : "Complete your profile";
 }
+
+export interface ResolvedProfileCompletion {
+  percent: number;
+  label: string;
+  status: "incomplete" | "complete";
+  detail: ProfileCompletionDetail;
+  isComplete: boolean;
+  statusMessage: string;
+}
+
+export function resolveProfileCompletion(params: {
+  role: "family" | "chef";
+  family?: FamilyProfileInput;
+  chef?: ChefProfileCompletionInput;
+}): ResolvedProfileCompletion {
+  const detail =
+    params.role === "family" && params.family
+      ? getFamilyProfileCompletionDetail(params.family)
+      : params.chef
+        ? getChefProfileCompletionDetail(params.chef)
+        : { completed: 0, total: 0, percent: 0, missing: [] };
+
+  const percent = detail.percent;
+  const isComplete = percent >= 100;
+
+  return {
+    percent,
+    label: profileCompletionLabel(percent),
+    status: isComplete ? "complete" : "incomplete",
+    detail,
+    isComplete,
+    statusMessage: isComplete
+      ? "Your profile is ready for bookings."
+      : params.role === "chef"
+        ? `${detail.completed} of ${detail.total} completed — add bio, cuisines, availability, avatar, and verification documents.`
+        : `Complete ${detail.missing.length} remaining field${detail.missing.length === 1 ? "" : "s"} to unlock full private dining bookings.`,
+  };
+}

@@ -27,4 +27,5 @@ export interface AdminPaymentRow {
   chef_name?: string;
   created_at: string;
   updated_at: string;
+  metadata?: Record<string, unknown> | null;
 }

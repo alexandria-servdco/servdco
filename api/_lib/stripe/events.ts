@@ -1,6 +1,8 @@
 import type Stripe from "stripe";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 
+const STALE_EVENT_RETRY_MS = 5 * 60 * 1000;
+
 export interface StripeEventClaim {
   shouldProcess: boolean;
   duplicate: boolean;
@@ -16,14 +18,19 @@ export async function claimStripeEvent(
 
   const { data: existing } = await client
     .from("stripe_events")
-    .select("id, processed, processing_error")
+    .select("id, processed, processing_error, created_at")
     .eq("stripe_event_id", event.id)
     .maybeSingle();
 
   if (existing) {
     const alreadyProcessed = existing.processed === true;
+    const staleInFlight =
+      !alreadyProcessed &&
+      !existing.processing_error &&
+      existing.created_at &&
+      Date.now() - new Date(existing.created_at).getTime() > STALE_EVENT_RETRY_MS;
     const shouldRetry =
-      !alreadyProcessed && Boolean(existing.processing_error);
+      !alreadyProcessed && (Boolean(existing.processing_error) || staleInFlight);
     return {
       shouldProcess: shouldRetry,
       duplicate: !shouldRetry,

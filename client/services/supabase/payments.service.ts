@@ -58,6 +58,7 @@ function mapPaymentRow(
     stripe_charge_id: string | null;
     created_at: string;
     updated_at: string;
+    metadata?: unknown;
   },
   names: { families: Map<string, string>; chefs: Map<string, string> },
 ): AdminPaymentRow {
@@ -79,6 +80,10 @@ function mapPaymentRow(
     chef_name: names.chefs.get(row.chef_profile_id),
     created_at: row.created_at,
     updated_at: row.updated_at,
+    metadata:
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : null,
   };
 }
 
@@ -102,6 +107,11 @@ export const PaymentsSupabaseService = {
   },
 
   async getByBookingId(bookingId: string): Promise<AdminPaymentRow | null> {
+    const rows = await this.listByBookingId(bookingId);
+    return rows[0] ?? null;
+  },
+
+  async listByBookingId(bookingId: string): Promise<AdminPaymentRow[]> {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
@@ -109,14 +119,14 @@ export const PaymentsSupabaseService = {
       .from("payments")
       .select("*")
       .eq("booking_id", bookingId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order("created_at", { ascending: false });
 
     if (error) throw new SupabaseQueryError(error.message, error);
-    if (!data) return null;
+    if (!data?.length) return [];
 
-    const names = await resolveNames([data.family_id], [data.chef_profile_id]);
-    return mapPaymentRow(data, names);
+    const familyIds = [...new Set(data.map((r) => r.family_id))];
+    const chefIds = [...new Set(data.map((r) => r.chef_profile_id))];
+    const names = await resolveNames(familyIds, chefIds);
+    return data.map((row) => mapPaymentRow(row, names));
   },
 };

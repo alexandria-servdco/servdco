@@ -28,10 +28,14 @@ function createQueryClient(): QueryClient {
   return new QueryClient({
     queryCache: new QueryCache({
       onError: (error, query) => {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes("Premium Chef Membership required")) {
+          return;
+        }
         logger.error("Query failed", {
           domain: "react-query",
           queryKey: JSON.stringify(query.queryKey),
-          message: error instanceof Error ? error.message : String(error),
+          message,
         });
       },
     }),

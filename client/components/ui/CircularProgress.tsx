@@ -17,9 +17,10 @@ export function CircularProgress({
   labelClassName,
 }: CircularProgressProps) {
   const clamped = Math.max(0, Math.min(100, value));
+  const isFull = clamped >= 100;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (clamped / 100) * circumference;
+  const offset = isFull ? 0 : circumference - (clamped / 100) * circumference;
 
   return (
     <div
@@ -46,7 +47,7 @@ export function CircularProgress({
           fill="none"
           stroke="#2E7D66"
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
+          strokeLinecap={isFull ? "butt" : "round"}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           className="transition-[stroke-dashoffset] duration-500 ease-out"

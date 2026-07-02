@@ -18,28 +18,65 @@ export interface RealtimeDashboardOptions {
   onAdminRefresh?: () => void;
 }
 
-function subscribe(
-  client: NonNullable<ReturnType<typeof getSupabaseClient>>,
-  channelName: string,
-  table: string,
-  filter: string | undefined,
-  handler: () => void,
-): RealtimeChannel {
-  const config = {
-    event: "*" as const,
-    schema: "public",
-    table,
-    ...(filter ? { filter } : {}),
+const MAX_RETRIES = 6;
+
+type SubscribeArgs = {
+  client: NonNullable<ReturnType<typeof getSupabaseClient>>;
+  channelName: string;
+  table: string;
+  filter: string | undefined;
+  handler: () => void;
+  cancelled: () => boolean;
+  channels: RealtimeChannel[];
+};
+
+function subscribeWithRetry({
+  client,
+  channelName,
+  table,
+  filter,
+  handler,
+  cancelled,
+  channels,
+}: SubscribeArgs): void {
+  let attempt = 0;
+
+  const connect = () => {
+    if (cancelled()) return;
+
+    const config = {
+      event: "*" as const,
+      schema: "public",
+      table,
+      ...(filter ? { filter } : {}),
+    };
+
+    const channel = client.channel(`${channelName}:${attempt}`);
+    channel.on("postgres_changes", config, handler);
+    channel.subscribe((status) => {
+      if (cancelled()) {
+        void client.removeChannel(channel);
+        return;
+      }
+
+      if (status === "SUBSCRIBED") {
+        attempt = 0;
+        return;
+      }
+
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        void client.removeChannel(channel);
+        if (attempt >= MAX_RETRIES) return;
+        attempt += 1;
+        const delay = Math.min(30_000, 1_000 * 2 ** attempt);
+        window.setTimeout(connect, delay);
+      }
+    });
+
+    channels.push(channel);
   };
 
-  const channel = client.channel(channelName);
-  channel.on("postgres_changes", config, handler);
-  channel.subscribe((status) => {
-    if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-      console.warn(`[realtime] ${channelName} subscription ${status}`);
-    }
-  });
-  return channel;
+  connect();
 }
 
 /** Live postgres_changes for bookings, documents, profiles, payments — no polling. */
@@ -58,6 +95,8 @@ export function useRealtimeDashboard({
     if (!client || !userId || !role) return;
 
     const channels: RealtimeChannel[] = [];
+    let disposed = false;
+    const cancelled = () => disposed;
 
     const invalidateBookings = () => {
       void queryClient.invalidateQueries({ queryKey: bookingQueryKeys.all });
@@ -82,78 +121,80 @@ export function useRealtimeDashboard({
       onAdminRefreshRef.current?.();
     };
 
-    // Notifications are handled by useRealtimeNotifications (via useNotifications).
-    // Do not subscribe to notifications:${userId} here — Supabase throws if
-    // postgres_changes listeners are added after subscribe on the same channel.
+  const add = (
+    channelName: string,
+    table: string,
+    filter: string | undefined,
+    handler: () => void,
+  ) => {
+    subscribeWithRetry({
+      client,
+      channelName,
+      table,
+      filter,
+      handler,
+      cancelled,
+      channels,
+    });
+  };
 
     if (role === "family") {
-      channels.push(
-        subscribe(
-          client,
-          `bookings:family:${userId}`,
-          "bookings",
-          `family_id=eq.${userId}`,
-          () => {
-            invalidateBookings();
-            invalidateNotifications();
-          },
-        ),
-        subscribe(
-          client,
-          `payments:family:${userId}`,
-          "payments",
-          `family_id=eq.${userId}`,
-          () => {
-            invalidateBookings();
-            invalidateNotifications();
-          },
-        ),
+      add(
+        `bookings:family:${userId}`,
+        "bookings",
+        `family_id=eq.${userId}`,
+        () => {
+          invalidateBookings();
+          invalidateNotifications();
+        },
+      );
+      add(
+        `payments:family:${userId}`,
+        "payments",
+        `family_id=eq.${userId}`,
+        () => {
+          invalidateBookings();
+          invalidateNotifications();
+        },
       );
     }
 
     if (role === "chef" && chefProfileId) {
-      channels.push(
-        subscribe(
-          client,
-          `bookings:chef:${chefProfileId}`,
-          "bookings",
-          `chef_profile_id=eq.${chefProfileId}`,
-          () => {
-            invalidateBookings();
-            invalidateNotifications();
-          },
-        ),
-        subscribe(
-          client,
-          `payments:chef:${chefProfileId}`,
-          "payments",
-          `chef_profile_id=eq.${chefProfileId}`,
-          () => {
-            invalidateBookings();
-            invalidateNotifications();
-          },
-        ),
-        subscribe(
-          client,
-          `transfers:chef:${chefProfileId}`,
-          "transfers",
-          `chef_profile_id=eq.${chefProfileId}`,
-          invalidateBookings,
-        ),
-        subscribe(
-          client,
-          `chef_profile:${chefProfileId}`,
-          "chef_profiles",
-          `id=eq.${chefProfileId}`,
-          invalidateChef,
-        ),
-        subscribe(
-          client,
-          `chef_documents:${chefProfileId}`,
-          "chef_documents",
-          `chef_profile_id=eq.${chefProfileId}`,
-          invalidateDocuments,
-        ),
+      add(
+        `bookings:chef:${chefProfileId}`,
+        "bookings",
+        `chef_profile_id=eq.${chefProfileId}`,
+        () => {
+          invalidateBookings();
+          invalidateNotifications();
+        },
+      );
+      add(
+        `payments:chef:${chefProfileId}`,
+        "payments",
+        `chef_profile_id=eq.${chefProfileId}`,
+        () => {
+          invalidateBookings();
+          invalidateNotifications();
+        },
+      );
+      add(
+        `transfers:chef:${chefProfileId}`,
+        "transfers",
+        `chef_profile_id=eq.${chefProfileId}`,
+        invalidateBookings,
+      );
+      add(
+        `chef_profile:${chefProfileId}`,
+        "chef_profiles",
+        `id=eq.${chefProfileId}`,
+        invalidateChef,
+      );
+      add(
+        `chef_documents:${chefProfileId}`,
+        "chef_documents",
+        `chef_profile_id=eq.${chefProfileId}`,
+        invalidateDocuments,
       );
     }
 
@@ -166,28 +207,24 @@ export function useRealtimeDashboard({
         adminRefresh();
       };
 
-      channels.push(
-        subscribe(client, "bookings:admin", "bookings", undefined, onAdminChange),
-        subscribe(
-          client,
-          "chef_profiles:admin",
-          "chef_profiles",
-          undefined,
-          onAdminChange,
-        ),
-        subscribe(
-          client,
-          "chef_documents:admin",
-          "chef_documents",
-          undefined,
-          onAdminChange,
-        ),
-        subscribe(client, "payments:admin", "payments", undefined, onAdminChange),
-        subscribe(client, "transfers:admin", "transfers", undefined, onAdminChange),
-      );
+      add("bookings:admin", "bookings", undefined, onAdminChange);
+      add("chef_profiles:admin", "chef_profiles", undefined, onAdminChange);
+      add("chef_documents:admin", "chef_documents", undefined, onAdminChange);
+      add("payments:admin", "payments", undefined, onAdminChange);
+      add("transfers:admin", "transfers", undefined, onAdminChange);
     }
 
+    const onOnline = () => {
+      if (disposed) return;
+      invalidateBookings();
+      invalidateChef();
+      invalidateNotifications();
+    };
+    window.addEventListener("online", onOnline);
+
     return () => {
+      disposed = true;
+      window.removeEventListener("online", onOnline);
       for (const channel of channels) {
         void client.removeChannel(channel);
       }

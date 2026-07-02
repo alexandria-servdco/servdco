@@ -5,6 +5,7 @@ import {
   getFamilyProfileCompletionDetail,
   getChefProfileCompletionDetail,
   profileCompletionLabel,
+  resolveProfileCompletion,
 } from "./profileCompletion";
 
 describe("family profile completion", () => {
@@ -110,6 +111,30 @@ describe("chef profile completion", () => {
     });
     expect(detail.completed).toBe(6);
     expect(detail.total).toBe(9);
+  });
+});
+
+describe("resolveProfileCompletion", () => {
+  it("returns consistent complete state at 100%", () => {
+    const resolved = resolveProfileCompletion({
+      role: "chef",
+      chef: {
+        avatar_url: "https://example.com/a.jpg",
+        city: "Austin",
+        state: "TX",
+        bio: "Bio",
+        cuisines: ["Italian"],
+        availabilityCount: 2,
+        servSafeSubmitted: true,
+        insuranceSubmitted: true,
+        backgroundCheckSubmitted: true,
+        verification_status: "approved",
+      },
+    });
+    expect(resolved.percent).toBe(100);
+    expect(resolved.isComplete).toBe(true);
+    expect(resolved.label).toBe("Profile Complete");
+    expect(resolved.status).toBe("complete");
   });
 });
 

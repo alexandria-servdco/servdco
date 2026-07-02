@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { 
   Heart, ChevronRight, Calendar, Users, 
   Gift, ArrowRight, Shield, Clock, User, Settings, Star, AlertCircle, LayoutDashboard, Search, MessageSquare
@@ -49,6 +49,9 @@ import {
 import type { LocationFormValue } from "@shared/location";
 import { CompletedBookingHistoryRow } from "@/components/reviews/CompletedBookingHistoryRow";
 import { toast } from "sonner";
+import { StripeService } from "@/services/stripe.service";
+import { bookingQueryKeys } from "@/services/supabase/bookings.service";
+import { paymentQueryKeys } from "@/services/supabase/payments.service";
 
 const DIETARY_PRESETS = [
   "Keto",
@@ -85,7 +88,9 @@ function mergeDietaryPreferences(presets: string[], other: string): string[] {
 export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const handledPaymentReturnRef = useRef(false);
   const { profile } = useCurrentProfile();
   const { user, userId } = useAuth();
   const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
@@ -105,6 +110,54 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  useEffect(() => {
+    const bookingParam = searchParams.get("booking");
+    const bookingId = searchParams.get("bookingId");
+    if (handledPaymentReturnRef.current || !bookingParam) return;
+
+    if (bookingParam === "success" && bookingId) {
+      handledPaymentReturnRef.current = true;
+      void (async () => {
+        try {
+          const result = await StripeService.reconcileBookingPayment(bookingId);
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: bookingQueryKeys.all }),
+            queryClient.invalidateQueries({
+              queryKey: paymentQueryKeys.byBooking(bookingId),
+            }),
+          ]);
+          if (result.bookingConfirmed) {
+            toast.success("Payment confirmed — your booking is ready.");
+          } else if (result.duplicateDetected) {
+            toast.warning(
+              "Duplicate payment detected. Our team will review and follow up.",
+            );
+          } else {
+            toast.info("Payment received. Your dashboard is updating.");
+          }
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? err.message : "Could not verify payment.",
+          );
+        } finally {
+          const next = new URLSearchParams(searchParams);
+          next.delete("booking");
+          next.delete("bookingId");
+          setSearchParams(next, { replace: true });
+        }
+      })();
+      return;
+    }
+
+    if (bookingParam === "payment_cancelled") {
+      handledPaymentReturnRef.current = true;
+      toast.info("Payment cancelled. You can try again when ready.");
+      const next = new URLSearchParams(searchParams);
+      next.delete("booking");
+      setSearchParams(next, { replace: true });
+    }
+  }, [queryClient, searchParams, setSearchParams]);
 
   // Profile Form state
   const [profileData, setProfileData] = useState({

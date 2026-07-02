@@ -2,42 +2,48 @@
  * ServdCo Cron Worker
  * ===================
  *
- * Pure scheduler — no business logic. Issues authenticated HTTP requests to
- * the existing ServdCo API on Vercel on a fixed schedule.
+ * A PURE SCHEDULER. Contains no business logic, no Stripe SDK, no Supabase SDK,
+ * no database access, and no persistent state. On every scheduled tick it issues
+ * authenticated HTTP requests to the existing ServdCo API on Vercel, which runs
+ * all reconciliation / transfer / subscription logic exactly as it does today.
  *
- * Hardening:
- * - KV overlap lock (skip if a previous run is still in-flight)
- * - Per-run summary metrics parsed from API JSON responses
- * - /health exposes last run, failures, cron schedule
- * - Optional ALERT_WEBHOOK_URL after consecutive scheduled failures
+ * Responsibilities per run (in order, each retried once, never aborting the rest):
+ *   1. POST /api/stripe/payments/reconcile-batch
+ *   2. POST /api/stripe/transfers/process
+ *   3. POST /api/stripe/subscription/reconcile-batch
+ *
+ * Overlap safety:
+ *   - A full run is bounded to well under the 15-minute cron interval
+ *     (3 jobs x max 2 attempts x 28s = worst case ~2.8 min).
+ *   - The ServdCo API is already fully idempotent (DB claim locks, Stripe
+ *     idempotency keys, conditional status updates), so even a rare overlap
+ *     cannot double-apply payments, transfers, or subscription changes.
+ *
+ * No KV / Durable Objects / Queues / D1 / R2 are used — deployment is a single
+ * `wrangler deploy` with two secrets and (optionally) two variables.
  */
 
-const WORKER_VERSION = "1.1.0";
+const WORKER_VERSION = "2.0.0";
 const CRON_SCHEDULE = "*/15 * * * *";
-const MAX_ATTEMPTS = 2;
+const MAX_ATTEMPTS = 2; // initial attempt + 1 retry
 const BASE_BACKOFF_MS = 500;
-/** Align with Vercel maxDuration (30s) — leave 2s buffer. */
+/** Per-request timeout — 2s under Vercel's 30s function maxDuration. */
 const REQUEST_TIMEOUT_MS = 28_000;
-/** Skip new cron tick if a run lock is younger than this. */
-const RUN_LOCK_TTL_SEC = 25 * 60;
-const CONSECUTIVE_FAILURE_ALERT_THRESHOLD = 3;
-
-const LOCK_KEY = "run_lock";
-const STATE_KEY = "run_state";
 
 interface Env {
+  /** Base URL of the ServdCo API on Vercel. Set as a Cloudflare variable. */
   SITE_URL: string;
+  /** Shared secret, sent as `Authorization: Bearer <CRON_SECRET>`. Cloudflare secret. */
   CRON_SECRET: string;
+  /** Optional version override (variable). */
   WORKER_VERSION?: string;
-  /** ISO timestamp set at deploy time (optional). */
-  DEPLOYED_AT?: string;
-  /** Discord/Slack/generic webhook URL for repeated failure alerts. */
+  /** Optional Discord/Slack webhook for failure alerts (secret). */
   ALERT_WEBHOOK_URL?: string;
-  CRON_STATE: KVNamespace;
 }
 
 interface CronJob {
   name: string;
+  /** Path relative to SITE_URL — public URL is unchanged from today. */
   path: string;
   method: "GET" | "POST";
 }
@@ -92,73 +98,40 @@ interface RunSummary {
   failures: number;
 }
 
-interface PersistedRunState {
-  deployedAt: string;
-  cronSchedule: string;
-  lastSuccessfulRun: string | null;
-  lastFailedRun: string | null;
-  lastSummary: RunSummary | null;
-  consecutiveFailures: number;
-}
-
 function version(env: Env): string {
   return env.WORKER_VERSION ?? WORKER_VERSION;
 }
 
 function log(record: Record<string, unknown>): void {
-  console.log(JSON.stringify({ source: "servdco-cron", ts: new Date().toISOString(), ...record }));
+  console.log(
+    JSON.stringify({ source: "servdco-cron", ts: new Date().toISOString(), ...record }),
+  );
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function loadState(env: Env): Promise<PersistedRunState> {
-  const raw = await env.CRON_STATE.get(STATE_KEY);
-  if (raw) {
-    try {
-      return JSON.parse(raw) as PersistedRunState;
-    } catch {
-      /* fall through */
-    }
+/** Constant-time string compare — prevents Bearer token timing attacks on POST /run. */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const aBytes = enc.encode(a);
+  const bBytes = enc.encode(b);
+  if (aBytes.byteLength !== bBytes.byteLength) return false;
+  let diff = 0;
+  for (let i = 0; i < aBytes.byteLength; i++) {
+    diff |= aBytes[i]! ^ bBytes[i]!;
   }
-  return {
-    deployedAt: env.DEPLOYED_AT ?? new Date().toISOString(),
-    cronSchedule: CRON_SCHEDULE,
-    lastSuccessfulRun: null,
-    lastFailedRun: null,
-    lastSummary: null,
-    consecutiveFailures: 0,
-  };
+  return diff === 0;
 }
 
-async function saveState(env: Env, state: PersistedRunState): Promise<void> {
-  await env.CRON_STATE.put(STATE_KEY, JSON.stringify(state));
+function isAuthorizedCronBearer(authHeader: string | null, secret: string): boolean {
+  if (!authHeader || !secret) return false;
+  return timingSafeEqual(authHeader, `Bearer ${secret}`);
 }
 
-async function tryAcquireRunLock(env: Env, trigger: string): Promise<boolean> {
-  const existing = await env.CRON_STATE.get(LOCK_KEY);
-  if (existing) {
-    log({
-      event: "run_skipped_overlap",
-      version: version(env),
-      trigger,
-      reason: "Previous run lock still held — skipping to avoid concurrent reconciliation",
-      lock: JSON.parse(existing),
-    });
-    return false;
-  }
-
-  await env.CRON_STATE.put(
-    LOCK_KEY,
-    JSON.stringify({ trigger, startedAt: new Date().toISOString() }),
-    { expirationTtl: RUN_LOCK_TTL_SEC },
-  );
-  return true;
-}
-
-async function releaseRunLock(env: Env): Promise<void> {
-  await env.CRON_STATE.delete(LOCK_KEY);
+function num(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
 }
 
 function extractMetrics(jobName: string, body: unknown): Record<string, unknown> | undefined {
@@ -192,47 +165,6 @@ function extractMetrics(jobName: string, body: unknown): Record<string, unknown>
     default:
       return undefined;
   }
-}
-
-function buildRunSummary(
-  trigger: string,
-  runStarted: number,
-  results: JobResult[],
-): RunSummary {
-  const payments = results.find((r) => r.job === "payments-reconcile-batch");
-  const transfers = results.find((r) => r.job === "transfers-process");
-  const subscriptions = results.find((r) => r.job === "subscription-reconcile-batch");
-
-  const pm = payments?.metrics ?? {};
-  const tm = transfers?.metrics ?? {};
-  const sm = subscriptions?.metrics ?? {};
-
-  const jobsFailed = results.filter((r) => !r.ok).length;
-
-  return {
-    trigger,
-    startedAt: new Date(runStarted).toISOString(),
-    completedAt: new Date().toISOString(),
-    durationMs: Date.now() - runStarted,
-    jobsTotal: results.length,
-    jobsSucceeded: results.length - jobsFailed,
-    jobsFailed,
-    paymentsScanned: num(pm.scanned),
-    paymentsRepaired: num(pm.repaired),
-    paymentsDuplicates: num(pm.duplicates),
-    transfersProcessed: num(tm.processed),
-    transfersFailed: num(tm.failed),
-    transfersSkipped: num(tm.skipped),
-    tipsRetried: num(tm.tipsRetried),
-    tipsSucceeded: num(tm.tipsSucceeded),
-    subscriptionsScanned: num(sm.scanned),
-    subscriptionsRepaired: num(sm.repaired),
-    failures: jobsFailed,
-  };
-}
-
-function num(value: unknown): number | undefined {
-  return typeof value === "number" ? value : undefined;
 }
 
 async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
@@ -300,6 +232,7 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
         attempt,
         status: res.status,
         durationMs: Date.now() - attemptStarted,
+        error: lastReason,
         failureReason: lastReason,
       });
     } catch (err) {
@@ -317,6 +250,7 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
         endpoint,
         attempt,
         durationMs: Date.now() - attemptStarted,
+        error: lastReason,
         failureReason: lastReason,
       });
     }
@@ -340,108 +274,32 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
   };
 }
 
-async function sendFailureAlert(env: Env, state: PersistedRunState, summary: RunSummary): Promise<void> {
-  if (!env.ALERT_WEBHOOK_URL) return;
+function buildRunSummary(trigger: string, runStarted: number, results: JobResult[]): RunSummary {
+  const pm = results.find((r) => r.job === "payments-reconcile-batch")?.metrics ?? {};
+  const tm = results.find((r) => r.job === "transfers-process")?.metrics ?? {};
+  const sm = results.find((r) => r.job === "subscription-reconcile-batch")?.metrics ?? {};
+  const jobsFailed = results.filter((r) => !r.ok).length;
 
-  const text = [
-    "⚠️ ServdCo Cron Worker — repeated failures",
-    `Consecutive failed runs: ${state.consecutiveFailures}`,
-    `Last run: ${summary.completedAt}`,
-    `Jobs failed: ${summary.jobsFailed}/${summary.jobsTotal}`,
-    `Payments repaired: ${summary.paymentsRepaired ?? "n/a"}`,
-    `Transfers processed: ${summary.transfersProcessed ?? "n/a"}`,
-    `Subscriptions repaired: ${summary.subscriptionsRepaired ?? "n/a"}`,
-    `Site: ${env.SITE_URL}`,
-  ].join("\n");
-
-  try {
-    await fetch(env.ALERT_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: text, text }),
-    });
-    log({ event: "alert_sent", consecutiveFailures: state.consecutiveFailures });
-  } catch (err) {
-    log({
-      event: "alert_failed",
-      message: err instanceof Error ? err.message : "unknown",
-    });
-  }
-}
-
-async function runAllJobs(env: Env, trigger: string): Promise<JobResult[]> {
-  const runStarted = Date.now();
-  log({ event: "run_start", version: version(env), trigger, siteUrl: env.SITE_URL, jobs: JOBS.length });
-
-  if (!env.CRON_SECRET || !env.SITE_URL) {
-    log({
-      event: "run_misconfigured",
-      version: version(env),
-      hasSiteUrl: Boolean(env.SITE_URL),
-      hasCronSecret: Boolean(env.CRON_SECRET),
-      failureReason: "Missing SITE_URL or CRON_SECRET",
-    });
-    return [];
-  }
-
-  const isScheduled = trigger.startsWith("cron:");
-  if (isScheduled) {
-    const acquired = await tryAcquireRunLock(env, trigger);
-    if (!acquired) return [];
-  }
-
-  const results: JobResult[] = [];
-  try {
-    for (const job of JOBS) {
-      results.push(await callEndpoint(env, job));
-    }
-  } finally {
-    if (isScheduled) {
-      await releaseRunLock(env);
-    }
-  }
-
-  const summary = buildRunSummary(trigger, runStarted, results);
-  const allOk = summary.jobsFailed === 0;
-
-  log({
-    event: "run_summary",
-    version: version(env),
-    ...summary,
-    humanReadable: formatSummaryLine(summary),
-  });
-
-  log({
-    event: "run_complete",
-    version: version(env),
+  return {
     trigger,
-    total: results.length,
-    succeeded: summary.jobsSucceeded,
-    failed: summary.jobsFailed,
-    durationMs: summary.durationMs,
-    results,
-  });
-
-  const state = await loadState(env);
-  state.lastSummary = summary;
-  if (allOk) {
-    state.lastSuccessfulRun = summary.completedAt;
-    state.consecutiveFailures = 0;
-  } else {
-    state.lastFailedRun = summary.completedAt;
-    if (isScheduled) {
-      state.consecutiveFailures += 1;
-      if (
-        state.consecutiveFailures >= CONSECUTIVE_FAILURE_ALERT_THRESHOLD &&
-        env.ALERT_WEBHOOK_URL
-      ) {
-        await sendFailureAlert(env, state, summary);
-      }
-    }
-  }
-  await saveState(env, state);
-
-  return results;
+    startedAt: new Date(runStarted).toISOString(),
+    completedAt: new Date().toISOString(),
+    durationMs: Date.now() - runStarted,
+    jobsTotal: results.length,
+    jobsSucceeded: results.length - jobsFailed,
+    jobsFailed,
+    paymentsScanned: num(pm.scanned),
+    paymentsRepaired: num(pm.repaired),
+    paymentsDuplicates: num(pm.duplicates),
+    transfersProcessed: num(tm.processed),
+    transfersFailed: num(tm.failed),
+    transfersSkipped: num(tm.skipped),
+    tipsRetried: num(tm.tipsRetried),
+    tipsSucceeded: num(tm.tipsSucceeded),
+    subscriptionsScanned: num(sm.scanned),
+    subscriptionsRepaired: num(sm.repaired),
+    failures: jobsFailed,
+  };
 }
 
 function formatSummaryLine(s: RunSummary): string {
@@ -454,48 +312,110 @@ function formatSummaryLine(s: RunSummary): string {
   ].join(", ");
 }
 
+async function sendFailureAlert(env: Env, summary: RunSummary): Promise<void> {
+  if (!env.ALERT_WEBHOOK_URL) return;
+  const text = [
+    "⚠️ ServdCo Cron Worker — run had failures",
+    `Jobs failed: ${summary.jobsFailed}/${summary.jobsTotal}`,
+    `Trigger: ${summary.trigger}`,
+    `Completed: ${summary.completedAt}`,
+    `Site: ${env.SITE_URL}`,
+    formatSummaryLine(summary),
+  ].join("\n");
+
+  try {
+    await fetch(env.ALERT_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: text, text }),
+    });
+    log({ event: "alert_sent", jobsFailed: summary.jobsFailed });
+  } catch (err) {
+    log({ event: "alert_failed", message: err instanceof Error ? err.message : "unknown" });
+  }
+}
+
+async function runAllJobs(env: Env, trigger: string): Promise<RunSummary> {
+  const runStarted = Date.now();
+  log({ event: "run_start", version: version(env), trigger, siteUrl: env.SITE_URL, jobs: JOBS.length });
+
+  if (!env.CRON_SECRET || !env.SITE_URL) {
+    log({
+      event: "run_misconfigured",
+      version: version(env),
+      hasSiteUrl: Boolean(env.SITE_URL),
+      hasCronSecret: Boolean(env.CRON_SECRET),
+      failureReason: "Missing SITE_URL or CRON_SECRET",
+    });
+    return buildRunSummary(trigger, runStarted, []);
+  }
+
+  const results: JobResult[] = [];
+  for (const job of JOBS) {
+    // Sequential; a failure never aborts remaining jobs.
+    results.push(await callEndpoint(env, job));
+  }
+
+  const summary = buildRunSummary(trigger, runStarted, results);
+
+  log({ event: "run_summary", version: version(env), ...summary, humanReadable: formatSummaryLine(summary) });
+  log({
+    event: "run_complete",
+    version: version(env),
+    trigger,
+    total: results.length,
+    succeeded: summary.jobsSucceeded,
+    failed: summary.jobsFailed,
+    durationMs: summary.durationMs,
+    results,
+  });
+
+  if (summary.jobsFailed > 0) {
+    await sendFailureAlert(env, summary);
+  }
+
+  return summary;
+}
+
 export default {
+  /** Cloudflare Cron trigger entrypoint. */
   async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(runAllJobs(env, `cron:${event.cron}`));
   },
 
+  /**
+   * HTTP entrypoint.
+   *   GET  /health → public, non-sensitive status (safe to expose)
+   *   POST /run    → manual trigger, requires `Authorization: Bearer CRON_SECRET`
+   *   everything else → 404
+   */
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname === "/health") {
-      const state = await loadState(env);
-      const lockHeld = Boolean(await env.CRON_STATE.get(LOCK_KEY));
+    if (request.method === "GET" && url.pathname === "/health") {
       return Response.json({
         status: "ok",
         worker: "servdco-cron",
         version: version(env),
-        deployedAt: state.deployedAt,
-        cronSchedule: state.cronSchedule,
-        siteUrl: env.SITE_URL ?? null,
+        cronSchedule: CRON_SCHEDULE,
         cronConfigured: true,
-        runLockHeld: lockHeld,
-        lastSuccessfulRun: state.lastSuccessfulRun,
-        lastFailedRun: state.lastFailedRun,
-        consecutiveFailures: state.consecutiveFailures,
-        lastSummary: state.lastSummary,
-        jobs: JOBS.map((j) => j.path),
+        siteUrlConfigured: Boolean(env.SITE_URL),
+        cronSecretConfigured: Boolean(env.CRON_SECRET),
         alertWebhookConfigured: Boolean(env.ALERT_WEBHOOK_URL),
+        jobs: JOBS.map((j) => j.path),
         timestamp: new Date().toISOString(),
       });
     }
 
     if (url.pathname === "/run") {
-      const auth = request.headers.get("authorization");
-      if (!env.CRON_SECRET || auth !== `Bearer ${env.CRON_SECRET}`) {
+      if (request.method !== "POST") {
+        return Response.json({ error: "Method not allowed" }, { status: 405 });
+      }
+      if (!isAuthorizedCronBearer(request.headers.get("authorization"), env.CRON_SECRET)) {
         return Response.json({ error: "Unauthorized" }, { status: 401 });
       }
-      const results = await runAllJobs(env, "manual");
-      const state = await loadState(env);
-      return Response.json({
-        triggered: "manual",
-        summary: state.lastSummary,
-        results,
-      });
+      const summary = await runAllJobs(env, "manual");
+      return Response.json({ triggered: "manual", summary });
     }
 
     return Response.json({ error: "Not found" }, { status: 404 });

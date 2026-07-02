@@ -105,3 +105,23 @@ pnpm build
 ```
 
 Output is in `dist/`.
+
+## Cloudflare Cron Worker
+
+Scheduled reconciliation (payments, transfers, subscriptions every 15 minutes) runs
+via a **pure HTTP scheduler** in `cloudflare-worker/`. The Worker calls existing
+Vercel API routes with `Authorization: Bearer CRON_SECRET` — it never touches
+Stripe, Supabase, or the database directly.
+
+```bash
+cd cloudflare-worker
+npm install
+npm run typecheck
+npm run build      # dry-run deploy
+npx wrangler secret put CRON_SECRET
+npm run deploy
+```
+
+- **Health check:** `GET https://servdco-cron.<subdomain>.workers.dev/health`
+- **Full guide:** [`docs/CLOUDFLARE_WORKER_DEPLOYMENT.md`](docs/CLOUDFLARE_WORKER_DEPLOYMENT.md)
+- **Rollback:** disable the cron trigger in Cloudflare dashboard, or roll back to a prior deployment — no app code changes required.

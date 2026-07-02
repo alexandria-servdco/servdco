@@ -3,35 +3,27 @@ main = "src/worker.ts"
 compatibility_date = "2024-11-01"
 
 # ---------------------------------------------------------------------------
-# ServdCo Cron Worker
+# ServdCo Cron Worker — pure scheduler.
 #
-# Pure scheduler. Contains NO business logic, NO Stripe SDK, NO Supabase SDK.
-# On each scheduled tick it makes authenticated HTTP POST requests to the
-# existing ServdCo API on Vercel. All reconciliation logic stays on Vercel.
+# No build step, no KV/Durable Objects/Queues/D1/R2. Deployed with the Wrangler
+# CLI (`npm run deploy`). All reconciliation logic stays on Vercel; this Worker
+# only makes authenticated HTTP calls on a schedule.
 # ---------------------------------------------------------------------------
 
-# Scheduled triggers (UTC). Every 15 minutes.
-# Adjust freely — this is the ONLY place the cadence is defined.
+# Scheduled triggers (UTC). Every 15 minutes. This is the only place the
+# cadence is defined.
 [triggers]
 crons = ["*/15 * * * *"]
 
-# Non-secret variables. Override per-environment in the Cloudflare dashboard
-# or with `wrangler secret put` (for secrets). SITE_URL can live here as a
-# plain var; CRON_SECRET must be a secret (see README).
+# Non-secret variables. SITE_URL can be changed here or in the Cloudflare
+# dashboard (Settings -> Variables) with no code edit. To move to the custom
+# domain later, change SITE_URL to "https://servdco.com" and redeploy.
+# CRON_SECRET and ALERT_WEBHOOK_URL are SECRETS — never put them here; set them
+# with `npx wrangler secret put <NAME>` (see docs).
 [vars]
 SITE_URL = "https://servdco.vercel.app"
-WORKER_VERSION = "1.1.0"
+WORKER_VERSION = "2.0.0"
 
-# KV stores run lock (overlap prevention), last-run summary, and failure counters.
-# Create before first deploy:
-#   npx wrangler kv:namespace create CRON_STATE
-#   npx wrangler kv:namespace create CRON_STATE --preview
-# Then paste the returned IDs below.
-[[kv_namespaces]]
-binding = "CRON_STATE"
-id = "REPLACE_AFTER_kv_namespace_create"
-preview_id = "REPLACE_AFTER_kv_namespace_create_preview"
-
-# Observability: keep logs so `wrangler tail` and the dashboard show output.
+# Keep runtime logs available for `wrangler tail` and the dashboard Logs tab.
 [observability]
 enabled = true

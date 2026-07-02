@@ -1,5 +1,9 @@
 # Cloudflare Workers Cron — Setup & Operations Guide
 
+> **Canonical reference:** [`CLOUDFLARE_WORKER_DEPLOYMENT.md`](./CLOUDFLARE_WORKER_DEPLOYMENT.md)
+> matches the v2.0.0 pure-scheduler implementation (no KV bindings).
+> Use that document for production deployment, health checks, rollback, and verification.
+
 This guide migrates ServdCo's scheduled reconciliation jobs from GitHub Actions
 to **Cloudflare Workers Cron**. It assumes you have **never used Cloudflare
 Workers before** and explains every click.
@@ -200,8 +204,9 @@ https://servdco-cron.<your-subdomain>.workers.dev/health
 Expected JSON:
 
 ```json
-{ "status": "ok", "worker": "servdco-cron", "version": "1.0.0",
-  "siteUrl": "https://servdco.vercel.app", "cronConfigured": true, ... }
+{ "status": "ok", "worker": "servdco-cron", "version": "2.0.0",
+  "cronSchedule": "*/15 * * * *", "cronConfigured": true,
+  "siteUrlConfigured": true, "cronSecretConfigured": true, ... }
 ```
 
 ### 5.2 Manually trigger a run
@@ -259,28 +264,16 @@ be deleted.
 
 ## 7. Rollback
 
-If anything with Cloudflare misbehaves, reconciliation still works on the daily
-Vercel crons (`vercel.json`), and you can instantly restore 15-minute cadence
-via GitHub Actions:
+No application code changes required.
 
-**Option 1 — Re-enable GitHub Actions (fast):**
-1. Edit `.github/workflows/reconcile-cron.yml`.
-2. Uncomment the `schedule` block:
-   ```yaml
-   on:
-     schedule:
-       - cron: "*/15 * * * *"
-     workflow_dispatch:
-   ```
-3. Ensure repo secrets `SITE_URL` and `CRON_SECRET` are set
-   (GitHub → Settings → Secrets and variables → Actions).
-4. Commit & push. GitHub resumes the schedule immediately.
+**Option A — Disable Cloudflare cron (instant):**
+- Worker → **Settings** → **Triggers** → delete the `*/15 * * * *` cron trigger
 
-**Option 2 — Pause Cloudflare Worker:**
-- Worker → **Settings** → **Triggers** → delete the cron trigger, **or**
-- Worker → **Manage** → **Delete** to remove entirely.
+**Option B — Redeploy previous Worker version:**
+- Worker → **Deployments** → select last known-good → **Rollback**
 
-Neither rollback touches application code, Stripe, Supabase, or Vercel hosting.
+Vercel daily crons in `vercel.json` remain as a safety net. See
+[`CLOUDFLARE_WORKER_DEPLOYMENT.md`](./CLOUDFLARE_WORKER_DEPLOYMENT.md) for details.
 
 ---
 
@@ -297,76 +290,43 @@ All three must use the **same** `CRON_SECRET` value.
 
 ## 9. Pre-deploy verification checklist
 
-### 9.1 Cron overlap (can two runs execute simultaneously?)
+See [`CLOUDFLARE_WORKER_DEPLOYMENT.md`](./CLOUDFLARE_WORKER_DEPLOYMENT.md) for the
+full production audit checklist. Key points:
 
-**Worker level:** Yes, Cloudflare Cron does not wait for the previous tick to finish.
-The worker now uses a **KV run lock** (`run_lock`, 25-minute TTL). If a prior run
-is still in-flight, the next tick logs `run_skipped_overlap` and exits without
-calling the API.
+### 9.1 Cron overlap
 
-**API level — idempotency verified in code:**
+Cloudflare Cron does not wait for the previous tick. The Worker holds **no run
+lock** (no KV). Overlap safety relies on API idempotency (DB claim locks, Stripe
+idempotency keys, conditional status updates).
 
-| Job | Idempotent? | Mechanism |
-| --- | :---------: | --------- |
-| Transfers | **Yes** | `claimTransferForProcessing()` atomically sets `status=processing`; second worker gets `null` and skips. Stripe transfer uses `cookTransferIdempotencyKey(transferId)`. Stale `processing` rows recovered via `isProcessingStale()`. |
-| Payments batch | **Yes** | `confirmBookingFromPayment()` is documented idempotent; booking update uses `.in("status", PAYABLE_STATUSES)` so already-confirmed bookings are not re-confirmed. Duplicate payments flagged, not double-applied. |
-| Subscriptions batch | **Yes** | `reconcileChefSubscription()` reads Stripe truth and only writes when `needsSync` is true. Re-running is a no-op when already in sync. |
-
-**Verdict:** Safe to run every 15 minutes. Overlap is mitigated at the worker
-(KV lock) and at the API (DB claims / conditional updates).
-
-### 9.2 Worker timeout (20–30 second endpoints)
+### 9.2 Worker timeout
 
 | Setting | Value |
 | ------- | ----- |
 | Per-request timeout | **28s** (2s under Vercel `maxDuration: 30`) |
 | Retries per job | 1 (2 attempts total) |
-| Worst-case per job | ~56s + 500ms backoff |
-| Worst-case full run | ~3 jobs × 56s ≈ **2.8 min** |
-
-**Behavior on timeout:**
-1. Request aborted → logged as `timeout after 28000ms`
-2. One retry after 500ms backoff
-3. If still failing → job marked failed, **next job continues**
-4. Partial success is possible (e.g. payments OK, transfers timeout)
+| Worst-case full run | ~2.8 min |
 
 ### 9.3 Rate limiting
 
-Cron batch handlers (`payments/reconcile-batch`, `transfers/process`,
-`subscription/reconcile-batch`) **do not call** `enforceRateLimit()`. Only
-user-facing Stripe endpoints (checkout, refund, etc.) are rate-limited.
-
-Worker traffic: 3 POSTs per run, max 6 with retries — well under any limit.
-
-**Cloudflare WAF:** If you rate-limit `servdco.vercel.app` at the edge, add a
-WAF rule to **bypass** requests with `Authorization: Bearer <CRON_SECRET>` or
-whitelist the Worker egress IPs.
+Cron batch handlers do **not** call `enforceRateLimit()`. Worker traffic is
+3 POSTs per run (max 6 with retries).
 
 ### 9.4 Observability
 
-Every run emits a `run_summary` log with human-readable line:
+Every run emits `run_summary` with a human-readable line:
 
 ```
 Run: payments repaired=3, transfers processed=9, subscriptions repaired=2, duration=5.8s, failures=0
 ```
 
-Parsed from API JSON responses (`repaired`, `processed`, `scanned`, etc.).
-
 ### 9.5 Health endpoint (`GET /health`)
 
-Returns:
-
-- `version`, `deployedAt`, `cronSchedule`
-- `lastSuccessfulRun`, `lastFailedRun`, `consecutiveFailures`
-- `lastSummary` (full metrics object)
-- `runLockHeld` (is a run currently in-flight?)
-- `alertWebhookConfigured`
+Returns `version`, `cronSchedule`, config flags (`siteUrlConfigured`,
+`cronSecretConfigured`), and the job path list. Does **not** expose secrets or
+run history (stateless Worker).
 
 ### 9.6 Failure notifications
 
-Set optional secret `ALERT_WEBHOOK_URL` (Discord or Slack incoming webhook).
-
-After **3 consecutive failed scheduled runs**, the worker POSTs an alert with
-run summary. Manual `/run` failures do not increment the counter.
-
-Reset: any fully successful scheduled run sets `consecutiveFailures` to 0.
+Set optional secret `ALERT_WEBHOOK_URL`. An alert is sent when any job fails
+during a run (scheduled or manual `/run`).

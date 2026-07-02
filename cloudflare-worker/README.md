@@ -1,14 +1,13 @@
 # ServdCo Cron Worker
 
-A **pure scheduler** running on Cloudflare Workers Cron. It replaces the
-temporary GitHub Actions scheduled jobs. It contains **no business logic** —
-every reconciliation, transfer, and subscription job still runs inside the
-existing ServdCo API on Vercel. This Worker only issues authenticated HTTP
-requests on a schedule.
+A **pure scheduler** on Cloudflare Workers Cron (v2.0.0). It replaces the
+temporary GitHub Actions 15-minute reconciliation schedule. It contains **no
+business logic** — every reconciliation, transfer, and subscription job still
+runs inside the existing ServdCo API on Vercel.
 
 ```
-Cloudflare Workers Cron
-        │  (every 15 min)
+Cloudflare Workers Cron (*/15 * * * * UTC)
+        │
         ▼
 Authenticated HTTPS POST  (Authorization: Bearer CRON_SECRET)
         │
@@ -18,87 +17,74 @@ ServdCo API on Vercel  ──►  existing business logic (unchanged)
 
 ## What it calls
 
-Every scheduled run, in order (each retried once on failure, never aborting the rest):
+Every scheduled run, in order (each retried once on failure; one failure never blocks the rest):
 
 1. `POST {SITE_URL}/api/stripe/payments/reconcile-batch`
 2. `POST {SITE_URL}/api/stripe/transfers/process`
 3. `POST {SITE_URL}/api/stripe/subscription/reconcile-batch`
 
-## Environment variables
+## Environment
 
-| Name          | Type   | Where                              | Example                        |
-| ------------- | ------ | ---------------------------------- | ------------------------------ |
-| `SITE_URL`    | var    | `wrangler.toml` / dashboard var    | `https://servdco.vercel.app`   |
-| `CRON_SECRET` | secret | `wrangler secret` / dashboard      | *(same value as Vercel)*       |
-| `ALERT_WEBHOOK_URL` | secret (optional) | dashboard / `wrangler secret` | Discord or Slack webhook URL |
-| `DEPLOYED_AT` | var (optional) | dashboard var | ISO timestamp of last deploy |
+| Name | Type | Where | Example |
+| ---- | ---- | ----- | ------- |
+| `SITE_URL` | var | `wrangler.toml` / dashboard | `https://servdco.vercel.app` |
+| `WORKER_VERSION` | var | `wrangler.toml` / dashboard | `2.0.0` |
+| `CRON_SECRET` | secret | `wrangler secret` / dashboard | *(same value as Vercel)* |
+| `ALERT_WEBHOOK_URL` | secret (optional) | dashboard / `wrangler secret` | Discord or Slack webhook |
 
 `CRON_SECRET` **must** match the `CRON_SECRET` set in the Vercel project.
 
-### KV namespace (required)
+**No KV, D1, R2, or other bindings are required.**
 
-The worker uses KV for overlap locks, run summaries, and failure counters:
+## Scripts
 
 ```bash
-cd cloudflare-worker
-npx wrangler kv:namespace create CRON_STATE
-npx wrangler kv:namespace create CRON_STATE --preview
+npm run typecheck   # tsc --noEmit
+npm run build       # wrangler deploy --dry-run
+npm run deploy      # wrangler deploy
+npm run tail        # wrangler tail (live logs)
+npm run dev         # wrangler dev
 ```
-
-Paste the returned IDs into `wrangler.toml` under `[[kv_namespaces]]`, then deploy.
 
 ## Local development
 
 ```bash
 cd cloudflare-worker
-pnpm install          # or npm install
+npm install
 cp .dev.vars.example .dev.vars   # fill in CRON_SECRET
-pnpm typecheck        # tsc --noEmit
-pnpm dev              # runs on http://localhost:8787
+npm run dev                      # http://localhost:8787
 ```
 
-Manually trigger the schedule locally:
-
 ```bash
-# In another terminal while `pnpm dev` runs:
 curl http://localhost:8787/health
-
-curl -X POST http://localhost:8787/run \
-  -H "Authorization: Bearer <CRON_SECRET>"
+curl -X POST http://localhost:8787/run -H "Authorization: Bearer <CRON_SECRET>"
 ```
 
-Or trigger the actual scheduled handler:
-
-```bash
-npx wrangler dev --test-scheduled
-# then hit the scheduled endpoint wrangler prints, e.g.:
-curl "http://localhost:8787/__scheduled?cron=*/15+*+*+*+*"
-```
-
-## Deploy (CLI)
+## Deploy
 
 ```bash
 cd cloudflare-worker
 npx wrangler login
-npx wrangler secret put CRON_SECRET     # paste the Vercel value
-npx wrangler deploy
-npx wrangler tail                       # live structured logs
+npx wrangler secret put CRON_SECRET
+npm run deploy
+npx wrangler tail
 ```
 
-Full click-by-click dashboard instructions (GitHub connection, root directory,
-secrets, cron trigger, verification, rollback) live in
-[`../docs/cloudflare-worker-setup.md`](../docs/cloudflare-worker-setup.md).
+Full production guide: [`../docs/CLOUDFLARE_WORKER_DEPLOYMENT.md`](../docs/CLOUDFLARE_WORKER_DEPLOYMENT.md)
 
-## Endpoints exposed by the Worker
+Manual deployment steps only: [`../docs/CLOUDFLARE_DEPLOYMENT.md`](../docs/CLOUDFLARE_DEPLOYMENT.md)
 
-| Method | Path      | Auth                       | Purpose                        |
-| ------ | --------- | -------------------------- | ------------------------------ |
-| GET    | `/health` | none                       | Version, SITE_URL, cron status |
-| POST   | `/run`    | `Bearer CRON_SECRET`       | Manually run all jobs now      |
+## Endpoints
+
+| Method | Path | Auth | Purpose |
+| ------ | ---- | ---- | ------- |
+| GET | `/health` | none | Version, config flags, job list |
+| POST | `/run` | `Bearer CRON_SECRET` (timing-safe) | Manually run all jobs |
 
 ## Guarantees
 
-- No Stripe SDK, no Supabase SDK, no DB access.
-- Does not change any ServdCo API, URL, or behavior.
+- No Stripe SDK, no Supabase SDK, no DB access, no persistent state.
+- Does not change any ServdCo API URL or behavior.
 - Retries once with exponential backoff; one failing job never blocks others.
-- Structured JSON logs for every attempt, retry, and completion summary.
+- Structured JSON logs: `ts`, `job`, `durationMs`, `status`, `attempt`, `error`.
+- Secrets are never logged.

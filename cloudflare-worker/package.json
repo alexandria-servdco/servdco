@@ -12,9 +12,14 @@
     "tail": "wrangler tail",
     "trigger": "wrangler dev --test-scheduled"
   },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "wrangler": "^3.114.17"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241106.0",
-    "typescript": "^5.6.0",
-    "wrangler": "^3.114.17"
+    "typescript": "^5.6.0"
   }
 }

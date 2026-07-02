@@ -41,7 +41,7 @@ cloudflare-worker
 Set **Build command** to:
 
 ```
-npm install
+npm ci
 ```
 
 ## Step 10
@@ -49,7 +49,7 @@ npm install
 Set **Deploy command** to:
 
 ```
-npx wrangler deploy
+npm run deploy
 ```
 
 ## Step 11
@@ -90,11 +90,11 @@ Go to **Deployments** → **Create deployment** (or push a commit to trigger a n
 
 ## Step 20
 
-Copy the Worker URL shown after deploy (format: `https://servdco-cron.<subdomain>.workers.dev`).
+Copy the Worker URL shown after deploy (format: `https://servdco-prod.<subdomain>.workers.dev`).
 
 ## Step 21
 
-Open `https://servdco-cron.<subdomain>.workers.dev/health` in a browser.
+Open `https://servdco-prod.<subdomain>.workers.dev/health` in a browser.
 
 ## Step 22
 
@@ -105,7 +105,7 @@ Confirm `"cronSecretConfigured": true` in the response.
 Run:
 
 ```
-curl -X POST "https://servdco-cron.<subdomain>.workers.dev/run" -H "Authorization: Bearer <CRON_SECRET>"
+curl -X POST "https://servdco-prod.<subdomain>.workers.dev/run" -H "Authorization: Bearer <CRON_SECRET>"
 ```
 
 ## Step 24

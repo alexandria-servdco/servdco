@@ -3,7 +3,7 @@ import type {
   TransferRowLike,
   TransferStatusPresentation,
   TransferTimelineStage,
-} from "./transferStatus";
+} from "./transferStatus.js";
 
 export type StripeOnboardingStatus =
   | "not_started"

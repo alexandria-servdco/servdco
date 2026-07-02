@@ -2,7 +2,7 @@ import {
   buildTransferTimeline as buildPayoutTransferTimeline,
   resolveTransferPresentation,
   type StripeAccountLike,
-} from "./payoutStatus";
+} from "./payoutStatus.js";
 
 export type TransferPipelineStatus =
   | "pending"
@@ -118,6 +118,6 @@ export {
   IN_PIPELINE_TRANSFER_STATUSES,
   mapOnboardingStatus,
   type CookPayoutState,
-} from "./payoutStatus";
+} from "./payoutStatus.js";
 
-export type { StripeAccountLike } from "./payoutStatus";
+export type { StripeAccountLike } from "./payoutStatus.js";

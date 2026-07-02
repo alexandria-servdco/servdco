@@ -3,10 +3,7 @@ import { json, methodNotAllowed, readBearerToken } from "../../http.js";
 import { isAuthorizedCronRequest } from "../../cronAuth.js";
 import { verifySupabaseUser, requireAdmin } from "../../auth.js";
 import { isStripeCheckoutEnabled } from "../../stripe/featureFlag.js";
-import { processEligibleTransfers } from "../../stripe/transfers.js";
-import { processPendingTipTransfers } from "../../stripe/tips.js";
 import { apiLogger } from "../../logger.js";
-import { isDevelopmentRuntime } from "../../stripe/transferDiagnostics.js";
 
 /**
  * GET|POST /api/stripe/transfers/process — transfer + tip retry processor.
@@ -52,6 +49,43 @@ export async function handleTransfersProcess(
   }
 
   const started = Date.now();
+
+  let processEligibleTransfers: typeof import("../../stripe/transfers.js").processEligibleTransfers;
+  let processPendingTipTransfers: typeof import("../../stripe/tips.js").processPendingTipTransfers;
+  let isDevelopmentRuntime: typeof import("../../stripe/transferDiagnostics.js").isDevelopmentRuntime;
+
+  try {
+    ({ processEligibleTransfers } = await import("../../stripe/transfers.js"));
+    ({ processPendingTipTransfers } = await import("../../stripe/tips.js"));
+    ({ isDevelopmentRuntime } = await import("../../stripe/transferDiagnostics.js"));
+  } catch (err) {
+    const reason =
+      err instanceof Error ? err.message : "Transfer module load failed";
+    apiLogger.error("Transfer batch module import failed", {
+      route: "/api/stripe/transfers/process",
+      reason,
+      cron: isCron,
+    });
+    json(res, 200, {
+      ok: false,
+      processed: 0,
+      failed: 0,
+      skipped: 0,
+      results: [],
+      batchError: {
+        reason,
+        recoveryAction: "action_required",
+        stack:
+          err instanceof Error && process.env.NODE_ENV === "development"
+            ? err.stack
+            : undefined,
+      },
+      tips: { retried: 0, succeeded: 0 },
+      durationMs: Date.now() - started,
+    });
+    return;
+  }
+
   const transfers = await processEligibleTransfers();
 
   let tips: { retried: number; succeeded: number; error?: string } = {

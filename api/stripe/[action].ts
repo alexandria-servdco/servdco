@@ -106,10 +106,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ error: "Unknown stripe action." });
     }
   } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Stripe action failed.";
     console.error(
       `[stripe.${action}]`,
       err instanceof Error ? err.stack ?? err.message : err,
     );
-    return res.status(500).json({ error: "Stripe action failed." });
+    return res.status(500).json({
+      error: "Stripe action failed.",
+      action,
+      message,
+      ...(process.env.NODE_ENV === "development" &&
+      err instanceof Error &&
+      err.stack
+        ? { stack: err.stack }
+        : {}),
+    });
   }
 }

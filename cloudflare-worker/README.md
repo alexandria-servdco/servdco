@@ -30,11 +30,22 @@ Every scheduled run, in order (each retried once on failure, never aborting the 
 | ------------- | ------ | ---------------------------------- | ------------------------------ |
 | `SITE_URL`    | var    | `wrangler.toml` / dashboard var    | `https://servdco.vercel.app`   |
 | `CRON_SECRET` | secret | `wrangler secret` / dashboard      | *(same value as Vercel)*       |
+| `ALERT_WEBHOOK_URL` | secret (optional) | dashboard / `wrangler secret` | Discord or Slack webhook URL |
+| `DEPLOYED_AT` | var (optional) | dashboard var | ISO timestamp of last deploy |
 
-`CRON_SECRET` **must** match the `CRON_SECRET` set in the Vercel project — the
-ServdCo API authenticates cron requests with `Authorization: Bearer <CRON_SECRET>`.
-Nothing is hardcoded; to move to production simply change `SITE_URL` to
-`https://servdco.com`.
+`CRON_SECRET` **must** match the `CRON_SECRET` set in the Vercel project.
+
+### KV namespace (required)
+
+The worker uses KV for overlap locks, run summaries, and failure counters:
+
+```bash
+cd cloudflare-worker
+npx wrangler kv:namespace create CRON_STATE
+npx wrangler kv:namespace create CRON_STATE --preview
+```
+
+Paste the returned IDs into `wrangler.toml` under `[[kv_namespaces]]`, then deploy.
 
 ## Local development
 

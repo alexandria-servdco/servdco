@@ -20,7 +20,17 @@ crons = ["*/15 * * * *"]
 # plain var; CRON_SECRET must be a secret (see README).
 [vars]
 SITE_URL = "https://servdco.vercel.app"
-WORKER_VERSION = "1.0.0"
+WORKER_VERSION = "1.1.0"
+
+# KV stores run lock (overlap prevention), last-run summary, and failure counters.
+# Create before first deploy:
+#   npx wrangler kv:namespace create CRON_STATE
+#   npx wrangler kv:namespace create CRON_STATE --preview
+# Then paste the returned IDs below.
+[[kv_namespaces]]
+binding = "CRON_STATE"
+id = "REPLACE_AFTER_kv_namespace_create"
+preview_id = "REPLACE_AFTER_kv_namespace_create_preview"
 
 # Observability: keep logs so `wrangler tail` and the dashboard show output.
 [observability]

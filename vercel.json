@@ -26,7 +26,6 @@
       "schedule": "0 6 * * *"
     }
   ],
-  "_comment_stripe_rewrites": "Public Stripe paths are mapped to the single consolidated dispatcher api/stripe/[action].ts to stay under the Vercel Hobby 12-function limit. /api/stripe/webhook is intentionally excluded and remains its own function (raw body + Stripe-registered URL).",
   "headers": [
     {
       "source": "/(.*)",

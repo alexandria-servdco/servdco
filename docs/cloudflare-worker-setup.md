@@ -292,3 +292,81 @@ Neither rollback touches application code, Stripe, Supabase, or Vercel hosting.
 | `SITE_URL`    |  n/a   |     ✅ (var)      |    ✅ (repo secret)     |
 
 All three must use the **same** `CRON_SECRET` value.
+
+---
+
+## 9. Pre-deploy verification checklist
+
+### 9.1 Cron overlap (can two runs execute simultaneously?)
+
+**Worker level:** Yes, Cloudflare Cron does not wait for the previous tick to finish.
+The worker now uses a **KV run lock** (`run_lock`, 25-minute TTL). If a prior run
+is still in-flight, the next tick logs `run_skipped_overlap` and exits without
+calling the API.
+
+**API level — idempotency verified in code:**
+
+| Job | Idempotent? | Mechanism |
+| --- | :---------: | --------- |
+| Transfers | **Yes** | `claimTransferForProcessing()` atomically sets `status=processing`; second worker gets `null` and skips. Stripe transfer uses `cookTransferIdempotencyKey(transferId)`. Stale `processing` rows recovered via `isProcessingStale()`. |
+| Payments batch | **Yes** | `confirmBookingFromPayment()` is documented idempotent; booking update uses `.in("status", PAYABLE_STATUSES)` so already-confirmed bookings are not re-confirmed. Duplicate payments flagged, not double-applied. |
+| Subscriptions batch | **Yes** | `reconcileChefSubscription()` reads Stripe truth and only writes when `needsSync` is true. Re-running is a no-op when already in sync. |
+
+**Verdict:** Safe to run every 15 minutes. Overlap is mitigated at the worker
+(KV lock) and at the API (DB claims / conditional updates).
+
+### 9.2 Worker timeout (20–30 second endpoints)
+
+| Setting | Value |
+| ------- | ----- |
+| Per-request timeout | **28s** (2s under Vercel `maxDuration: 30`) |
+| Retries per job | 1 (2 attempts total) |
+| Worst-case per job | ~56s + 500ms backoff |
+| Worst-case full run | ~3 jobs × 56s ≈ **2.8 min** |
+
+**Behavior on timeout:**
+1. Request aborted → logged as `timeout after 28000ms`
+2. One retry after 500ms backoff
+3. If still failing → job marked failed, **next job continues**
+4. Partial success is possible (e.g. payments OK, transfers timeout)
+
+### 9.3 Rate limiting
+
+Cron batch handlers (`payments/reconcile-batch`, `transfers/process`,
+`subscription/reconcile-batch`) **do not call** `enforceRateLimit()`. Only
+user-facing Stripe endpoints (checkout, refund, etc.) are rate-limited.
+
+Worker traffic: 3 POSTs per run, max 6 with retries — well under any limit.
+
+**Cloudflare WAF:** If you rate-limit `servdco.vercel.app` at the edge, add a
+WAF rule to **bypass** requests with `Authorization: Bearer <CRON_SECRET>` or
+whitelist the Worker egress IPs.
+
+### 9.4 Observability
+
+Every run emits a `run_summary` log with human-readable line:
+
+```
+Run: payments repaired=3, transfers processed=9, subscriptions repaired=2, duration=5.8s, failures=0
+```
+
+Parsed from API JSON responses (`repaired`, `processed`, `scanned`, etc.).
+
+### 9.5 Health endpoint (`GET /health`)
+
+Returns:
+
+- `version`, `deployedAt`, `cronSchedule`
+- `lastSuccessfulRun`, `lastFailedRun`, `consecutiveFailures`
+- `lastSummary` (full metrics object)
+- `runLockHeld` (is a run currently in-flight?)
+- `alertWebhookConfigured`
+
+### 9.6 Failure notifications
+
+Set optional secret `ALERT_WEBHOOK_URL` (Discord or Slack incoming webhook).
+
+After **3 consecutive failed scheduled runs**, the worker POSTs an alert with
+run summary. Manual `/run` failures do not increment the counter.
+
+Reset: any fully successful scheduled run sets `consecutiveFailures` to 0.

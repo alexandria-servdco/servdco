@@ -2,37 +2,42 @@
  * ServdCo Cron Worker
  * ===================
  *
- * A PURE SCHEDULER. This Worker contains no business logic. On every scheduled
- * tick it issues authenticated HTTP requests to the existing ServdCo API on
- * Vercel, which performs all reconciliation / transfer / subscription work
- * exactly as it does today.
+ * Pure scheduler — no business logic. Issues authenticated HTTP requests to
+ * the existing ServdCo API on Vercel on a fixed schedule.
  *
- * Responsibilities per run (in order):
- *   1. POST /api/stripe/payments/reconcile-batch
- *   2. POST /api/stripe/transfers/process
- *   3. POST /api/stripe/subscription/reconcile-batch
- *
- * Each job is retried once with a small exponential backoff on failure. A
- * failing job never aborts the remaining jobs. All output is structured JSON.
- *
- * There is NO Stripe SDK, NO Supabase SDK, NO database access here.
+ * Hardening:
+ * - KV overlap lock (skip if a previous run is still in-flight)
+ * - Per-run summary metrics parsed from API JSON responses
+ * - /health exposes last run, failures, cron schedule
+ * - Optional ALERT_WEBHOOK_URL after consecutive scheduled failures
  */
 
-const WORKER_VERSION = "1.0.0";
+const WORKER_VERSION = "1.1.0";
+const CRON_SCHEDULE = "*/15 * * * *";
+const MAX_ATTEMPTS = 2;
+const BASE_BACKOFF_MS = 500;
+/** Align with Vercel maxDuration (30s) — leave 2s buffer. */
+const REQUEST_TIMEOUT_MS = 28_000;
+/** Skip new cron tick if a run lock is younger than this. */
+const RUN_LOCK_TTL_SEC = 25 * 60;
+const CONSECUTIVE_FAILURE_ALERT_THRESHOLD = 3;
+
+const LOCK_KEY = "run_lock";
+const STATE_KEY = "run_state";
 
 interface Env {
-  /** Base URL of the ServdCo API on Vercel, e.g. https://servdco.vercel.app */
   SITE_URL: string;
-  /** Shared secret. Sent as `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: string;
-  /** Optional override; falls back to compiled constant. */
   WORKER_VERSION?: string;
+  /** ISO timestamp set at deploy time (optional). */
+  DEPLOYED_AT?: string;
+  /** Discord/Slack/generic webhook URL for repeated failure alerts. */
+  ALERT_WEBHOOK_URL?: string;
+  CRON_STATE: KVNamespace;
 }
 
-/** One scheduled job = one authenticated call to a ServdCo cron endpoint. */
 interface CronJob {
   name: string;
-  /** Path relative to SITE_URL. Public URL is preserved exactly as today. */
   path: string;
   method: "GET" | "POST";
 }
@@ -55,23 +60,6 @@ const JOBS: CronJob[] = [
   },
 ];
 
-const MAX_ATTEMPTS = 2; // initial attempt + 1 retry
-const BASE_BACKOFF_MS = 500;
-const REQUEST_TIMEOUT_MS = 25_000;
-
-function version(env: Env): string {
-  return env.WORKER_VERSION ?? WORKER_VERSION;
-}
-
-function log(record: Record<string, unknown>): void {
-  // Structured single-line JSON — readable in `wrangler tail` and dashboard.
-  console.log(JSON.stringify({ source: "servdco-cron", ...record }));
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 interface JobResult {
   job: string;
   endpoint: string;
@@ -80,6 +68,171 @@ interface JobResult {
   status: number | null;
   durationMs: number;
   failureReason?: string;
+  metrics?: Record<string, unknown>;
+}
+
+interface RunSummary {
+  trigger: string;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+  jobsTotal: number;
+  jobsSucceeded: number;
+  jobsFailed: number;
+  paymentsScanned?: number;
+  paymentsRepaired?: number;
+  paymentsDuplicates?: number;
+  transfersProcessed?: number;
+  transfersFailed?: number;
+  transfersSkipped?: number;
+  tipsRetried?: number;
+  tipsSucceeded?: number;
+  subscriptionsScanned?: number;
+  subscriptionsRepaired?: number;
+  failures: number;
+}
+
+interface PersistedRunState {
+  deployedAt: string;
+  cronSchedule: string;
+  lastSuccessfulRun: string | null;
+  lastFailedRun: string | null;
+  lastSummary: RunSummary | null;
+  consecutiveFailures: number;
+}
+
+function version(env: Env): string {
+  return env.WORKER_VERSION ?? WORKER_VERSION;
+}
+
+function log(record: Record<string, unknown>): void {
+  console.log(JSON.stringify({ source: "servdco-cron", ts: new Date().toISOString(), ...record }));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function loadState(env: Env): Promise<PersistedRunState> {
+  const raw = await env.CRON_STATE.get(STATE_KEY);
+  if (raw) {
+    try {
+      return JSON.parse(raw) as PersistedRunState;
+    } catch {
+      /* fall through */
+    }
+  }
+  return {
+    deployedAt: env.DEPLOYED_AT ?? new Date().toISOString(),
+    cronSchedule: CRON_SCHEDULE,
+    lastSuccessfulRun: null,
+    lastFailedRun: null,
+    lastSummary: null,
+    consecutiveFailures: 0,
+  };
+}
+
+async function saveState(env: Env, state: PersistedRunState): Promise<void> {
+  await env.CRON_STATE.put(STATE_KEY, JSON.stringify(state));
+}
+
+async function tryAcquireRunLock(env: Env, trigger: string): Promise<boolean> {
+  const existing = await env.CRON_STATE.get(LOCK_KEY);
+  if (existing) {
+    log({
+      event: "run_skipped_overlap",
+      version: version(env),
+      trigger,
+      reason: "Previous run lock still held — skipping to avoid concurrent reconciliation",
+      lock: JSON.parse(existing),
+    });
+    return false;
+  }
+
+  await env.CRON_STATE.put(
+    LOCK_KEY,
+    JSON.stringify({ trigger, startedAt: new Date().toISOString() }),
+    { expirationTtl: RUN_LOCK_TTL_SEC },
+  );
+  return true;
+}
+
+async function releaseRunLock(env: Env): Promise<void> {
+  await env.CRON_STATE.delete(LOCK_KEY);
+}
+
+function extractMetrics(jobName: string, body: unknown): Record<string, unknown> | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const data = body as Record<string, unknown>;
+
+  switch (jobName) {
+    case "payments-reconcile-batch":
+      return {
+        scanned: data.scanned,
+        repaired: data.repaired,
+        duplicates: data.duplicates,
+        errorCount: Array.isArray(data.errors) ? data.errors.length : 0,
+      };
+    case "transfers-process": {
+      const tips = data.tips as Record<string, unknown> | undefined;
+      return {
+        processed: data.processed,
+        failed: data.failed,
+        skipped: data.skipped,
+        tipsRetried: tips?.retried,
+        tipsSucceeded: tips?.succeeded,
+      };
+    }
+    case "subscription-reconcile-batch":
+      return {
+        scanned: data.scanned,
+        repaired: data.repaired,
+        errorCount: Array.isArray(data.errors) ? data.errors.length : 0,
+      };
+    default:
+      return undefined;
+  }
+}
+
+function buildRunSummary(
+  trigger: string,
+  runStarted: number,
+  results: JobResult[],
+): RunSummary {
+  const payments = results.find((r) => r.job === "payments-reconcile-batch");
+  const transfers = results.find((r) => r.job === "transfers-process");
+  const subscriptions = results.find((r) => r.job === "subscription-reconcile-batch");
+
+  const pm = payments?.metrics ?? {};
+  const tm = transfers?.metrics ?? {};
+  const sm = subscriptions?.metrics ?? {};
+
+  const jobsFailed = results.filter((r) => !r.ok).length;
+
+  return {
+    trigger,
+    startedAt: new Date(runStarted).toISOString(),
+    completedAt: new Date().toISOString(),
+    durationMs: Date.now() - runStarted,
+    jobsTotal: results.length,
+    jobsSucceeded: results.length - jobsFailed,
+    jobsFailed,
+    paymentsScanned: num(pm.scanned),
+    paymentsRepaired: num(pm.repaired),
+    paymentsDuplicates: num(pm.duplicates),
+    transfersProcessed: num(tm.processed),
+    transfersFailed: num(tm.failed),
+    transfersSkipped: num(tm.skipped),
+    tipsRetried: num(tm.tipsRetried),
+    tipsSucceeded: num(tm.tipsSucceeded),
+    subscriptionsScanned: num(sm.scanned),
+    subscriptionsRepaired: num(sm.repaired),
+    failures: jobsFailed,
+  };
+}
+
+function num(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
 }
 
 async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
@@ -88,6 +241,7 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
   const started = Date.now();
   let lastStatus: number | null = null;
   let lastReason: string | undefined;
+  let lastMetrics: Record<string, unknown> | undefined;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const attemptStarted = Date.now();
@@ -107,7 +261,15 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
       clearTimeout(timeout);
       lastStatus = res.status;
 
+      let body: unknown = null;
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
+
       if (res.ok) {
+        lastMetrics = extractMetrics(job.name, body);
         log({
           event: "job_success",
           version: version(env),
@@ -116,6 +278,7 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
           attempt,
           status: res.status,
           durationMs: Date.now() - attemptStarted,
+          metrics: lastMetrics,
         });
         return {
           job: job.name,
@@ -124,6 +287,7 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
           ok: true,
           status: res.status,
           durationMs: Date.now() - started,
+          metrics: lastMetrics,
         };
       }
 
@@ -140,7 +304,12 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
       });
     } catch (err) {
       clearTimeout(timeout);
-      lastReason = err instanceof Error ? err.message : "unknown error";
+      lastReason =
+        err instanceof Error && err.name === "AbortError"
+          ? `timeout after ${REQUEST_TIMEOUT_MS}ms`
+          : err instanceof Error
+            ? err.message
+            : "unknown error";
       log({
         event: "job_attempt_error",
         version: version(env),
@@ -167,7 +336,37 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
     status: lastStatus,
     durationMs: Date.now() - started,
     failureReason: lastReason ?? "exhausted retries",
+    metrics: lastMetrics,
   };
+}
+
+async function sendFailureAlert(env: Env, state: PersistedRunState, summary: RunSummary): Promise<void> {
+  if (!env.ALERT_WEBHOOK_URL) return;
+
+  const text = [
+    "⚠️ ServdCo Cron Worker — repeated failures",
+    `Consecutive failed runs: ${state.consecutiveFailures}`,
+    `Last run: ${summary.completedAt}`,
+    `Jobs failed: ${summary.jobsFailed}/${summary.jobsTotal}`,
+    `Payments repaired: ${summary.paymentsRepaired ?? "n/a"}`,
+    `Transfers processed: ${summary.transfersProcessed ?? "n/a"}`,
+    `Subscriptions repaired: ${summary.subscriptionsRepaired ?? "n/a"}`,
+    `Site: ${env.SITE_URL}`,
+  ].join("\n");
+
+  try {
+    await fetch(env.ALERT_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: text, text }),
+    });
+    log({ event: "alert_sent", consecutiveFailures: state.consecutiveFailures });
+  } catch (err) {
+    log({
+      event: "alert_failed",
+      message: err instanceof Error ? err.message : "unknown",
+    });
+  }
 }
 
 async function runAllJobs(env: Env, trigger: string): Promise<JobResult[]> {
@@ -185,67 +384,116 @@ async function runAllJobs(env: Env, trigger: string): Promise<JobResult[]> {
     return [];
   }
 
-  const results: JobResult[] = [];
-  for (const job of JOBS) {
-    // Sequential: wait + log each before continuing. A failure never aborts.
-    results.push(await callEndpoint(env, job));
+  const isScheduled = trigger.startsWith("cron:");
+  if (isScheduled) {
+    const acquired = await tryAcquireRunLock(env, trigger);
+    if (!acquired) return [];
   }
 
-  const succeeded = results.filter((r) => r.ok).length;
+  const results: JobResult[] = [];
+  try {
+    for (const job of JOBS) {
+      results.push(await callEndpoint(env, job));
+    }
+  } finally {
+    if (isScheduled) {
+      await releaseRunLock(env);
+    }
+  }
+
+  const summary = buildRunSummary(trigger, runStarted, results);
+  const allOk = summary.jobsFailed === 0;
+
+  log({
+    event: "run_summary",
+    version: version(env),
+    ...summary,
+    humanReadable: formatSummaryLine(summary),
+  });
+
   log({
     event: "run_complete",
     version: version(env),
     trigger,
     total: results.length,
-    succeeded,
-    failed: results.length - succeeded,
-    durationMs: Date.now() - runStarted,
+    succeeded: summary.jobsSucceeded,
+    failed: summary.jobsFailed,
+    durationMs: summary.durationMs,
     results,
   });
+
+  const state = await loadState(env);
+  state.lastSummary = summary;
+  if (allOk) {
+    state.lastSuccessfulRun = summary.completedAt;
+    state.consecutiveFailures = 0;
+  } else {
+    state.lastFailedRun = summary.completedAt;
+    if (isScheduled) {
+      state.consecutiveFailures += 1;
+      if (
+        state.consecutiveFailures >= CONSECUTIVE_FAILURE_ALERT_THRESHOLD &&
+        env.ALERT_WEBHOOK_URL
+      ) {
+        await sendFailureAlert(env, state, summary);
+      }
+    }
+  }
+  await saveState(env, state);
 
   return results;
 }
 
+function formatSummaryLine(s: RunSummary): string {
+  return [
+    `Run: payments repaired=${s.paymentsRepaired ?? 0}`,
+    `transfers processed=${s.transfersProcessed ?? 0}`,
+    `subscriptions repaired=${s.subscriptionsRepaired ?? 0}`,
+    `duration=${(s.durationMs / 1000).toFixed(1)}s`,
+    `failures=${s.failures}`,
+  ].join(", ");
+}
+
 export default {
-  /** Cloudflare Cron trigger entrypoint. */
   async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(runAllJobs(env, `cron:${event.cron}`));
   },
 
-  /**
-   * Optional HTTP entrypoint.
-   *   GET  /health          → worker status
-   *   POST /run  (or GET)    → manually trigger all jobs (requires CRON_SECRET)
-   */
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === "/health") {
+      const state = await loadState(env);
+      const lockHeld = Boolean(await env.CRON_STATE.get(LOCK_KEY));
       return Response.json({
         status: "ok",
         worker: "servdco-cron",
         version: version(env),
-        environment: env.SITE_URL?.includes("vercel.app") ? "staging-or-default" : "custom",
+        deployedAt: state.deployedAt,
+        cronSchedule: state.cronSchedule,
         siteUrl: env.SITE_URL ?? null,
         cronConfigured: true,
+        runLockHeld: lockHeld,
+        lastSuccessfulRun: state.lastSuccessfulRun,
+        lastFailedRun: state.lastFailedRun,
+        consecutiveFailures: state.consecutiveFailures,
+        lastSummary: state.lastSummary,
         jobs: JOBS.map((j) => j.path),
+        alertWebhookConfigured: Boolean(env.ALERT_WEBHOOK_URL),
         timestamp: new Date().toISOString(),
       });
     }
 
     if (url.pathname === "/run") {
-      // Manual trigger — protect with the same shared secret.
       const auth = request.headers.get("authorization");
       if (!env.CRON_SECRET || auth !== `Bearer ${env.CRON_SECRET}`) {
         return Response.json({ error: "Unauthorized" }, { status: 401 });
       }
       const results = await runAllJobs(env, "manual");
-      const succeeded = results.filter((r) => r.ok).length;
+      const state = await loadState(env);
       return Response.json({
         triggered: "manual",
-        total: results.length,
-        succeeded,
-        failed: results.length - succeeded,
+        summary: state.lastSummary,
         results,
       });
     }

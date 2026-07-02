@@ -26,6 +26,7 @@
       "schedule": "0 6 * * *"
     }
   ],
+  "_comment_stripe_rewrites": "Public Stripe paths are mapped to the single consolidated dispatcher api/stripe/[action].ts to stay under the Vercel Hobby 12-function limit. /api/stripe/webhook is intentionally excluded and remains its own function (raw body + Stripe-registered URL).",
   "headers": [
     {
       "source": "/(.*)",
@@ -58,6 +59,58 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/stripe/payments/reconcile",
+      "destination": "/api/stripe/[action]?action=payments-reconcile"
+    },
+    {
+      "source": "/api/stripe/payments/reconcile-batch",
+      "destination": "/api/stripe/[action]?action=payments-reconcile-batch"
+    },
+    {
+      "source": "/api/stripe/subscription/checkout-session",
+      "destination": "/api/stripe/[action]?action=subscription-checkout-session"
+    },
+    {
+      "source": "/api/stripe/subscription/reconcile",
+      "destination": "/api/stripe/[action]?action=subscription-reconcile"
+    },
+    {
+      "source": "/api/stripe/subscription/reconcile-batch",
+      "destination": "/api/stripe/[action]?action=subscription-reconcile-batch"
+    },
+    {
+      "source": "/api/stripe/tips/create-checkout-session",
+      "destination": "/api/stripe/[action]?action=tips-create-checkout-session"
+    },
+    {
+      "source": "/api/stripe/transfers/process",
+      "destination": "/api/stripe/[action]?action=transfers-process"
+    },
+    {
+      "source": "/api/stripe/connect/onboarding",
+      "destination": "/api/stripe/[action]?action=connect-onboarding"
+    },
+    {
+      "source": "/api/stripe/connect/dashboard-link",
+      "destination": "/api/stripe/[action]?action=connect-dashboard-link"
+    },
+    {
+      "source": "/api/stripe/connect/sync",
+      "destination": "/api/stripe/[action]?action=connect-sync"
+    },
+    {
+      "source": "/api/stripe/create-checkout-session",
+      "destination": "/api/stripe/[action]?action=create-checkout-session"
+    },
+    {
+      "source": "/api/stripe/refund",
+      "destination": "/api/stripe/[action]?action=refund"
+    },
+    {
+      "source": "/api/admin/payment-ledger",
+      "destination": "/api/admin/[action]?action=payment-ledger"
+    },
     {
       "source": "/api/contact/submit",
       "destination": "/api/platform/contact-submit"

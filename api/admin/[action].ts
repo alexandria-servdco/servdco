@@ -35,6 +35,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
         return handleAdminTransferFinancials(req, res);
       }
+      case "payment-ledger": {
+        const { handleAdminPaymentLedger } = await import(
+          "../_lib/handlers/adminPaymentLedger.js"
+        );
+        return handleAdminPaymentLedger(req, res);
+      }
       default:
         return res.status(404).json({ error: "Unknown admin action." });
     }

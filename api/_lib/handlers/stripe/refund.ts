@@ -1,18 +1,16 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { json, methodNotAllowed, readBearerToken } from "../_lib/http.js";
-import { enforceRateLimit } from "../_lib/rateLimit.js";
-import { requireAdmin, verifySupabaseUser } from "../_lib/auth.js";
-import { isStripeCheckoutEnabled } from "../_lib/stripe/featureFlag.js";
-import { processRefund, refundSchema } from "../_lib/stripe/refund.js";
-import { validateStripeEnvOnStartup } from "../_lib/stripe/env.js";
-import { apiLogger } from "../_lib/logger.js";
+import { json, methodNotAllowed, readBearerToken } from "../../http.js";
+import { enforceRateLimit } from "../../rateLimit.js";
+import { requireAdmin, verifySupabaseUser } from "../../auth.js";
+import { isStripeCheckoutEnabled } from "../../stripe/featureFlag.js";
+import { processRefund, refundSchema } from "../../stripe/refund.js";
+import { apiLogger } from "../../logger.js";
 
-export default async function handler(
+/** POST /api/stripe/refund */
+export async function handleRefund(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  validateStripeEnvOnStartup();
-
   if (req.method !== "POST") {
     methodNotAllowed(res);
     return;

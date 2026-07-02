@@ -1,26 +1,24 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { json, methodNotAllowed, readBearerToken } from "../_lib/http.js";
-import { verifySupabaseUser, requireAdmin } from "../_lib/auth.js";
-import { isStripeCheckoutEnabled } from "../_lib/stripe/featureFlag.js";
-import { validateStripeEnvOnStartup } from "../_lib/stripe/env.js";
+import { json, methodNotAllowed, readBearerToken } from "../http.js";
+import { verifySupabaseUser, requireAdmin } from "../auth.js";
+import { isStripeCheckoutEnabled } from "../stripe/featureFlag.js";
 import {
   buildPaymentLedger,
   reconcileBookingPayment,
-} from "../_lib/stripe/paymentIntegrity.js";
-import { getServiceRoleClient } from "../_lib/supabase/serviceRole.js";
-import { apiLogger } from "../_lib/logger.js";
+} from "../stripe/paymentIntegrity.js";
+import { getServiceRoleClient } from "../supabase/serviceRole.js";
+import { apiLogger } from "../logger.js";
 
 const querySchema = z.object({
   bookingId: z.string().uuid(),
 });
 
-export default async function handler(
+/** GET|POST /api/admin/payment-ledger */
+export async function handleAdminPaymentLedger(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  validateStripeEnvOnStartup();
-
   if (req.method !== "GET" && req.method !== "POST") {
     methodNotAllowed(res);
     return;

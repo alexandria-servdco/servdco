@@ -1,26 +1,23 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { json, methodNotAllowed, readBearerToken } from "../../_lib/http.js";
-import { isAuthorizedCronRequest } from "../../_lib/cronAuth.js";
-import { verifySupabaseUser, requireAdmin } from "../../_lib/auth.js";
-import { isStripeCheckoutEnabled } from "../../_lib/stripe/featureFlag.js";
-import { processEligibleTransfers } from "../../_lib/stripe/transfers.js";
-import { processPendingTipTransfers } from "../../_lib/stripe/tips.js";
-import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
-import { apiLogger } from "../../_lib/logger.js";
+import { json, methodNotAllowed, readBearerToken } from "../../http.js";
+import { isAuthorizedCronRequest } from "../../cronAuth.js";
+import { verifySupabaseUser, requireAdmin } from "../../auth.js";
+import { isStripeCheckoutEnabled } from "../../stripe/featureFlag.js";
+import { processEligibleTransfers } from "../../stripe/transfers.js";
+import { processPendingTipTransfers } from "../../stripe/tips.js";
+import { apiLogger } from "../../logger.js";
 
 /**
- * Transfer + tip retry processor.
+ * GET|POST /api/stripe/transfers/process — transfer + tip retry processor.
  *
  * Auth (in order):
- * 1. Vercel Cron — GET or POST with `Authorization: Bearer CRON_SECRET`
+ * 1. Cron — GET or POST with `Authorization: Bearer CRON_SECRET`
  * 2. Admin — POST with Supabase JWT
  */
-export default async function handler(
+export async function handleTransfersProcess(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  validateStripeEnvOnStartup();
-
   if (req.method !== "GET" && req.method !== "POST") {
     methodNotAllowed(res);
     return;

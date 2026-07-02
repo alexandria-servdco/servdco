@@ -1,0 +1,27 @@
+name = "servdco-cron"
+main = "src/worker.ts"
+compatibility_date = "2024-11-01"
+
+# ---------------------------------------------------------------------------
+# ServdCo Cron Worker
+#
+# Pure scheduler. Contains NO business logic, NO Stripe SDK, NO Supabase SDK.
+# On each scheduled tick it makes authenticated HTTP POST requests to the
+# existing ServdCo API on Vercel. All reconciliation logic stays on Vercel.
+# ---------------------------------------------------------------------------
+
+# Scheduled triggers (UTC). Every 15 minutes.
+# Adjust freely — this is the ONLY place the cadence is defined.
+[triggers]
+crons = ["*/15 * * * *"]
+
+# Non-secret variables. Override per-environment in the Cloudflare dashboard
+# or with `wrangler secret put` (for secrets). SITE_URL can live here as a
+# plain var; CRON_SECRET must be a secret (see README).
+[vars]
+SITE_URL = "https://servdco.vercel.app"
+WORKER_VERSION = "1.0.0"
+
+# Observability: keep logs so `wrangler tail` and the dashboard show output.
+[observability]
+enabled = true

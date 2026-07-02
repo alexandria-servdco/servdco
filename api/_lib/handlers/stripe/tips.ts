@@ -1,21 +1,19 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { json, methodNotAllowed, readBearerToken } from "../../_lib/http.js";
-import { enforceRateLimit } from "../../_lib/rateLimit.js";
-import { verifySupabaseUser } from "../../_lib/auth.js";
-import { isStripeCheckoutEnabled } from "../../_lib/stripe/featureFlag.js";
+import { json, methodNotAllowed, readBearerToken } from "../../http.js";
+import { enforceRateLimit } from "../../rateLimit.js";
+import { verifySupabaseUser } from "../../auth.js";
+import { isStripeCheckoutEnabled } from "../../stripe/featureFlag.js";
 import {
   createTipCheckoutSession,
   tipCheckoutSchema,
-} from "../../_lib/stripe/tips.js";
-import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
-import { apiLogger } from "../../_lib/logger.js";
+} from "../../stripe/tips.js";
+import { apiLogger } from "../../logger.js";
 
-export default async function handler(
+/** POST /api/stripe/tips/create-checkout-session */
+export async function handleTipsCreateCheckoutSession(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  validateStripeEnvOnStartup();
-
   if (req.method !== "POST") {
     methodNotAllowed(res);
     return;

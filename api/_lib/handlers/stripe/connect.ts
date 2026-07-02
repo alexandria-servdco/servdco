@@ -1,25 +1,25 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { json, methodNotAllowed, readBearerToken } from "../../_lib/http.js";
-import { enforceRateLimit } from "../../_lib/rateLimit.js";
-import { requireChefProfile, verifySupabaseUser } from "../../_lib/auth.js";
-import { isStripeCheckoutEnabled } from "../../_lib/stripe/featureFlag.js";
+import { json, readBearerToken } from "../../http.js";
+import { enforceRateLimit } from "../../rateLimit.js";
+import { requireChefProfile, verifySupabaseUser } from "../../auth.js";
+import { isStripeCheckoutEnabled } from "../../stripe/featureFlag.js";
 import {
   createOnboardingLink,
   createDashboardLink,
   ensureConnectAccount,
   syncConnectAccountByChefProfileId,
-} from "../../_lib/stripe/connect.js";
-import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
-import { apiLogger } from "../../_lib/logger.js";
-import { getServiceRoleClient } from "../../_lib/supabase/serviceRole.js";
+} from "../../stripe/connect.js";
+import { apiLogger } from "../../logger.js";
+import { getServiceRoleClient } from "../../supabase/serviceRole.js";
 
 const onboardingBodySchema = z.object({
   returnUrl: z.string().url(),
   refreshUrl: z.string().url(),
 });
 
-async function handleOnboarding(req: VercelRequest, res: VercelResponse) {
+/** POST /api/stripe/connect/onboarding */
+export async function handleConnectOnboarding(req: VercelRequest, res: VercelResponse) {
   if (!(await enforceRateLimit(req, res, "stripe_default", { route: "/api/stripe/connect/onboarding" }))) {
     return;
   }
@@ -83,7 +83,8 @@ async function handleOnboarding(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function handleDashboardLink(req: VercelRequest, res: VercelResponse) {
+/** POST /api/stripe/connect/dashboard-link */
+export async function handleConnectDashboardLink(req: VercelRequest, res: VercelResponse) {
   if (!(await enforceRateLimit(req, res, "stripe_default", { route: "/api/stripe/connect/dashboard-link" }))) {
     return;
   }
@@ -151,7 +152,8 @@ const syncBodySchema = z.object({
   chefProfileId: z.string().uuid().optional(),
 });
 
-async function handleSync(req: VercelRequest, res: VercelResponse) {
+/** POST /api/stripe/connect/sync */
+export async function handleConnectSync(req: VercelRequest, res: VercelResponse) {
   if (!(await enforceRateLimit(req, res, "stripe_default", { route: "/api/stripe/connect/sync" }))) {
     return;
   }
@@ -219,31 +221,4 @@ async function handleSync(req: VercelRequest, res: VercelResponse) {
     });
     json(res, 500, { error: message });
   }
-}
-
-const ACTIONS = {
-  onboarding: handleOnboarding,
-  "dashboard-link": handleDashboardLink,
-  sync: handleSync,
-} as const;
-
-type ConnectAction = keyof typeof ACTIONS;
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  validateStripeEnvOnStartup();
-
-  if (req.method !== "POST") {
-    methodNotAllowed(res);
-    return;
-  }
-
-  const action = String(req.query.action ?? "") as ConnectAction;
-  const routeHandler = ACTIONS[action];
-
-  if (!routeHandler) {
-    json(res, 404, { error: "Unknown connect action." });
-    return;
-  }
-
-  return routeHandler(req, res);
 }

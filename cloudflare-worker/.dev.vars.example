@@ -1,0 +1,8 @@
+# Local development secrets for `wrangler dev`.
+# Copy to `.dev.vars` (gitignored) and fill in real values.
+#
+# SITE_URL is also set in wrangler.toml [vars]; setting it here overrides it
+# locally so you can point at a preview deployment during testing.
+
+SITE_URL="https://servdco.vercel.app"
+CRON_SECRET="paste-the-same-value-as-vercel-CRON_SECRET"

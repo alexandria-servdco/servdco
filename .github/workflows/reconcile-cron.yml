@@ -1,10 +1,18 @@
-# Hobby-plan cron schedules run at most once per day on Vercel.
-# Sub-hourly payment/subscription reconciliation runs via GitHub Actions instead.
-name: Payment Reconciliation Cron
+# =============================================================================
+# LEGACY — SUPERSEDED BY CLOUDFLARE WORKERS CRON (cloudflare-worker/).
+# =============================================================================
+# Sub-hourly reconciliation now runs on Cloudflare Workers Cron. This workflow
+# is retained ONLY as a manual rollback fallback: the automatic schedule is
+# disabled so it no longer runs on its own. To re-enable as an emergency
+# fallback, uncomment the `schedule` block below.
+#
+# Once Cloudflare is verified in production for 48h, this file may be deleted.
+# =============================================================================
+name: Payment Reconciliation Cron (LEGACY)
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
+  # schedule:
+  #   - cron: "*/15 * * * *"   # disabled — migrated to Cloudflare Workers Cron
   workflow_dispatch:
 
 concurrency:

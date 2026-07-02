@@ -1,24 +1,26 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { json, methodNotAllowed, readBearerToken } from "../../_lib/http.js";
-import { enforceRateLimit } from "../../_lib/rateLimit.js";
-import { verifySupabaseUser, requireAdmin } from "../../_lib/auth.js";
-import { isStripeCheckoutEnabled } from "../../_lib/stripe/featureFlag.js";
-import { validateStripeEnvOnStartup } from "../../_lib/stripe/env.js";
-import { reconcileBookingPayment } from "../../_lib/stripe/paymentIntegrity.js";
-import { getServiceRoleClient } from "../../_lib/supabase/serviceRole.js";
-import { apiLogger } from "../../_lib/logger.js";
+import { json, methodNotAllowed, readBearerToken } from "../../http.js";
+import { enforceRateLimit } from "../../rateLimit.js";
+import { verifySupabaseUser, requireAdmin } from "../../auth.js";
+import { isAuthorizedCronRequest } from "../../cronAuth.js";
+import { isStripeCheckoutEnabled } from "../../stripe/featureFlag.js";
+import {
+  reconcileBookingPayment,
+  reconcileAllPaymentMismatches,
+} from "../../stripe/paymentIntegrity.js";
+import { getServiceRoleClient } from "../../supabase/serviceRole.js";
+import { apiLogger } from "../../logger.js";
 
 const bodySchema = z.object({
   bookingId: z.string().uuid(),
 });
 
-export default async function handler(
+/** POST /api/stripe/payments/reconcile — single booking, admin or owner. */
+export async function handlePaymentsReconcile(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  validateStripeEnvOnStartup();
-
   if (req.method !== "POST") {
     methodNotAllowed(res);
     return;
@@ -89,6 +91,43 @@ export default async function handler(
       bookingId: parsed.data.bookingId,
       message,
     });
+    json(res, 500, { error: message });
+  }
+}
+
+/** GET|POST /api/stripe/payments/reconcile-batch — cron-authenticated batch repair. */
+export async function handlePaymentsReconcileBatch(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
+  if (req.method !== "GET" && req.method !== "POST") {
+    methodNotAllowed(res);
+    return;
+  }
+
+  if (!isAuthorizedCronRequest(req)) {
+    json(res, 401, { error: "Unauthorized cron request." });
+    return;
+  }
+
+  if (!(await isStripeCheckoutEnabled())) {
+    json(res, 503, { error: "Stripe checkout is disabled." });
+    return;
+  }
+
+  try {
+    const result = await reconcileAllPaymentMismatches(50);
+    apiLogger.info("Payment reconciliation batch completed", {
+      route: "/api/stripe/payments/reconcile-batch",
+      scanned: result.scanned,
+      repaired: result.repaired,
+      duplicates: result.duplicates,
+      errorCount: result.errors.length,
+    });
+    json(res, 200, { ...result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Reconciliation batch failed";
+    apiLogger.error("Payment reconciliation batch failed", { message });
     json(res, 500, { error: message });
   }
 }

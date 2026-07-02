@@ -73,6 +73,9 @@ interface JobResult {
   ok: boolean;
   status: number | null;
   durationMs: number;
+  body?: unknown;
+  error?: string;
+  stack?: string;
   failureReason?: string;
   metrics?: Record<string, unknown>;
 }
@@ -96,6 +99,11 @@ interface RunSummary {
   subscriptionsScanned?: number;
   subscriptionsRepaired?: number;
   failures: number;
+}
+
+interface RunOutcome {
+  summary: RunSummary;
+  results: JobResult[];
 }
 
 function version(env: Env): string {
@@ -167,12 +175,21 @@ function extractMetrics(jobName: string, body: unknown): Record<string, unknown>
   }
 }
 
+function formatError(err: unknown): { error: string; stack?: string } {
+  if (err instanceof Error) {
+    return { error: err.message, stack: err.stack };
+  }
+  return { error: "unknown error" };
+}
+
 async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
   const base = env.SITE_URL.replace(/\/$/, "");
   const endpoint = `${base}${job.path}`;
   const started = Date.now();
   let lastStatus: number | null = null;
   let lastReason: string | undefined;
+  let lastStack: string | undefined;
+  let lastBody: unknown;
   let lastMetrics: Record<string, unknown> | undefined;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -199,6 +216,7 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
       } catch {
         body = null;
       }
+      lastBody = body;
 
       if (res.ok) {
         lastMetrics = extractMetrics(job.name, body);
@@ -219,11 +237,15 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
           ok: true,
           status: res.status,
           durationMs: Date.now() - started,
+          body,
           metrics: lastMetrics,
         };
       }
 
       lastReason = `HTTP ${res.status}`;
+      if (body && typeof body === "object" && "error" in body && typeof (body as { error: unknown }).error === "string") {
+        lastReason = `${lastReason}: ${(body as { error: string }).error}`;
+      }
       log({
         event: "job_attempt_failed",
         version: version(env),
@@ -237,12 +259,12 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
       });
     } catch (err) {
       clearTimeout(timeout);
+      const formatted = formatError(err);
       lastReason =
         err instanceof Error && err.name === "AbortError"
           ? `timeout after ${REQUEST_TIMEOUT_MS}ms`
-          : err instanceof Error
-            ? err.message
-            : "unknown error";
+          : formatted.error;
+      lastStack = formatted.stack;
       log({
         event: "job_attempt_error",
         version: version(env),
@@ -269,6 +291,9 @@ async function callEndpoint(env: Env, job: CronJob): Promise<JobResult> {
     ok: false,
     status: lastStatus,
     durationMs: Date.now() - started,
+    body: lastBody,
+    error: lastReason ?? "exhausted retries",
+    stack: lastStack,
     failureReason: lastReason ?? "exhausted retries",
     metrics: lastMetrics,
   };
@@ -335,7 +360,7 @@ async function sendFailureAlert(env: Env, summary: RunSummary): Promise<void> {
   }
 }
 
-async function runAllJobs(env: Env, trigger: string): Promise<RunSummary> {
+async function runAllJobs(env: Env, trigger: string): Promise<RunOutcome> {
   const runStarted = Date.now();
   log({ event: "run_start", version: version(env), trigger, siteUrl: env.SITE_URL, jobs: JOBS.length });
 
@@ -347,7 +372,7 @@ async function runAllJobs(env: Env, trigger: string): Promise<RunSummary> {
       hasCronSecret: Boolean(env.CRON_SECRET),
       failureReason: "Missing SITE_URL or CRON_SECRET",
     });
-    return buildRunSummary(trigger, runStarted, []);
+    return { summary: buildRunSummary(trigger, runStarted, []), results: [] };
   }
 
   const results: JobResult[] = [];
@@ -374,7 +399,7 @@ async function runAllJobs(env: Env, trigger: string): Promise<RunSummary> {
     await sendFailureAlert(env, summary);
   }
 
-  return summary;
+  return { summary, results };
 }
 
 export default {
@@ -414,8 +439,8 @@ export default {
       if (!isAuthorizedCronBearer(request.headers.get("authorization"), env.CRON_SECRET)) {
         return Response.json({ error: "Unauthorized" }, { status: 401 });
       }
-      const summary = await runAllJobs(env, "manual");
-      return Response.json({ triggered: "manual", summary });
+      const { summary, results } = await runAllJobs(env, "manual");
+      return Response.json({ triggered: "manual", summary, results });
     }
 
     return Response.json({ error: "Not found" }, { status: 404 });

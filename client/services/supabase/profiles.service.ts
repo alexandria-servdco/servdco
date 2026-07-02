@@ -1,6 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { ProfileRow } from "@/lib/supabase/types";
 import { SupabaseQueryError } from "./fallback";
+import { getSessionUserId } from "@/lib/supabase/sessionUser";
 
 export const profileQueryKeys = {
   all: ["profiles"] as const,
@@ -14,9 +15,7 @@ export const ProfilesSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw new SupabaseQueryError(authError.message, authError);
-    const userId = authData.user?.id;
+    const userId = await getSessionUserId(client);
     if (!userId) return null;
 
     return this.getProfileById(userId);
@@ -44,9 +43,7 @@ export const ProfilesSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw new SupabaseQueryError(authError.message, authError);
-    const userId = authData.user?.id;
+    const userId = await getSessionUserId(client);
     if (!userId) throw new SupabaseQueryError("Not signed in");
 
     const { error } = await client
@@ -67,9 +64,7 @@ export const ProfilesSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw new SupabaseQueryError(authError.message, authError);
-    const userId = authData.user?.id;
+    const userId = await getSessionUserId(client);
     if (!userId) return null;
 
     const now = new Date().toISOString();
@@ -98,9 +93,7 @@ export const ProfilesSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw new SupabaseQueryError(authError.message, authError);
-    const userId = authData.user?.id;
+    const userId = await getSessionUserId(client);
     if (!userId) return null;
 
     const { data, error } = await client
@@ -139,9 +132,7 @@ export const ProfilesSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw new SupabaseQueryError(authError.message, authError);
-    const userId = authData.user?.id;
+    const userId = await getSessionUserId(client);
     if (!userId) return null;
 
     const { data, error } = await client
@@ -166,9 +157,7 @@ export const ProfilesSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw new SupabaseQueryError(authError.message, authError);
-    const userId = authData.user?.id;
+    const userId = await getSessionUserId(client);
     if (!userId) return null;
 
     const { data, error } = await client

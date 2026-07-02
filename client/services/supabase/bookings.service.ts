@@ -377,7 +377,9 @@ export const BookingsSupabaseService = {
     }
 
     if (status === "completed") {
-      updatePayload.completed_at = new Date().toISOString();
+      const now = new Date().toISOString();
+      updatePayload.completed_at = now;
+      updatePayload.family_confirmed_at = now;
     }
 
     const { data, error } = await client

@@ -2,6 +2,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import { toJson } from "@/lib/supabase/json";
 import type { Database, Tables } from "@/lib/supabase/types";
 import { SupabaseQueryError } from "./fallback";
+import { getSessionUserId } from "@/lib/supabase/sessionUser";
 
 type NotificationInsert = Database["public"]["Tables"]["notifications"]["Insert"];
 
@@ -39,9 +40,7 @@ export const NotificationsSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw new SupabaseQueryError(authError.message, authError);
-    const userId = authData.user?.id;
+    const userId = await getSessionUserId(client);
     if (!userId) return [];
 
     const { data, error } = await client
@@ -105,9 +104,7 @@ export const NotificationsSupabaseService = {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError) throw new SupabaseQueryError(authError.message, authError);
-    const userId = authData.user?.id;
+    const userId = await getSessionUserId(client);
     if (!userId) return;
 
     const { error } = await client

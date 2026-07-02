@@ -3,6 +3,7 @@ import { getStripe } from "./server.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
 import { syncTransfersAfterRefund } from "./transfers.js";
 import { createUserNotification } from "./ledger.js";
+import { stripeIdempotencyKey } from "./helpers.js";
 
 export const refundSchema = z.object({
   paymentId: z.string().uuid(),
@@ -31,19 +32,36 @@ export async function processRefund(
     throw new Error("Payment has no Stripe charge to refund.");
   }
 
-  const refund = await stripe.refunds.create({
-    charge: payment.stripe_charge_id ?? undefined,
-    payment_intent: payment.stripe_charge_id
-      ? undefined
-      : payment.stripe_payment_intent_id ?? undefined,
-    amount: input.amountCents,
-    reason: "requested_by_customer",
-    metadata: {
-      payment_id: payment.id,
-      admin_id: input.adminId ?? "",
-      reason: input.reason ?? "",
+  const meta = (payment.metadata as Record<string, unknown>) ?? {};
+  if (payment.status === "refunded") {
+    return {
+      refundId: String(meta.last_refund_id ?? ""),
+      status: "refunded",
+    };
+  }
+
+  const refundAmount = input.amountCents ?? payment.amount_cents;
+  const idempotencyKey = stripeIdempotencyKey(
+    "admin_refund",
+    `${payment.id}_${refundAmount}`,
+  );
+
+  const refund = await stripe.refunds.create(
+    {
+      charge: payment.stripe_charge_id ?? undefined,
+      payment_intent: payment.stripe_charge_id
+        ? undefined
+        : payment.stripe_payment_intent_id ?? undefined,
+      amount: input.amountCents,
+      reason: "requested_by_customer",
+      metadata: {
+        payment_id: payment.id,
+        admin_id: input.adminId ?? "",
+        reason: input.reason ?? "",
+      },
     },
-  });
+    { idempotencyKey },
+  );
 
   const refundedCents =
     (payment.refunded_cents ?? 0) + (refund.amount ?? payment.amount_cents);

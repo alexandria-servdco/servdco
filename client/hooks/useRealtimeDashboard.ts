@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { logger } from "@/lib/logger";
 import { bookingQueryKeys } from "@/services/supabase/bookings.service";
 import { documentQueryKeys } from "@/services/supabase/documents.service";
 import { chefQueryKeys } from "@/services/supabase/chefs.service";
@@ -18,7 +19,7 @@ export interface RealtimeDashboardOptions {
   onAdminRefresh?: () => void;
 }
 
-const MAX_RETRIES = 6;
+const MAX_RETRIES = 8;
 
 type SubscribeArgs = {
   client: NonNullable<ReturnType<typeof getSupabaseClient>>;
@@ -28,6 +29,7 @@ type SubscribeArgs = {
   handler: () => void;
   cancelled: () => boolean;
   channels: RealtimeChannel[];
+  onExhausted: () => void;
 };
 
 function subscribeWithRetry({
@@ -38,6 +40,7 @@ function subscribeWithRetry({
   handler,
   cancelled,
   channels,
+  onExhausted,
 }: SubscribeArgs): void {
   let attempt = 0;
 
@@ -51,7 +54,7 @@ function subscribeWithRetry({
       ...(filter ? { filter } : {}),
     };
 
-    const channel = client.channel(`${channelName}:${attempt}`);
+    const channel = client.channel(`${channelName}:${attempt}:${Date.now()}`);
     channel.on("postgres_changes", config, handler);
     channel.subscribe((status) => {
       if (cancelled()) {
@@ -66,7 +69,15 @@ function subscribeWithRetry({
 
       if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
         void client.removeChannel(channel);
-        if (attempt >= MAX_RETRIES) return;
+        if (attempt >= MAX_RETRIES) {
+          logger.warn("Realtime subscription exhausted retries", {
+            domain: "realtime",
+            channelName,
+            table,
+          });
+          onExhausted();
+          return;
+        }
         attempt += 1;
         const delay = Math.min(30_000, 1_000 * 2 ** attempt);
         window.setTimeout(connect, delay);
@@ -89,6 +100,26 @@ export function useRealtimeDashboard({
   const queryClient = useQueryClient();
   const onAdminRefreshRef = useRef(onAdminRefresh);
   onAdminRefreshRef.current = onAdminRefresh;
+  const [reconnectKey, setReconnectKey] = useState(0);
+
+  useEffect(() => {
+    const client = getSupabaseClient();
+    if (!client) return;
+
+    const { data: authSub } = client.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+        setReconnectKey((k) => k + 1);
+      }
+    });
+
+    const onOnline = () => setReconnectKey((k) => k + 1);
+    window.addEventListener("online", onOnline);
+
+    return () => {
+      authSub.subscription.unsubscribe();
+      window.removeEventListener("online", onOnline);
+    };
+  }, []);
 
   useEffect(() => {
     const client = getSupabaseClient();
@@ -121,22 +152,25 @@ export function useRealtimeDashboard({
       onAdminRefreshRef.current?.();
     };
 
-  const add = (
-    channelName: string,
-    table: string,
-    filter: string | undefined,
-    handler: () => void,
-  ) => {
-    subscribeWithRetry({
-      client,
-      channelName,
-      table,
-      filter,
-      handler,
-      cancelled,
-      channels,
-    });
-  };
+    const add = (
+      channelName: string,
+      table: string,
+      filter: string | undefined,
+      handler: () => void,
+    ) => {
+      subscribeWithRetry({
+        client,
+        channelName,
+        table,
+        filter,
+        handler,
+        cancelled,
+        channels,
+        onExhausted: () => {
+          if (!disposed) setReconnectKey((k) => k + 1);
+        },
+      });
+    };
 
     if (role === "family") {
       add(
@@ -214,22 +248,13 @@ export function useRealtimeDashboard({
       add("transfers:admin", "transfers", undefined, onAdminChange);
     }
 
-    const onOnline = () => {
-      if (disposed) return;
-      invalidateBookings();
-      invalidateChef();
-      invalidateNotifications();
-    };
-    window.addEventListener("online", onOnline);
-
     return () => {
       disposed = true;
-      window.removeEventListener("online", onOnline);
       for (const channel of channels) {
         void client.removeChannel(channel);
       }
     };
-  }, [userId, chefProfileId, role, queryClient]);
+  }, [userId, chefProfileId, role, queryClient, reconnectKey]);
 }
 
 /** Resolve dashboard role from profile row or auth metadata while profile loads. */

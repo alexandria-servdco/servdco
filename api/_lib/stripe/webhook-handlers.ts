@@ -16,6 +16,7 @@ import {
 } from "./payment-resolve.js";
 import {
   isBookingPaymentMetadata,
+  verifyCheckoutAmountCents,
 } from "./helpers.js";
 import {
   handleTipChargeRefunded,
@@ -54,13 +55,7 @@ async function handleBookingCheckoutCompleted(session: Stripe.Checkout.Session) 
   if (!payment) return;
 
   const sessionAmount = session.amount_total ?? payment.amount_cents;
-  if (sessionAmount !== payment.amount_cents) {
-    apiLogger.warn("Checkout amount differs from payment row — syncing to Stripe", {
-      paymentId: payment.id,
-      expected: payment.amount_cents,
-      actual: sessionAmount,
-    });
-  }
+  verifyCheckoutAmountCents(sessionAmount, payment.amount_cents);
 
   const paymentIntentId =
     typeof session.payment_intent === "string"

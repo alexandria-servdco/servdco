@@ -54,11 +54,36 @@ export async function claimStripeEvent(
 
   if (error) {
     if (error.message.includes("duplicate")) {
+      const { data: raced } = await client
+        .from("stripe_events")
+        .select("id, processed, processing_error, created_at")
+        .eq("stripe_event_id", event.id)
+        .maybeSingle();
+
+      if (!raced) {
+        return {
+          shouldProcess: false,
+          duplicate: true,
+          alreadyProcessed: false,
+          rowId: null,
+        };
+      }
+
+      const alreadyProcessed = raced.processed === true;
+      const staleInFlight =
+        !alreadyProcessed &&
+        !raced.processing_error &&
+        raced.created_at &&
+        Date.now() - new Date(raced.created_at).getTime() > STALE_EVENT_RETRY_MS;
+      const shouldRetry =
+        !alreadyProcessed &&
+        (Boolean(raced.processing_error) || staleInFlight);
+
       return {
-        shouldProcess: false,
-        duplicate: true,
-        alreadyProcessed: true,
-        rowId: null,
+        shouldProcess: shouldRetry,
+        duplicate: !shouldRetry,
+        alreadyProcessed,
+        rowId: raced.id,
       };
     }
     throw error;

@@ -6,6 +6,7 @@ import { isStripeCheckoutEnabled } from "../../stripe/featureFlag.js";
 import { processEligibleTransfers } from "../../stripe/transfers.js";
 import { processPendingTipTransfers } from "../../stripe/tips.js";
 import { apiLogger } from "../../logger.js";
+import { isDevelopmentRuntime } from "../../stripe/transferDiagnostics.js";
 
 /**
  * GET|POST /api/stripe/transfers/process — transfer + tip retry processor.
@@ -13,6 +14,9 @@ import { apiLogger } from "../../logger.js";
  * Auth (in order):
  * 1. Cron — GET or POST with `Authorization: Bearer CRON_SECRET`
  * 2. Admin — POST with Supabase JWT
+ *
+ * Batch always returns HTTP 200 when auth succeeds — per-transfer failures are
+ * recoverable and reported in `results` with structured Stripe diagnostics.
  */
 export async function handleTransfersProcess(
   req: VercelRequest,
@@ -47,21 +51,82 @@ export async function handleTransfersProcess(
     }
   }
 
+  const started = Date.now();
+  const transfers = await processEligibleTransfers();
+
+  let tips: { retried: number; succeeded: number; error?: string } = {
+    retried: 0,
+    succeeded: 0,
+  };
+
   try {
-    const transfers = await processEligibleTransfers();
-    const tips = await processPendingTipTransfers();
-    apiLogger.info("Transfer batch processed", {
-      route: "/api/stripe/transfers/process",
-      method: req.method,
-      cron: isCron,
-      ...transfers,
-      tipsRetried: tips.retried,
-      tipsSucceeded: tips.succeeded,
-    });
-    json(res, 200, { ...transfers, tips });
+    tips = await processPendingTipTransfers();
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Transfer processing failed";
-    apiLogger.error("Transfer batch failed", { message, cron: isCron });
-    json(res, 500, { error: message });
+    const message =
+      err instanceof Error ? err.message : "Tip transfer batch failed";
+    apiLogger.error("Tip transfer batch failed (non-fatal)", {
+      message,
+      cron: isCron,
+    });
+    tips = { retried: 0, succeeded: 0, error: message };
   }
+
+  const durationMs = Date.now() - started;
+  const ok =
+    !transfers.batchError &&
+    transfers.results.every(
+      (row) =>
+        row.success ||
+        row.recoveryAction === "skipped" ||
+        row.recoveryAction === "retry_scheduled" ||
+        row.recoveryAction === "action_required" ||
+        row.recoveryAction === "cancelled",
+    );
+
+  apiLogger.info("Transfer batch processed", {
+    route: "/api/stripe/transfers/process",
+    method: req.method,
+    cron: isCron,
+    ok,
+    processed: transfers.processed,
+    failed: transfers.failed,
+    skipped: transfers.skipped,
+    resultCount: transfers.results.length,
+    tipsRetried: tips.retried,
+    tipsSucceeded: tips.succeeded,
+    durationMs,
+    batchError: transfers.batchError?.reason ?? null,
+  });
+
+  json(res, 200, {
+    ok,
+    processed: transfers.processed,
+    failed: transfers.failed,
+    skipped: transfers.skipped,
+    results: transfers.results.map((row) => ({
+      transferId: row.transferId,
+      bookingId: row.bookingId,
+      chefProfileId: row.chefProfileId,
+      stripeAccountId: row.stripeAccountId,
+      stripeTransferId: row.stripeTransferId,
+      amountCents: row.amountCents,
+      success: row.success,
+      recoveryAction: row.recoveryAction,
+      reason: row.reason ?? null,
+      retryCount: row.retryCount ?? null,
+      durationMs: row.durationMs,
+      stripe: row.stripe
+        ? {
+            code: row.stripe.code,
+            type: row.stripe.type,
+            message: row.stripe.message,
+            requestId: row.stripe.requestId,
+          }
+        : null,
+      ...(isDevelopmentRuntime() && row.stack ? { stack: row.stack } : {}),
+    })),
+    batchError: transfers.batchError ?? null,
+    tips,
+    durationMs,
+  });
 }

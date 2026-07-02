@@ -79,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { handleTransfersProcess } = await import(
           "../_lib/handlers/stripe/transfersProcess.js"
         );
-        return handleTransfersProcess(req, res);
+        return await handleTransfersProcess(req, res);
       }
 
       // Connect

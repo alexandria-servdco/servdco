@@ -199,7 +199,9 @@ export function PayoutDiagnosticsPanel({
               Last error (detail): {currentTransfer.failure_reason}
             </p>
           )}
-          {["failed", "action_required", "pending"].includes(currentTransfer.status) && (
+          {["failed", "action_required", "pending", "retry_scheduled"].includes(
+            currentTransfer.status,
+          ) && (
             <button
               type="button"
               onClick={() => void retryTransfer(currentTransfer.id)}

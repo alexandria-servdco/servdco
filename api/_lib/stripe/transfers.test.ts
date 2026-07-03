@@ -33,6 +33,7 @@ describe("atomic claim statuses", () => {
     ]);
     expect(TRANSFER_CLAIMABLE_STATUSES).not.toContain("processing");
     expect(TRANSFER_CLAIMABLE_STATUSES).not.toContain("paid");
+    expect(TRANSFER_CLAIMABLE_STATUSES).not.toContain("action_required");
   });
 });
 

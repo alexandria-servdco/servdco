@@ -926,16 +926,18 @@ export async function retryTransferById(
   await validateTransferSchemaOnStartup();
 
   const client = getServiceRoleClient();
-  const { data: transfer, error } = await client
+  const { data: transferRow, error } = await client
     .from("transfers")
     .select("*")
     .eq("id", transferId)
     .maybeSingle();
 
   if (error) throw error;
-  if (!transfer) {
+  if (!transferRow) {
     return { success: false, reason: "Transfer not found" };
   }
+
+  let transfer = transferRow;
 
   let syncDiagnostics: Record<string, unknown> | undefined;
   try {
@@ -1021,6 +1023,100 @@ export async function retryTransferById(
     );
   }
 
+  if (transfer.status === "action_required") {
+    if (transfer.stripe_transfer_id) {
+      try {
+        await reconcileTransferPaid(
+          transfer as TransferRow,
+          transfer.stripe_transfer_id,
+          transfer.net_amount_cents,
+          new Date().toISOString(),
+        );
+        if (options?.adminUserId) {
+          await writeAdminAuditLog({
+            action: "admin.transfer.recover_action_required",
+            adminUserId: options.adminUserId,
+            entityType: "transfers",
+            entityId: transferId,
+            result: "reconciled",
+            metadata: {
+              stripe_transfer_id: transfer.stripe_transfer_id,
+              diagnostics: syncDiagnostics,
+            },
+          });
+        }
+        return {
+          success: true,
+          reason: "Reconciled action_required transfer with existing Stripe transfer",
+          diagnostics: syncDiagnostics,
+          recovered: true,
+        };
+      } catch (reconcileErr) {
+        return {
+          success: false,
+          reason:
+            reconcileErr instanceof Error
+              ? `Transfer is action_required with Stripe transfer ${transfer.stripe_transfer_id} but reconcile failed: ${reconcileErr.message}`
+              : "Transfer is action_required — reconcile failed",
+          diagnostics: syncDiagnostics,
+        };
+      }
+    }
+
+    const recoveredAt = new Date().toISOString();
+    const previousFailureReason = transfer.failure_reason ?? null;
+
+    assertSupabaseWrite(
+      await client
+        .from("transfers")
+        .update({
+          status: "retry_scheduled",
+          next_retry_at: recoveredAt,
+          failure_reason: previousFailureReason,
+          last_retry_reason: "Admin recovery: re-queued from action_required",
+          last_retry_at: recoveredAt,
+          updated_at: recoveredAt,
+          metadata: {
+            ...((transfer.metadata as Record<string, unknown>) ?? {}),
+            admin_recovery_from_action_required: {
+              at: recoveredAt,
+              admin_user_id: options?.adminUserId ?? null,
+              previous_failure_reason: previousFailureReason,
+            },
+          },
+        })
+        .eq("id", transfer.id)
+        .eq("status", "action_required")
+        .select("id"),
+      "recover action_required transfer for admin retry",
+    );
+
+    if (options?.adminUserId) {
+      await writeAdminAuditLog({
+        action: "admin.transfer.recover_action_required",
+        adminUserId: options.adminUserId,
+        entityType: "transfers",
+        entityId: transferId,
+        result: "queued_for_retry",
+        metadata: {
+          previous_failure_reason: previousFailureReason,
+          retry_count: transfer.retry_count,
+          diagnostics: syncDiagnostics,
+        },
+      });
+    }
+
+    const { data: refreshed, error: refreshError } = await client
+      .from("transfers")
+      .select("*")
+      .eq("id", transferId)
+      .maybeSingle();
+    if (refreshError) throw refreshError;
+    if (refreshed) {
+      transfer = refreshed;
+    }
+  }
+
   const result = await executeSingleTransfer(transfer as TransferRow);
 
   if (options?.adminUserId) {
@@ -1037,7 +1133,34 @@ export async function retryTransferById(
     });
   }
 
-  return { ...result, diagnostics: syncDiagnostics };
+  let finalResult = { ...result, diagnostics: syncDiagnostics };
+
+  if (
+    !result.success &&
+    result.reason === "Transfer already being processed by another worker"
+  ) {
+    const { data: currentRow } = await client
+      .from("transfers")
+      .select("status")
+      .eq("id", transferId)
+      .maybeSingle();
+
+    if (currentRow?.status === "action_required") {
+      finalResult = {
+        ...finalResult,
+        reason:
+          "Transfer status is action_required and was not queued for retry. Admin recovery must reset it to retry_scheduled before processing.",
+      };
+    } else if (currentRow?.status === "processing") {
+      finalResult = {
+        ...finalResult,
+        reason:
+          "Transfer is processing — another worker holds the claim. Wait for completion or the processing timeout.",
+      };
+    }
+  }
+
+  return finalResult;
 }
 
 export async function processEligibleTransfers(): Promise<{

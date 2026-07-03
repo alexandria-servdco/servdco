@@ -66,17 +66,53 @@ export const NotificationsSupabaseService = {
   },
 
   async listAdminRecent(limit = 30): Promise<UiNotification[]> {
+    const page = await this.listAdminPage({ page: 1, pageSize: limit });
+    return page.rows;
+  },
+
+  async listAdminPage(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    type?: string;
+  }) {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data, error } = await client
+    const page = Math.max(1, params.page);
+    const pageSize = Math.max(1, params.pageSize);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const search = params.search?.trim();
+
+    let query = client
       .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false });
+
+    if (params.type && params.type !== "all") {
+      query = query.eq(
+        "type",
+        params.type as UiNotification["type"],
+      );
+    }
+
+    if (search) {
+      query = query.or(
+        `title.ilike.%${search}%,message.ilike.%${search}%,user_id.ilike.%${search}%`,
+      );
+    }
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error) throw new SupabaseQueryError(error.message, error);
-    return (data ?? []).map(mapNotificationRow);
+
+    return {
+      rows: (data ?? []).map(mapNotificationRow),
+      total: count ?? 0,
+      page,
+      pageSize,
+    };
   },
 
   async createForUser(params: {

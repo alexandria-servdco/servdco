@@ -2,18 +2,17 @@
 
 ## Workers Builds (GitHub checks)
 
-Cloudflare runs `npx wrangler deploy` from the **root directory** configured in
-Workers → Settings → Builds. If that directory is the repository root (not
-`cloudflare-worker`), the repo-root `wrangler.toml` shim is required so Wrangler
-does not autoconfigure this project as the Vite frontend.
+Cloudflare auto-installs dependencies with **pnpm** (inherited from the monorepo
+`packageManager` field). This directory must include `pnpm-lock.yaml`; do not
+remove it.
 
 **Recommended build settings** (root directory = `cloudflare-worker`):
 
 | Setting | Value |
 | ------- | ----- |
 | Root directory | `cloudflare-worker` |
-| Build command | `npm ci` |
-| Deploy command | `npm run deploy` |
+| Build command | `pnpm run build` |
+| Deploy command | `pnpm run deploy` |
 
 **Alternate** (root directory = repository root):
 
@@ -77,7 +76,7 @@ cloudflare-worker
 Set **Build command** to:
 
 ```
-npm ci
+pnpm run build
 ```
 
 ## Step 12
@@ -85,7 +84,7 @@ npm ci
 Set **Deploy command** to:
 
 ```
-npm run deploy
+pnpm run deploy
 ```
 
 ## Step 13

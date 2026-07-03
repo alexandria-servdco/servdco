@@ -50,9 +50,9 @@ npm run dev         # wrangler dev
 
 ```bash
 cd cloudflare-worker
-npm install
+pnpm install
 cp .dev.vars.example .dev.vars   # fill in CRON_SECRET
-npm run dev                      # http://localhost:8787
+pnpm run dev                      # http://localhost:8787
 ```
 
 ```bash
@@ -64,9 +64,10 @@ curl -X POST http://localhost:8787/run -H "Authorization: Bearer <CRON_SECRET>"
 
 ```bash
 cd cloudflare-worker
+pnpm install
 npx wrangler login
 npx wrangler secret put CRON_SECRET
-npm run deploy
+pnpm run deploy
 npx wrangler tail
 ```
 

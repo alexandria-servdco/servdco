@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { getStripe } from "./server.js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
+import {
+  resolveStripeChargeId,
+  tipTransferGroup,
+  tipTransferIdempotencyKey,
+} from "./transferFunding.js";
 
 export const tipCheckoutSchema = z.object({
   bookingId: z.string().uuid(),
@@ -99,6 +104,7 @@ export async function createTipCheckoutSession(
       },
     ],
     payment_intent_data: {
+      transfer_group: tipTransferGroup(booking.id),
       metadata: {
         payment_type: "tip",
         tip: "true",
@@ -172,16 +178,30 @@ export async function transferTipToCook(tipId: string): Promise<void> {
   }
 
   try {
-    const transfer = await stripe.transfers.create({
+    const sourceChargeId = await resolveStripeChargeId(stripe, {
+      stripe_charge_id: tip.stripe_charge_id,
+      stripe_payment_intent_id: tip.stripe_payment_intent_id,
+    });
+
+    const transferParams: Parameters<typeof stripe.transfers.create>[0] = {
       amount: tip.amount_cents,
       currency: (tip.currency ?? "usd").toLowerCase(),
       destination: stripeAccount.stripe_account_id,
+      transfer_group: tipTransferGroup(tip.booking_id),
       metadata: {
         tip_id: tip.id,
         booking_id: tip.booking_id,
         chef_profile_id: tip.chef_profile_id,
         tip: "true",
       },
+    };
+
+    if (sourceChargeId) {
+      transferParams.source_transaction = sourceChargeId;
+    }
+
+    const transfer = await stripe.transfers.create(transferParams, {
+      idempotencyKey: tipTransferIdempotencyKey(tip.id, Boolean(sourceChargeId)),
     });
 
     await client

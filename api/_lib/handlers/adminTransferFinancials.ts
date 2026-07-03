@@ -11,7 +11,13 @@ export interface TransferFinancialSummary {
   failedTransfers: { count: number; totalCents: number };
   actionRequired: { count: number; totalCents: number };
   completedToday: { count: number; totalCents: number };
-  platformBalance: { availableCents: number; pendingCents: number; currency: string };
+  platformBalance: {
+    availableCents: number;
+    pendingCents: number;
+    availableCardCents: number;
+    availableBankAccountCents: number;
+    currency: string;
+  };
   outstandingLiabilityCents: number;
   generatedAt: string;
 }
@@ -88,6 +94,8 @@ export async function getTransferFinancialSummary(): Promise<TransferFinancialSu
 
   let availableCents = 0;
   let pendingCents = 0;
+  let availableCardCents = 0;
+  let availableBankAccountCents = 0;
   let currency = "usd";
 
   try {
@@ -96,6 +104,8 @@ export async function getTransferFinancialSummary(): Promise<TransferFinancialSu
     const pending = balance.pending.find((b) => b.currency === "usd");
     availableCents = available?.amount ?? 0;
     pendingCents = pending?.amount ?? 0;
+    availableCardCents = available?.source_types?.card ?? 0;
+    availableBankAccountCents = available?.source_types?.bank_account ?? 0;
     currency = available?.currency ?? pending?.currency ?? "usd";
   } catch (err) {
     apiLogger.warn("Unable to retrieve Stripe platform balance", {
@@ -127,6 +137,8 @@ export async function getTransferFinancialSummary(): Promise<TransferFinancialSu
     platformBalance: {
       availableCents,
       pendingCents,
+      availableCardCents,
+      availableBankAccountCents,
       currency,
     },
     outstandingLiabilityCents: sumNetCents(liabilityRes.data),

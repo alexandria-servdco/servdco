@@ -26,6 +26,10 @@ import {
   validateTransferSchemaOnStartup,
   type TransferClaimRow,
 } from "./transferIntegrity.js";
+import {
+  buildCookTransferCreateParams,
+  resolveStripeChargeId,
+} from "./transferFunding.js";
 
 export async function getBookingHoldHours(): Promise<number> {
   const client = getServiceRoleClient();
@@ -490,7 +494,7 @@ export async function executeSingleTransfer(
     const { data: payment } = await client
       .from("payments")
       .select(
-        "status, refunded_cents, amount_cents, cook_payout_cents, platform_fee_cents",
+        "status, refunded_cents, amount_cents, cook_payout_cents, platform_fee_cents, stripe_charge_id, stripe_payment_intent_id",
       )
       .eq("id", transfer.payment_id)
       .maybeSingle();
@@ -656,23 +660,76 @@ export async function executeSingleTransfer(
       metadata: { transfer_id: transfer.id, net_amount_cents: netCents },
     });
 
+    const sourceChargeId = await resolveStripeChargeId(stripe, payment);
+
+    if (!sourceChargeId) {
+      apiLogger.error("Cook transfer missing Stripe charge for source_transaction", {
+        transferId: transfer.id,
+        paymentId: transfer.payment_id,
+        bookingId: transfer.booking_id,
+        stripePaymentIntentId: payment.stripe_payment_intent_id ?? null,
+      });
+      const result = buildTransferExecutionResult({
+        success: false,
+        transferId: transfer.id,
+        bookingId: transfer.booking_id,
+        chefProfileId: transfer.chef_profile_id,
+        stripeAccountId,
+        amountCents: netCents,
+        recoveryAction: "action_required",
+        reason:
+          "Cannot fund cook transfer — booking payment has no Stripe charge ID for source_transaction",
+        durationMs: Date.now() - started,
+      });
+      logTransferExecution("transfer_missing_source_charge", result);
+      try {
+        assertSupabaseWrite(
+          await client
+            .from("transfers")
+            .update({
+              status: "action_required",
+              failure_reason: result.reason,
+              next_retry_at: null,
+              updated_at: now,
+            })
+            .eq("id", transfer.id)
+            .select("id"),
+          "mark transfer action_required missing source charge",
+        );
+      } catch (updateErr) {
+        apiLogger.error("Failed to mark transfer action_required for missing charge", {
+          transferId: transfer.id,
+          message:
+            updateErr instanceof Error ? updateErr.message : String(updateErr),
+        });
+      }
+      return result;
+    }
+
+    if (!payment.stripe_charge_id) {
+      await client
+        .from("payments")
+        .update({
+          stripe_charge_id: sourceChargeId,
+          updated_at: now,
+        })
+        .eq("id", transfer.payment_id);
+    }
+
+    const transferCreateParams = buildCookTransferCreateParams({
+      amountCents: netCents,
+      stripeAccountId,
+      transferId: transfer.id,
+      paymentId: transfer.payment_id,
+      bookingId: transfer.booking_id,
+      chefProfileId: transfer.chef_profile_id,
+      sourceChargeId,
+    });
+
     try {
-      const stripeTransfer = await stripe.transfers.create(
-        {
-          amount: netCents,
-          currency: "usd",
-          destination: stripeAccountId,
-          metadata: {
-            transfer_id: transfer.id,
-            payment_id: transfer.payment_id,
-            booking_id: transfer.booking_id,
-            chef_profile_id: transfer.chef_profile_id,
-          },
-        },
-        {
-          idempotencyKey: cookTransferIdempotencyKey(transfer.id),
-        },
-      );
+      const stripeTransfer = await stripe.transfers.create(transferCreateParams, {
+        idempotencyKey: cookTransferIdempotencyKey(transfer.id, true),
+      });
 
       try {
         await reconcileTransferPaid(

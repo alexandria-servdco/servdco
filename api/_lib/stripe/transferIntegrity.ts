@@ -1,7 +1,8 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { getServiceRoleClient } from "../supabase/serviceRole.js";
-import { stripeIdempotencyKey } from "./helpers.js";
 import { apiLogger } from "../logger.js";
+
+export { cookTransferIdempotencyKey } from "./transferFunding.js";
 
 export const TRANSFER_CLAIMABLE_STATUSES = [
   "scheduled",
@@ -11,10 +12,6 @@ export const TRANSFER_CLAIMABLE_STATUSES = [
 ] as const;
 
 export type ClaimableTransferStatus = (typeof TRANSFER_CLAIMABLE_STATUSES)[number];
-
-export function cookTransferIdempotencyKey(transferId: string): string {
-  return stripeIdempotencyKey("cook_transfer", transferId);
-}
 
 export function isProcessingStale(
   updatedAt: string | null | undefined,

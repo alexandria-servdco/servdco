@@ -203,6 +203,7 @@ export async function createBookingCheckoutSession(
         },
       ],
       payment_intent_data: {
+        transfer_group: booking.id,
         metadata: {
           payment_type: "booking",
           booking_id: booking.id,

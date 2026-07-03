@@ -12,6 +12,9 @@ describe("cookTransferIdempotencyKey", () => {
     expect(cookTransferIdempotencyKey(transferId)).toBe(
       `servdco_cook_transfer_${transferId}`,
     );
+    expect(cookTransferIdempotencyKey(transferId, true)).toBe(
+      `servdco_cook_transfer_st_${transferId}`,
+    );
     expect(cookTransferIdempotencyKey(transferId).length).toBeLessThanOrEqual(
       255,
     );

@@ -160,7 +160,11 @@ export async function reconcileAllSubscriptionMismatches(): Promise<BatchSubscri
   if (error) throw error;
 
   const chefIds = [
-    ...new Set((rows ?? []).map((row) => row.chef_profile_id).filter(Boolean)),
+    ...new Set(
+      (rows ?? [])
+        .map((row) => row.chef_profile_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
   ];
 
   const { data: stalePremium } = await client
@@ -170,7 +174,10 @@ export async function reconcileAllSubscriptionMismatches(): Promise<BatchSubscri
     .limit(200);
 
   for (const row of stalePremium ?? []) {
-    if (!chefIds.includes(row.id)) chefIds.push(row.id);
+    const id = row.id;
+    if (typeof id === "string" && id.length > 0 && !chefIds.includes(id)) {
+      chefIds.push(id);
+    }
   }
 
   let repaired = 0;

@@ -5,6 +5,7 @@ import { BookingDetailModal } from "@/components/admin/BookingDetailModal";
 import { BrandSelect } from "@/components/ui/BrandSelect";
 import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { PaginationBar } from "@/components/ui/PaginationBar";
+import { formatBookingDateTime } from "@/lib/formatDate";
 import {
   DesktopTableView,
   MobileCardStack,
@@ -20,6 +21,8 @@ interface Booking {
   chef_name: string;
   service_type: string;
   date: string;
+  booking_time?: string | null;
+  created_at?: string;
   price: number;
   status: string;
   guests_count?: number;
@@ -266,7 +269,7 @@ export function BookingsLedgerTable({
                         color: "#A8A8A8",
                       }}
                     >
-                      {new Date(b.date).toLocaleString()}
+                      {formatBookingDateTime(b.date, b.booking_time, b.created_at)}
                     </td>
                     <td
                       style={{
@@ -419,7 +422,9 @@ export function BookingsLedgerTable({
               <MobileFieldRow label="Family">{b.family_name}</MobileFieldRow>
               <MobileFieldRow label="Cook">{b.chef_name}</MobileFieldRow>
               <MobileFieldRow label="Service">{b.service_type}</MobileFieldRow>
-              <MobileFieldRow label="Date">{new Date(b.date).toLocaleString()}</MobileFieldRow>
+              <MobileFieldRow label="Date">
+                {formatBookingDateTime(b.date, b.booking_time, b.created_at)}
+              </MobileFieldRow>
               <MobileFieldRow label="Price">${b.price}</MobileFieldRow>
               <MobileFieldRow label="Status">
                 <span className="capitalize">{b.status}</span>

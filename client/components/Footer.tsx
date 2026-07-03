@@ -330,7 +330,7 @@ export default function Footer() {
               {[
                 { label: "Apply To Cook", path: "/register/chef" },
                 { label: "Income Calculator", path: "/for-chefs#calculator" },
-                { label: "Requirements", path: "/for-chefs" },
+                { label: "Requirements", path: "/faq?category=chef" },
                 { label: "Cook Dashboard", path: "/chef-dashboard" },
               ].map((link) => (
                 <li key={link.label}>
@@ -393,7 +393,7 @@ export default function Footer() {
                 <button
                   type="button"
                   onClick={() => openCookiePreferences()}
-                  className="text-[12.5px] text-[#A5A5A5] hover:text-[#FF7A59] transition-all font-medium"
+                  className="text-left text-[12.5px] text-[#A5A5A5] hover:text-[#FF7A59] transition-all relative pb-0.5 after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#FF7A59] after:transition-all after:duration-300 hover:after:w-full font-medium whitespace-nowrap"
                 >
                   Manage Cookie Preferences
                 </button>

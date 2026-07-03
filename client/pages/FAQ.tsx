@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { 
   Plus, Minus, HelpCircle, ChevronDown, User, ChefHat, MessageSquare, ArrowRight 
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { VerificationResources } from "@/components/chef/VerificationResources";
 import {
   formatUsd,
@@ -47,7 +47,16 @@ const FAQS_CHEF = [
 ];
 
 export default function FAQ() {
-  const [activeCategory, setActiveCategory] = useState("family"); // family, chef
+  const [searchParams] = useSearchParams();
+  const initialCategory =
+    searchParams.get("category") === "chef" ? "chef" : "family";
+  const [activeCategory, setActiveCategory] = useState(initialCategory); // family, chef
+
+  useEffect(() => {
+    if (searchParams.get("category") === "chef") {
+      setActiveCategory("chef");
+    }
+  }, [searchParams]);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggleAccordion = (idx: number) => {
@@ -141,7 +150,7 @@ export default function FAQ() {
           </div>
 
           {activeCategory === "chef" && (
-            <div className="mb-12">
+            <div id="requirements" className="mb-12 scroll-mt-28">
               <VerificationResources />
             </div>
           )}

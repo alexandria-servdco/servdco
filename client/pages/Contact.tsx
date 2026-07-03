@@ -55,7 +55,7 @@ export default function Contact() {
     } catch {
       setTurnstileToken(null);
       setTurnstileResetKey((k) => k + 1);
-      setError("Failed to send message. Please try again or email hello@servdco.com.");
+      setError("Failed to send message. Please try again or email alexandria@servdco.com.");
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Email Us</h3>
-                  <a href="mailto:hello@servdco.com" className="text-xs text-[#FF7A59] font-semibold hover:underline block mt-1">hello@servdco.com</a>
+                  <a href="mailto:alexandria@servdco.com" className="text-xs text-[#FF7A59] font-semibold hover:underline block mt-1">alexandria@servdco.com</a>
                 </div>
               </div>
 
@@ -101,7 +101,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Call Us</h3>
-                  <a href="tel:6501234567" className="text-xs text-[#FF7A59] font-semibold hover:underline block mt-1">(650) 123-4567</a>
+                  <a href="tel:+16148188057" className="text-xs text-[#FF7A59] font-semibold hover:underline block mt-1">(614) 818-8057</a>
                 </div>
               </div>
 

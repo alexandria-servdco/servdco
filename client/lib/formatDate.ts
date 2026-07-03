@@ -50,6 +50,17 @@ export function formatBookingDisplayDate(
   return fallbackIso ? formatIsoDate(fallbackIso) : raw;
 }
 
+export function formatBookingDateTime(
+  dateInput: string | null | undefined,
+  timeInput?: string | null,
+  fallbackIso?: string | null,
+): string {
+  const datePart = formatBookingDisplayDate(dateInput, fallbackIso);
+  const timePart = formatBookingTime(timeInput);
+  if (timePart === "—") return datePart;
+  return `${datePart}, ${timePart}`;
+}
+
 export function formatIsoDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);

@@ -6,8 +6,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { formatBookingDateTime } from "@/lib/formatDate";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 type BookingDetailModalProps = {
   bookingId: string | null;
@@ -107,18 +108,21 @@ export function BookingDetailModal({
                     <dd>{booking.service_type}</dd>
                   </div>
                   <div>
-                    <dt className="text-[#A8A8A8] text-xs mb-0.5">Date</dt>
-                    <dd>{booking.date}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#A8A8A8] text-xs mb-0.5">Time</dt>
+                    <dt className="text-[#A8A8A8] text-xs mb-0.5">Date & time</dt>
                     <dd>
-                      {booking.booking_time ?? "—"}
-                      {booking.booking_end_time
-                        ? ` – ${booking.booking_end_time}`
-                        : ""}
+                      {formatBookingDateTime(
+                        booking.date,
+                        booking.booking_time,
+                        booking.created_at,
+                      )}
                     </dd>
                   </div>
+                  {booking.booking_end_time ? (
+                  <div>
+                    <dt className="text-[#A8A8A8] text-xs mb-0.5">End time</dt>
+                    <dd>{booking.booking_end_time}</dd>
+                  </div>
+                  ) : null}
                   <div>
                     <dt className="text-[#A8A8A8] text-xs mb-0.5">Guests</dt>
                     <dd>{booking.guests_count ?? "—"}</dd>

@@ -1,0 +1,15 @@
+# Cron Worker config when Cloudflare Workers Builds uses the repository root.
+# Canonical config for local CLI deploys: cloudflare-worker/wrangler.toml
+name = "servdco-prod"
+main = "cloudflare-worker/src/worker.ts"
+compatibility_date = "2024-11-01"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+SITE_URL = "https://servdco.vercel.app"
+WORKER_VERSION = "2.0.0"
+
+[observability]
+enabled = true

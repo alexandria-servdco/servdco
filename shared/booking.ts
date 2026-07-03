@@ -113,3 +113,32 @@ export function maskStreet(street: string | null | undefined): string {
   if (!street?.trim()) return "Address hidden until accepted";
   return "••• ••• •••";
 }
+
+/** Completed bookings use booking status only — payment/refund state is reflected via status. */
+export function isCompletedBookingStatus(status: string): boolean {
+  return status === "completed";
+}
+
+export function countCompletedBookings<
+  T extends { status: string; chef_profile_id?: string | null },
+>(bookings: readonly T[], chefProfileId?: string): number {
+  return bookings.filter(
+    (b) =>
+      isCompletedBookingStatus(b.status) &&
+      (chefProfileId == null || b.chef_profile_id === chefProfileId),
+  ).length;
+}
+
+export function completedBookingsCountByChef<
+  T extends { status: string; chef_profile_id?: string | null },
+>(bookings: readonly T[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const booking of bookings) {
+    if (!isCompletedBookingStatus(booking.status) || !booking.chef_profile_id) {
+      continue;
+    }
+    const chefId = booking.chef_profile_id;
+    counts.set(chefId, (counts.get(chefId) ?? 0) + 1);
+  }
+  return counts;
+}

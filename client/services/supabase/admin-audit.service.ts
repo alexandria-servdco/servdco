@@ -60,16 +60,50 @@ export const AdminAuditService = {
   },
 
   async listRecent(limit = 50) {
+    const page = await this.listPage({ page: 1, pageSize: limit });
+    return page.rows;
+  },
+
+  async listPage(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    action?: string;
+    sortAscending?: boolean;
+  }) {
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
 
-    const { data, error } = await client
+    const page = Math.max(1, params.page);
+    const pageSize = Math.max(1, params.pageSize);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const search = params.search?.trim();
+
+    let query = client
       .from("audit_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: params.sortAscending ?? false });
+
+    if (params.action && params.action !== "all") {
+      query = query.eq("action", params.action);
+    }
+
+    if (search) {
+      query = query.or(
+        `action.ilike.%${search}%,entity_type.ilike.%${search}%,entity_id.ilike.%${search}%`,
+      );
+    }
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error) throw new SupabaseQueryError(error.message, error);
-    return data ?? [];
+
+    return {
+      rows: data ?? [],
+      total: count ?? 0,
+      page,
+      pageSize,
+    };
   },
 };

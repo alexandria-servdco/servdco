@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { BrandSelect } from "@/components/ui/BrandSelect";
 import { PaginationBar } from "@/components/ui/PaginationBar";
+import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { formatIsoDate } from "@/lib/formatDate";
 import {
   AdminTableShell,
@@ -20,6 +21,7 @@ interface UserManagementTableProps {
   handleSuspendUser: (id: string, currentStatus: string) => void;
   handleDeleteUser: (id: string) => void;
   handlePermanentDeleteUser?: (id: string, email: string) => void;
+  pendingUserId?: string | null;
 }
 
 export function UserManagementTable({
@@ -27,6 +29,7 @@ export function UserManagementTable({
   handleSuspendUser,
   handleDeleteUser,
   handlePermanentDeleteUser,
+  pendingUserId = null,
 }: UserManagementTableProps) {
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
@@ -266,7 +269,14 @@ export function UserManagementTable({
                       </td>
                       <td style={{ padding: "14px 12px" }}>
                         <div style={{ display: "flex", gap: "6px" }}>
-                          <button
+                          <AdminActionButton
+                            label={
+                              usr.status === "suspended"
+                                ? "Unsuspend"
+                                : "Suspend"
+                            }
+                            loading={pendingUserId === usr.id}
+                            disabled={pendingUserId !== null}
                             onClick={() =>
                               handleSuspendUser(usr.id, usr.status)
                             }
@@ -286,11 +296,7 @@ export function UserManagementTable({
                               border: "none",
                               cursor: "pointer",
                             }}
-                          >
-                            {usr.status === "suspended"
-                              ? "Unsuspend"
-                              : "Suspend"}
-                          </button>
+                          />
                           <button
                             onClick={() => handleDeleteUser(usr.id)}
                             title="Soft delete"

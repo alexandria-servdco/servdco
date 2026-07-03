@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { BrandSelect } from "@/components/ui/BrandSelect";
 import { PaginationBar } from "@/components/ui/PaginationBar";
+import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import {
   DesktopTableView,
   MobileCardStack,
@@ -33,6 +34,7 @@ interface ChefNetworkTableProps {
   setChefStatusFilter: (value: string) => void;
   handleChefVerification: (id: string, action: string, reason?: string) => void;
   handleSuspendCookAccount?: (userId: string) => void;
+  pendingChefId?: string | null;
 }
 
 export function ChefNetworkTable({
@@ -43,6 +45,7 @@ export function ChefNetworkTable({
   setChefStatusFilter,
   handleChefVerification,
   handleSuspendCookAccount,
+  pendingChefId = null,
 }: ChefNetworkTableProps) {
   const [page, setPage] = useState(1);
 
@@ -278,10 +281,11 @@ export function ChefNetworkTable({
                   <td style={{ padding: "14px 12px" }}>
                     <div style={{ display: "flex", gap: "6px" }}>
                       {c.verification_status !== "approved" && (
-                        <button
-                          onClick={() =>
-                            handleChefVerification(c.id, "approved")
-                          }
+                        <AdminActionButton
+                          label="Approve"
+                          loading={pendingChefId === c.id}
+                          disabled={pendingChefId !== null}
+                          onClick={() => handleChefVerification(c.id, "approved")}
                           style={{
                             padding: "6px 12px",
                             borderRadius: "8px",
@@ -292,12 +296,13 @@ export function ChefNetworkTable({
                             border: "none",
                             cursor: "pointer",
                           }}
-                        >
-                          Approve
-                        </button>
+                        />
                       )}
                       {c.verification_status === "approved" && c.userId && handleSuspendCookAccount && (
-                        <button
+                        <AdminActionButton
+                          label="Suspend"
+                          loading={pendingChefId === c.userId}
+                          disabled={pendingChefId !== null}
                           onClick={() => handleSuspendCookAccount(c.userId!)}
                           style={{
                             padding: "6px 12px",
@@ -309,11 +314,12 @@ export function ChefNetworkTable({
                             border: "none",
                             cursor: "pointer",
                           }}
-                        >
-                          Suspend
-                        </button>
+                        />
                       )}
-                      <button
+                      <AdminActionButton
+                        label="Reject"
+                        loading={pendingChefId === c.id}
+                        disabled={pendingChefId !== null}
                         onClick={() => handleChefVerification(c.id, "rejected")}
                         style={{
                           padding: "6px 12px",
@@ -325,9 +331,7 @@ export function ChefNetworkTable({
                           border: "none",
                           cursor: "pointer",
                         }}
-                      >
-                        Reject
-                      </button>
+                      />
                     </div>
                   </td>
                 </tr>
@@ -344,30 +348,30 @@ export function ChefNetworkTable({
             actions={
               <div className="flex flex-wrap gap-2 w-full">
                 {c.verification_status === "pending" && (
-                  <button
-                    type="button"
+                  <AdminActionButton
+                    label="Approve"
+                    loading={pendingChefId === c.id}
+                    disabled={pendingChefId !== null}
                     onClick={() => handleChefVerification(c.id, "approved")}
                     className="flex-1 py-2.5 rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-semibold touch-target"
-                  >
-                    Approve
-                  </button>
+                  />
                 )}
                 {c.verification_status === "approved" && c.userId && handleSuspendCookAccount && (
-                  <button
-                    type="button"
+                  <AdminActionButton
+                    label="Suspend"
+                    loading={pendingChefId === c.userId}
+                    disabled={pendingChefId !== null}
                     onClick={() => handleSuspendCookAccount(c.userId!)}
                     className="flex-1 py-2.5 rounded-lg bg-amber-500/15 text-amber-400 text-xs font-semibold touch-target"
-                  >
-                    Suspend
-                  </button>
+                  />
                 )}
-                <button
-                  type="button"
+                <AdminActionButton
+                  label="Reject"
+                  loading={pendingChefId === c.id}
+                  disabled={pendingChefId !== null}
                   onClick={() => handleChefVerification(c.id, "rejected")}
                   className="flex-1 py-2.5 rounded-lg bg-red-500/15 text-red-400 text-xs font-semibold touch-target"
-                >
-                  Reject
-                </button>
+                />
               </div>
             }
           >

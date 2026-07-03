@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/lib/api";
 import { AuthService } from "@/services/auth.service";
@@ -78,6 +78,10 @@ import type { InterestRequestRow } from "@/components/admin/RegionReviewModal";
 import { useDocumentModeration } from "@/hooks/useDocumentModeration";
 import { ChartErrorBoundary } from "@/components/errors/ChartErrorBoundary";
 import { toast } from "sonner";
+import {
+  countCompletedBookings,
+  completedBookingsCountByChef,
+} from "@shared/booking";
 import {
   Dialog,
   DialogContent,
@@ -299,6 +303,9 @@ export default function AdminDashboard({
   // Document modal preview state
   const [previewDoc, setPreviewDoc] = useState<any>(null);
   const [pendingDocAction, setPendingDocAction] = useState<string | null>(null);
+  const [pendingChefId, setPendingChefId] = useState<string | null>(null);
+  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [docActionSuccess, setDocActionSuccess] = useState(false);
   const previewDocIdRef = useRef<string | null>(null);
   const silentRefreshTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -589,12 +596,19 @@ export default function AdminDashboard({
 
   // Users Handlers
   const handleSuspendUser = async (id: string, currentStatus: string) => {
+    setPendingUserId(id);
     try {
       const newStatus = currentStatus === "suspended" ? "active" : "suspended";
       await api.updateUserStatus(id, newStatus);
       await reloadData();
+      toast.success(
+        newStatus === "suspended" ? "User suspended" : "User reactivated",
+      );
     } catch (err) {
       console.error(err);
+      toast.error("Failed to update user status.");
+    } finally {
+      setPendingUserId(null);
     }
   };
 
@@ -651,20 +665,36 @@ export default function AdminDashboard({
         setChefRejectModal({ id, reason: "" });
         return;
       }
+      setPendingChefId(id);
       await api.updateChefStatus(id, status, rejectionReason);
       await reloadData();
+      toast.success(
+        status === "approved"
+          ? "Cook approved"
+          : status === "rejected"
+            ? "Cook rejected"
+            : "Cook suspended",
+      );
     } catch (err) {
       console.error(err);
+      toast.error("Failed to update cook status.");
+    } finally {
+      setPendingChefId(null);
     }
   };
 
   const handleSuspendCookAccount = async (userId: string) => {
     const reason = window.prompt("Optional suspension reason for internal records:");
+    setPendingChefId(userId);
     try {
       await api.suspendCookAccount(userId, reason ?? undefined);
       await reloadData();
+      toast.success("Cook account suspended");
     } catch (err) {
       console.error(err);
+      toast.error("Failed to suspend cook account.");
+    } finally {
+      setPendingChefId(null);
     }
   };
 
@@ -673,6 +703,7 @@ export default function AdminDashboard({
     id: string,
     status: import("@shared/booking").BookingStatus,
   ) => {
+    setPendingBookingId(id);
     try {
       const booking = bookings.find((b) => b.id === id);
       await api.updateBookingStatus(id, status);
@@ -686,8 +717,12 @@ export default function AdminDashboard({
         },
       });
       await reloadData();
+      toast.success(`Booking updated to ${status.replace(/_/g, " ")}`);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to update booking status.");
+    } finally {
+      setPendingBookingId(null);
     }
   };
 
@@ -814,9 +849,21 @@ export default function AdminDashboard({
       "awaiting_family_confirmation",
     ].includes(b.status),
   ).length;
-  const completedBookingsCount = bookings.filter(
-    (b) => b.status === "completed",
-  ).length;
+  const completedBookingsCount = countCompletedBookings(bookings);
+
+  const completedBookingsByChef = useMemo(
+    () => completedBookingsCountByChef(bookings),
+    [bookings],
+  );
+
+  const chefsWithLiveBookingCounts = useMemo(
+    () =>
+      chefs.map((chef) => ({
+        ...chef,
+        bookings_count: completedBookingsByChef.get(chef.id) ?? 0,
+      })),
+    [chefs, completedBookingsByChef],
+  );
   const pendingDocumentsCount = documents.filter(
     (d) => d.status === "pending",
   ).length;
@@ -2934,19 +2981,21 @@ export default function AdminDashboard({
                 handleSuspendUser={handleSuspendUser}
                 handleDeleteUser={handleDeleteUser}
                 handlePermanentDeleteUser={handlePermanentDeleteUser}
+                pendingUserId={pendingUserId}
               />
             )}
 
             {/* ── Tab: CHEFS MANAGEMENT ─────────────────────────────────────── */}
             {activeNav === "chefs" && (
               <ChefNetworkTable
-                chefs={chefs}
+                chefs={chefsWithLiveBookingCounts}
                 chefSearch={chefSearch}
                 setChefSearch={setChefSearch}
                 chefStatusFilter={chefStatusFilter}
                 setChefStatusFilter={setChefStatusFilter}
                 handleChefVerification={handleChefVerification}
                 handleSuspendCookAccount={handleSuspendCookAccount}
+                pendingChefId={pendingChefId}
               />
             )}
 
@@ -2961,6 +3010,7 @@ export default function AdminDashboard({
                 bookingPriceSort={bookingPriceSort}
                 setBookingPriceSort={setBookingPriceSort}
                 handleBookingStatusChange={handleBookingStatusChange}
+                pendingBookingId={pendingBookingId}
               />
             )}
             {/* ── Tab: TRUST & VERIFICATION DOCUMENTS ────────────────────────── */}
@@ -2970,6 +3020,14 @@ export default function AdminDashboard({
                   documents={documents}
                   setPreviewDoc={setPreviewDoc}
                   handleDocumentAction={handleDocumentAction}
+                  pendingDocId={
+                    moderateDocument.isPending
+                      ? (moderateDocument.variables?.id ?? null)
+                      : null
+                  }
+                  isDocActionPending={
+                    moderateDocument.isPending || docActionLoading
+                  }
                 />
                 <Suspense fallback={<CardSkeleton />}>
                   <OrphanedDocumentsUtility

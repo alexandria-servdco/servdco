@@ -3,6 +3,7 @@ import { Search, Eye } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BookingDetailModal } from "@/components/admin/BookingDetailModal";
 import { BrandSelect } from "@/components/ui/BrandSelect";
+import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { PaginationBar } from "@/components/ui/PaginationBar";
 import {
   DesktopTableView,
@@ -33,6 +34,7 @@ interface BookingsLedgerTableProps {
   bookingPriceSort: string;
   setBookingPriceSort: (val: string) => void;
   handleBookingStatusChange: (id: string, action: string) => void;
+  pendingBookingId?: string | null;
 }
 
 export function BookingsLedgerTable({
@@ -44,6 +46,7 @@ export function BookingsLedgerTable({
   bookingPriceSort,
   setBookingPriceSort,
   handleBookingStatusChange,
+  pendingBookingId = null,
 }: BookingsLedgerTableProps) {
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -327,7 +330,10 @@ export function BookingsLedgerTable({
                           Details
                         </button>
                         {b.status === "pending" && (
-                          <button
+                          <AdminActionButton
+                            label="Accept"
+                            loading={pendingBookingId === b.id}
+                            disabled={pendingBookingId !== null}
                             onClick={() =>
                               handleBookingStatusChange(b.id, "accepted")
                             }
@@ -341,12 +347,13 @@ export function BookingsLedgerTable({
                               border: "none",
                               cursor: "pointer",
                             }}
-                          >
-                            Accept
-                          </button>
+                          />
                         )}
                         {b.status === "awaiting_family_confirmation" && (
-                          <button
+                          <AdminActionButton
+                            label="Complete"
+                            loading={pendingBookingId === b.id}
+                            disabled={pendingBookingId !== null}
                             onClick={() =>
                               handleBookingStatusChange(b.id, "completed")
                             }
@@ -360,13 +367,14 @@ export function BookingsLedgerTable({
                               border: "none",
                               cursor: "pointer",
                             }}
-                          >
-                            Complete
-                          </button>
+                          />
                         )}
                         {b.status !== "cancelled" &&
                           b.status !== "completed" && (
-                            <button
+                            <AdminActionButton
+                              label="Cancel"
+                              loading={pendingBookingId === b.id}
+                              disabled={pendingBookingId !== null}
                               onClick={() =>
                                 handleBookingStatusChange(b.id, "cancelled")
                               }
@@ -380,9 +388,7 @@ export function BookingsLedgerTable({
                                 border: "none",
                                 cursor: "pointer",
                               }}
-                            >
-                              Cancel
-                            </button>
+                            />
                           )}
                       </div>
                     </td>

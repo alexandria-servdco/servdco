@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AdminActionButton } from "@/components/admin/AdminActionButton";
 
 interface VerificationCenterProps {
   documents: Array<{
@@ -21,12 +22,16 @@ interface VerificationCenterProps {
   }>;
   setPreviewDoc: (doc: unknown) => void;
   handleDocumentAction: (docId: string, action: string) => void;
+  pendingDocId?: string | null;
+  isDocActionPending?: boolean;
 }
 
 export function VerificationCenter({
   documents,
   setPreviewDoc,
   handleDocumentAction,
+  pendingDocId = null,
+  isDocActionPending = false,
 }: VerificationCenterProps) {
   return (
     <div className="flex flex-col gap-6">
@@ -195,33 +200,33 @@ export function VerificationCenter({
                         </button>
                         {doc.status === "pending" && (
                           <>
-                            <button
-                              type="button"
+                            <AdminActionButton
+                              label="Approve"
+                              loading={isDocActionPending && pendingDocId === doc.id}
+                              disabled={isDocActionPending}
                               onClick={() =>
                                 handleDocumentAction(doc.id, "approved")
                               }
                               className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#2E7D66]/15 text-[#34D399]"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              type="button"
+                            />
+                            <AdminActionButton
+                              label="Reject"
+                              loading={isDocActionPending && pendingDocId === doc.id}
+                              disabled={isDocActionPending}
                               onClick={() =>
                                 handleDocumentAction(doc.id, "rejected")
                               }
                               className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/15 text-red-400"
-                            >
-                              Reject
-                            </button>
-                            <button
-                              type="button"
+                            />
+                            <AdminActionButton
+                              label="Resubmit"
+                              loading={isDocActionPending && pendingDocId === doc.id}
+                              disabled={isDocActionPending}
                               onClick={() =>
                                 handleDocumentAction(doc.id, "resubmit")
                               }
                               className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/15 text-blue-400"
-                            >
-                              Resubmit
-                            </button>
+                            />
                           </>
                         )}
                       </div>

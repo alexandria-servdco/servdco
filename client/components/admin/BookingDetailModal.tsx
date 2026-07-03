@@ -45,15 +45,15 @@ export function BookingDetailModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        overlayClassName="z-[9999]"
         className={cn(
-          "flex flex-col p-0 gap-0 overflow-hidden",
+          "z-[9999] flex flex-col p-0 gap-0 overflow-hidden min-h-0",
           "sm:max-w-2xl w-[calc(100vw-2rem)] max-h-[90vh]",
           "bg-[#161616] border border-white/10 text-white rounded-3xl",
         )}
       >
-        {/* Sticky header */}
-        <DialogHeader className="shrink-0 px-6 py-5 border-b border-white/8 bg-[#161616] space-y-1">
-          <div className="flex items-start justify-between gap-4 pr-8">
+        <DialogHeader className="sticky top-0 z-10 shrink-0 px-6 py-5 border-b border-white/8 bg-[#161616] space-y-1">
+          <div className="flex items-start justify-between gap-4 pr-12">
             <div>
               <DialogTitle className="font-serif text-xl text-left">
                 Booking details
@@ -70,8 +70,7 @@ export function BookingDetailModal({
           </div>
         </DialogHeader>
 
-        {/* Scrollable body only */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 servd-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5 servd-scrollbar">
           {isLoading && (
             <div className="flex justify-center py-12">
               <Loader2 className="animate-spin text-[#FF7A59]" size={28} />

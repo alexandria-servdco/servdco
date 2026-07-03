@@ -7,6 +7,8 @@ import {
   timelineStepIndex,
   maskPhone,
   maskEmail,
+  countCompletedBookings,
+  completedBookingsCountByChef,
 } from "./booking";
 
 describe("booking status model", () => {
@@ -54,5 +56,21 @@ describe("contact masking", () => {
   it("masks phone and email", () => {
     expect(maskPhone("6145551234")).toContain("1234");
     expect(maskEmail("family@example.com")).toContain("@example.com");
+  });
+});
+
+describe("completed booking counts", () => {
+  it("counts completed bookings with optional chef scope", () => {
+    const bookings = [
+      { status: "completed", chef_profile_id: "chef-a" },
+      { status: "completed", chef_profile_id: "chef-a" },
+      { status: "cancelled", chef_profile_id: "chef-a" },
+      { status: "completed", chef_profile_id: "chef-b" },
+    ];
+    expect(countCompletedBookings(bookings)).toBe(3);
+    expect(countCompletedBookings(bookings, "chef-a")).toBe(2);
+    const byChef = completedBookingsCountByChef(bookings);
+    expect(byChef.get("chef-a")).toBe(2);
+    expect(byChef.get("chef-b")).toBe(1);
   });
 });

@@ -729,26 +729,36 @@ export default function Dashboard() {
                   onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                   required
                 />
-                <FormInput
-                  type="text"
-                  label="ZIP Code"
-                  id="zip"
-                  value={profileData.zip}
-                  onChange={(e) => setProfileData({ ...profileData, zip: e.target.value })}
-                  required
-                />
               </div>
 
               <StateCitySelect
                 state={profileData.state}
                 city={profileData.city}
+                zip={profileData.zip}
                 onStateChange={(state) =>
-                  setProfileData((prev) => ({ ...prev, state, city: "" }))
+                  setProfileData((prev) => ({ ...prev, state }))
                 }
                 onCityChange={(city) =>
                   setProfileData((prev) => ({ ...prev, city }))
                 }
               />
+
+              <FormInput
+                type="text"
+                label="ZIP Code"
+                id="zip"
+                value={profileData.zip}
+                onChange={(e) =>
+                  setProfileData({
+                    ...profileData,
+                    zip: e.target.value.replace(/\D/g, "").slice(0, 5),
+                  })
+                }
+                required
+              />
+              <p className="text-[10px] text-[#6B6B6B] leading-snug -mt-2">
+                Launch availability is verified from your ZIP code.
+              </p>
 
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Dietary Preferences</h4>

@@ -117,10 +117,13 @@ export function StateCitySelect({
   }, [remoteCities, bundledCities, cityQuery]);
 
   const handleStateChange = (nextState: string) => {
-    setCityQuery("");
-    setRemoteCities([]);
+    const nextCode = resolveStateCode(nextState) ?? "";
+    if (nextCode !== stateCode) {
+      setCityQuery("");
+      setRemoteCities([]);
+      onCityChange("");
+    }
     onStateChange(nextState);
-    onCityChange("");
   };
 
   const listId = `city-suggestions-${stateCode || "state"}`;
@@ -185,7 +188,7 @@ export function StateCitySelect({
         <p className="text-[10px] text-[#6B6B6B] leading-snug">
           {loadingCities
             ? "Loading cities…"
-            : "Pick from suggestions or type your city — availability is verified from your ZIP."}
+            : "Pick from suggestions or type your city."}
         </p>
         {cityError && (
           <p className="text-[10px] text-red-400 font-medium">{cityError}</p>

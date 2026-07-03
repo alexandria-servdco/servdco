@@ -128,12 +128,10 @@ export function evaluateGeography(
     zipCodes.length === 0 ? true : zip ? zipMatchesList(zip, zipCodes) : false;
 
   let geographyAllowed = true;
-  if (cities.length > 0 && zipCodes.length > 0) {
-    geographyAllowed = cityAllowed && zipAllowed;
+  if (zipCodes.length > 0) {
+    geographyAllowed = zipAllowed;
   } else if (cities.length > 0) {
     geographyAllowed = cityAllowed;
-  } else if (zipCodes.length > 0) {
-    geographyAllowed = zipAllowed;
   }
 
   return { cityAllowed, zipAllowed, geographyAllowed };
@@ -328,9 +326,7 @@ export function resolveRegionAccess(
   const geo = evaluateGeography(input, config.cities, config.zipCodes);
   let effectiveStatus = config.status;
 
-  const stateIsLive =
-    config.status === "active" || config.status === "internal_beta";
-  const geographyForAccess = stateIsLive ? true : geo.geographyAllowed;
+  const geographyForAccess = geo.geographyAllowed;
 
   if (config.maintenance_mode) {
     effectiveStatus = "maintenance";
@@ -362,13 +358,13 @@ export function resolveRegionAccess(
     message =
       config.pause_reason ??
       "New bookings and payments are paused in your region. Existing bookings remain active.";
-  } else if (
-    effectiveStatus === "waitlist" &&
-    !geographyForAccess &&
-    !stateIsLive
-  ) {
-    reason = "city_not_launched";
-    message = `Servd Co has not launched in ${city || "your city"} yet. Join the waitlist and we'll notify you when we arrive.`;
+  } else if (!geographyForAccess) {
+    reason =
+      config.zipCodes.length > 0 ? "zip_not_launched" : "city_not_launched";
+    message =
+      config.zipCodes.length > 0
+        ? `Servd Co has not launched in ZIP ${zip || "your area"} yet. Join the waitlist and we'll notify you when we arrive.`
+        : `Servd Co has not launched in ${city || "your city"} yet. Join the waitlist and we'll notify you when we arrive.`;
   } else if (effectiveStatus === "waitlist") {
     reason = "region_waitlist";
     message =

@@ -14,9 +14,7 @@ export async function upsertUserRegionAccess(
   const client = getServiceRoleClient();
   const now = new Date().toISOString();
 
-  const isMarketActive =
-    resolved.effectiveStatus === "active" ||
-    resolved.effectiveStatus === "internal_beta";
+  const isMarketActive = resolved.canAccessDashboard;
 
   const { error } = await client.from("user_region_access").upsert(
     {

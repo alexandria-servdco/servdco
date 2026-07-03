@@ -187,6 +187,16 @@ export function LocationPicker({
         <div className="flex-1 h-px bg-white/10" />
       </div>
 
+      <StateCitySelect
+        state={value.state}
+        city={value.city}
+        zip={value.zip}
+        onStateChange={(state) => markManual({ state })}
+        onCityChange={(city) => markManual({ city })}
+        stateError={stateError}
+        cityError={cityError}
+      />
+
       <FormInput
         type="text"
         label="ZIP Code"
@@ -208,16 +218,9 @@ export function LocationPicker({
             : undefined)
         }
       />
-
-      <StateCitySelect
-        state={value.state}
-        city={value.city}
-        zip={value.zip}
-        onStateChange={(state) => markManual({ state, city: "" })}
-        onCityChange={(city) => markManual({ city })}
-        stateError={stateError}
-        cityError={cityError}
-      />
+      <p className="text-[10px] text-[#6B6B6B] leading-snug -mt-2">
+        Launch availability is verified from your ZIP code.
+      </p>
     </section>
   );
 }

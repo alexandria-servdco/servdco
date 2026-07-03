@@ -7,11 +7,29 @@ import {
 } from "./launchControl";
 
 describe("evaluateGeography", () => {
-  it("requires city and zip when both lists configured", () => {
+  it("uses zip list when configured (city alone is not enough)", () => {
+    const result = evaluateGeography(
+      { city: "Columbus", zip: "43125" },
+      ["Springfield", "Urbana"],
+      ["45501", "43002"],
+    );
+    expect(result.geographyAllowed).toBe(false);
+  });
+
+  it("allows matching zip even when city differs", () => {
+    const result = evaluateGeography(
+      { city: "Groveport", zip: "45501" },
+      ["Springfield"],
+      ["45501", "43002"],
+    );
+    expect(result.geographyAllowed).toBe(true);
+  });
+
+  it("requires city when only city list configured", () => {
     const result = evaluateGeography(
       { city: "Dayton", zip: "45402" },
       ["Columbus", "Cleveland", "Cincinnati"],
-      ["43201", "44101", "45201"],
+      [],
     );
     expect(result.geographyAllowed).toBe(false);
   });
@@ -48,11 +66,23 @@ describe("resolveRegionAccess", () => {
     family_count: 20,
   });
 
-  it("grants active access statewide when region is live", () => {
+  it("waitlists user outside covered zips when region is active", () => {
     const result = resolveRegionAccess(
       "OH",
       ohioConfig,
-      { state: "Ohio", city: "Dayton", zip: "45402", role: "family" },
+      { state: "Ohio", city: "Groveport", zip: "43125", role: "family" },
+    );
+    expect(result.effectiveStatus).toBe("active");
+    expect(result.canAccessDashboard).toBe(false);
+    expect(result.reason).toBe("zip_not_launched");
+    expect(result.permissions.booking_create).toBe(false);
+  });
+
+  it("grants active access for matching launch zip", () => {
+    const result = resolveRegionAccess(
+      "OH",
+      ohioConfig,
+      { state: "Ohio", city: "Columbus", zip: "43201", role: "family" },
     );
     expect(result.effectiveStatus).toBe("active");
     expect(result.canAccessDashboard).toBe(true);
@@ -73,18 +103,7 @@ describe("resolveRegionAccess", () => {
     );
     expect(result.effectiveStatus).toBe("waitlist");
     expect(result.canAccessDashboard).toBe(false);
-    expect(result.reason).toBe("city_not_launched");
-  });
-
-  it("grants active access for Columbus suburb ZIP when region is live", () => {
-    const result = resolveRegionAccess(
-      "OH",
-      ohioConfig,
-      { state: "Ohio", city: "Columbus", zip: "43004", role: "family" },
-    );
-    expect(result.effectiveStatus).toBe("active");
-    expect(result.canAccessDashboard).toBe(true);
-    expect(result.permissions.booking_create).toBe(true);
+    expect(result.reason).toBe("zip_not_launched");
   });
 
   it("blocks bookings when region paused", () => {

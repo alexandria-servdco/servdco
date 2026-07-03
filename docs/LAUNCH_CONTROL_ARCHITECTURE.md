@@ -11,7 +11,7 @@ Launch Control is the **authoritative runtime system** governing marketplace acc
 | Field | Purpose |
 |-------|---------|
 | `status` | `active`, `waitlist`, `paused`, `maintenance`, `internal_beta`, `coming_soon` |
-| `city` / `zip_codes` | **Ops metadata** during rollout — geography gates access only while `status` is `waitlist` or `coming_soon`. When `status` is `active` or `internal_beta`, access is **statewide**. |
+| `city` / `zip_codes` | **Launch boundaries** — when `zip_codes` is set, only those ZIPs may access the marketplace (even if `status` is `active`). City list is fallback when no ZIPs are configured. |
 | `allow_*` flags | Per-capability toggles (bookings, payments, messages, reviews, signups) |
 | `maintenance_mode` / `maintenance_message` | Temporary outage UX |
 | `auto_launch` + `min_chefs` / `min_families` | Automated activation thresholds |
@@ -37,7 +37,9 @@ effectiveStatus + flags → permissions
 
 **Example (waitlist):** Ohio waitlist with Columbus/Cleveland/Cincinnati only → Dayton user gets `effectiveStatus: waitlist`, `reason: city_not_launched`.
 
-**Example (active):** Ohio active with Columbus only in city list → Dayton user still gets `effectiveStatus: active` (statewide launch). Suburban ZIPs like 43004 (Blacklick) are included automatically.
+**Example (active + ZIP list):** Ohio active with ZIPs 45501, 43002 only → user at 43125 (Groveport) gets `canAccessDashboard: false`, `reason: zip_not_launched`.
+
+**Example (active, no ZIP list):** Ohio active with city list only → geography follows city names.
 
 ## Enforcement Layers
 

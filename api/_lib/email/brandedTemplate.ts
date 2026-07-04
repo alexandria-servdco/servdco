@@ -1,4 +1,4 @@
-import { normalizeSiteUrl, siteDisplayHost } from "@shared/siteUrl";
+import { normalizeSiteUrl, siteDisplayHost } from "../../../shared/siteUrl.js";
 
 export function escapeHtml(value: string): string {
   return value

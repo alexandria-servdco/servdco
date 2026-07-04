@@ -47,6 +47,8 @@ export default defineConfig(() => ({
     alias: {
       "@": path.resolve(__dirname, "./client"),
       "@shared": path.resolve(__dirname, "./shared"),
+      // Rolldown hoists `import ws from "ws"` from supabase error-message strings.
+      ws: path.resolve(__dirname, "./client/lib/supabase/wsStub.ts"),
     },
   },
 }));

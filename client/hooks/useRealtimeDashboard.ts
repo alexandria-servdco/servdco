@@ -44,6 +44,13 @@ function subscribeWithRetry({
 }: SubscribeArgs): void {
   let attempt = 0;
 
+  const scheduleRemove = (channel: RealtimeChannel) => {
+    queueMicrotask(() => {
+      if (cancelled()) return;
+      void client.removeChannel(channel);
+    });
+  };
+
   const connect = () => {
     if (cancelled()) return;
 
@@ -58,7 +65,7 @@ function subscribeWithRetry({
     channel.on("postgres_changes", config, handler);
     channel.subscribe((status) => {
       if (cancelled()) {
-        void client.removeChannel(channel);
+        scheduleRemove(channel);
         return;
       }
 
@@ -68,7 +75,7 @@ function subscribeWithRetry({
       }
 
       if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        void client.removeChannel(channel);
+        scheduleRemove(channel);
         if (attempt >= MAX_RETRIES) {
           logger.warn("Realtime subscription exhausted retries", {
             domain: "realtime",
@@ -106,8 +113,11 @@ export function useRealtimeDashboard({
     const client = getSupabaseClient();
     if (!client) return;
 
-    const { data: authSub } = client.auth.onAuthStateChange((event) => {
-      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+    const { data: authSub } = client.auth.onAuthStateChange((event, session) => {
+      if (
+        session &&
+        (event === "TOKEN_REFRESHED" || event === "SIGNED_IN")
+      ) {
         setReconnectKey((k) => k + 1);
       }
     });
@@ -167,7 +177,7 @@ export function useRealtimeDashboard({
         cancelled,
         channels,
         onExhausted: () => {
-          if (!disposed) setReconnectKey((k) => k + 1);
+          // Stop retrying when exhausted — `online` / auth events recover later.
         },
       });
     };
@@ -250,9 +260,12 @@ export function useRealtimeDashboard({
 
     return () => {
       disposed = true;
-      for (const channel of channels) {
-        void client.removeChannel(channel);
-      }
+      const toRemove = [...channels];
+      queueMicrotask(() => {
+        for (const channel of toRemove) {
+          void client.removeChannel(channel);
+        }
+      });
     };
   }, [userId, chefProfileId, role, queryClient, reconnectKey]);
 }

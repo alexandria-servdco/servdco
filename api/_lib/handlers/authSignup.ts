@@ -212,6 +212,12 @@ export async function handleAuthSignup(
 
     const signup = parsed.data;
 
+    const env = getStripeEnv();
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+      sendUserError(res, 503, "AUTH_SERVICE_UNAVAILABLE");
+      return;
+    }
+
     const normalizedZip = signup.zip.replace(/\D/g, "").slice(0, 5);
     const locValidation = await validateLocationFields({
       state: signup.state,
@@ -251,12 +257,6 @@ export async function handleAuthSignup(
       primaryCuisine: signup.primaryCuisine,
       bio: signup.bio,
     };
-    const env = getStripeEnv();
-    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-      sendUserError(res, 503, "AUTH_SERVICE_UNAVAILABLE");
-      return;
-    }
-
     const admin = getServiceRoleClient();
 
     const { user: existingAuthUser } = await findAuthUserByEmail(signup.email);
@@ -443,12 +443,20 @@ export async function handleAuthSignup(
     }
 
     if (!session) {
-      confirmationEmailSent = await sendSignupConfirmationEmail({
-        email: signup.email,
-        password: signup.password,
-        name: signup.name,
-        role: signup.role,
-      });
+      try {
+        confirmationEmailSent = await sendSignupConfirmationEmail({
+          email: signup.email,
+          password: signup.password,
+          name: signup.name,
+          role: signup.role,
+        });
+      } catch (emailErr) {
+        console.error(
+          "[auth.signup] confirmation email:",
+          emailErr instanceof Error ? emailErr.message : emailErr,
+        );
+        confirmationEmailSent = false;
+      }
     }
 
     res.status(200).json({

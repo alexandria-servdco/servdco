@@ -8,8 +8,9 @@ compatibility_date = "2024-11-01"
 crons = ["*/15 * * * *"]
 
 [vars]
-SITE_URL = "https://servdco.vercel.app"
 WORKER_VERSION = "2.0.0"
+# SITE_URL — set in Cloudflare dashboard (Settings → Variables). Do not commit deployment URLs.
+# CRON_SECRET — set via `wrangler secret put CRON_SECRET` (must match Vercel CRON_SECRET).
 
 [observability]
 enabled = true

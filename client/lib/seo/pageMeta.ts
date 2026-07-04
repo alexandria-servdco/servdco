@@ -1,15 +1,11 @@
+import { getClientSiteUrl } from "@/lib/siteUrl";
+
 export interface PageSeoConfig {
   title: string;
   description: string;
   path: string;
   ogType?: "website" | "article";
 }
-
-const SITE_URL =
-  (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") ||
-  (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/$/, "") ||
-  (typeof window !== "undefined" ? window.location.origin : "");
-const DEFAULT_OG_IMAGE = SITE_URL ? `${SITE_URL}/og-default.png` : "/og-default.png";
 
 export const SEO_ROUTES: Record<string, PageSeoConfig> = {
   "/": {
@@ -118,7 +114,9 @@ export function getSeoForPath(pathname: string): PageSeoConfig {
 }
 
 export function applyPageMeta(config: PageSeoConfig): void {
-  const canonical = `${SITE_URL}${config.path === "/" ? "" : config.path}`;
+  const siteUrl = getClientSiteUrl();
+  const canonical = `${siteUrl}${config.path === "/" ? "" : config.path}`;
+  const ogImage = siteUrl ? `${siteUrl}/og-default.png` : "/og-default.png";
 
   document.title = config.title;
 
@@ -127,12 +125,12 @@ export function applyPageMeta(config: PageSeoConfig): void {
   setMeta("property", "og:description", config.description);
   setMeta("property", "og:type", config.ogType ?? "website");
   setMeta("property", "og:url", canonical);
-  setMeta("property", "og:image", DEFAULT_OG_IMAGE);
+  setMeta("property", "og:image", ogImage);
   setMeta("property", "og:site_name", "Servd Co");
   setMeta("name", "twitter:card", "summary_large_image");
   setMeta("name", "twitter:title", config.title);
   setMeta("name", "twitter:description", config.description);
-  setMeta("name", "twitter:image", DEFAULT_OG_IMAGE);
+  setMeta("name", "twitter:image", ogImage);
 
   let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
   if (!link) {

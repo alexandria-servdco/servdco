@@ -27,6 +27,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 
 const Login = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Register = lazy(() => import("./pages/Register"));
 const ChefRegistration = lazy(() => import("./pages/ChefRegistration"));
 const FamilyRegistration = lazy(() => import("./pages/FamilyRegistration"));
@@ -309,6 +310,15 @@ const App = () => (
                 element={
                   <LazyRoute label="reset-password" viewportLocked>
                     <ResetPassword />
+                  </LazyRoute>
+                }
+              />
+
+              <Route
+                path="/auth/callback"
+                element={
+                  <LazyRoute label="auth-callback" viewportLocked>
+                    <AuthCallback />
                   </LazyRoute>
                 }
               />

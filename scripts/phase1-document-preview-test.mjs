@@ -68,7 +68,10 @@ function detectType(pathStr) {
 async function main() {
   const env = loadEnv();
   const supabaseUrl =
-    env.VITE_SUPABASE_URL || env.SUPABASE_URL || "https://onerrwpixumcablgyhzs.supabase.co";
+    env.VITE_SUPABASE_URL || env.SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error("SUPABASE_URL or VITE_SUPABASE_URL is required in .env.local");
+  }
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
   const pgClient = new pg.Client({

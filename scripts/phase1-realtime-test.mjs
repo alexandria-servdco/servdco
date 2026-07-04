@@ -61,11 +61,14 @@ async function runRealtimeTest({
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
   const supabaseUrl =
     env.VITE_SUPABASE_URL ||
-    env.SUPABASE_URL ||
-    "https://onerrwpixumcablgyhzs.supabase.co";
+    env.SUPABASE_URL;
 
   if (!serviceKey) {
     return { skipped: true, reason: "No service role key" };
+  }
+
+  if (!supabaseUrl) {
+    return { skipped: true, reason: "No SUPABASE_URL configured" };
   }
 
   const pgClient = new pg.Client({

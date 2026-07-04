@@ -36,6 +36,12 @@ export function validateClientStartup(): StartupValidationResult {
     }
   }
 
+  if (import.meta.env.PROD && !import.meta.env.VITE_SITE_URL?.trim()) {
+    warnings.push(
+      "VITE_SITE_URL is not set — canonical URLs and sitemap will use window.location.origin at runtime and VERCEL_URL at build.",
+    );
+  }
+
   if (import.meta.env.VITE_ENABLE_STRIPE_CHECKOUT === "true") {
     warnings.push(
       "Stripe checkout flag is on — ensure Vercel /api/stripe/* secrets are set before accepting payments.",

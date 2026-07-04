@@ -1,6 +1,28 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const mockSelect = vi.fn();
+
+vi.mock("@/lib/supabase/client", () => ({
+  getSupabaseClient: () => ({
+    from: () => ({
+      select: mockSelect,
+    }),
+  }),
+}));
+
+vi.mock("@/lib/supabase/env", () => ({
+  isSupabaseConfigured: () => true,
+}));
 
 describe("messaging feature flag default", () => {
+  beforeEach(() => {
+    mockSelect.mockReset();
+    mockSelect.mockResolvedValue({
+      data: [{ key: "enable_messaging", enabled: true }],
+      error: null,
+    });
+  });
+
   it("enable_messaging reads cloud flag when no env override", async () => {
     vi.stubEnv("VITE_ENABLE_MESSAGING", "");
     const { isMessagingEnabled, resetFeatureFlagCache } = await import(

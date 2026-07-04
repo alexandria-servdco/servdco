@@ -1,10 +1,10 @@
 # Local development secrets for `wrangler dev`.
 # Copy to `.dev.vars` (gitignored) and fill in real values.
 #
-# SITE_URL is also set in wrangler.toml [vars]; setting it here overrides it
-# locally so you can point at a preview deployment during testing.
+# SITE_URL targets the ServdCo API base (Vercel). Use your production domain,
+# preview URL, or http://localhost:3000 when running the API locally.
 
-SITE_URL="https://servdco.vercel.app"
+SITE_URL="https://YOUR_PRODUCTION_DOMAIN"
 CRON_SECRET="paste-the-same-value-as-vercel-CRON_SECRET"
 # Optional: Discord/Slack webhook for failure alerts.
 # ALERT_WEBHOOK_URL="https://discord.com/api/webhooks/..."

@@ -1,3 +1,5 @@
+import { normalizeSiteUrl, siteDisplayHost } from "@shared/siteUrl";
+
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -12,19 +14,20 @@ export function resolveSiteUrl(): string {
     process.env.APP_URL ??
     process.env.VERCEL_PROJECT_PRODUCTION_URL ??
     process.env.VERCEL_URL;
-  if (!raw) {
-    if (
-      process.env.NODE_ENV === "development" ||
-      process.env.VERCEL_ENV === "preview"
-    ) {
-      return "http://localhost:8080";
-    }
-    throw new Error(
-      "SITE_URL environment variable is required for production email links.",
-    );
+
+  const normalized = normalizeSiteUrl(raw);
+  if (normalized) return normalized;
+
+  if (
+    process.env.NODE_ENV === "development" ||
+    process.env.VERCEL_ENV === "preview"
+  ) {
+    return "http://localhost:8080";
   }
-  if (raw.startsWith("http")) return raw.replace(/\/$/, "");
-  return `https://${raw.replace(/\/$/, "")}`;
+
+  throw new Error(
+    "SITE_URL environment variable is required for production email links.",
+  );
 }
 
 export function brandedEmailHtml(params: {
@@ -34,6 +37,9 @@ export function brandedEmailHtml(params: {
   const preheader = params.preheader
     ? `<span style="display:none!important;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">${escapeHtml(params.preheader)}</span>`
     : "";
+
+  const siteUrl = resolveSiteUrl();
+  const siteHost = siteDisplayHost(siteUrl);
 
   return `
 <!DOCTYPE html>
@@ -59,7 +65,7 @@ export function brandedEmailHtml(params: {
           <tr>
             <td style="padding:20px 32px 28px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
               <p style="margin:0;font-size:11px;color:#A8A8A8;font-family:system-ui,sans-serif;">
-                © ${new Date().getFullYear()} Servd Co · <a href="${resolveSiteUrl()}" style="color:#FF7A59;text-decoration:none;">servdco.com</a>
+                © ${new Date().getFullYear()} Servd Co · <a href="${siteUrl}" style="color:#FF7A59;text-decoration:none;">${siteHost}</a>
               </p>
             </td>
           </tr>

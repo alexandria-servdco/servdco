@@ -27,7 +27,7 @@ Every scheduled run, in order (each retried once on failure; one failure never b
 
 | Name | Type | Where | Example |
 | ---- | ---- | ----- | ------- |
-| `SITE_URL` | var | `wrangler.toml` / dashboard | `https://servdco.vercel.app` |
+| `SITE_URL` | var | Cloudflare dashboard only | `https://servdco.com` (production) |
 | `WORKER_VERSION` | var | `wrangler.toml` / dashboard | `2.0.0` |
 | `CRON_SECRET` | secret | `wrangler secret` / dashboard | *(same value as Vercel)* |
 | `ALERT_WEBHOOK_URL` | secret (optional) | dashboard / `wrangler secret` | Discord or Slack webhook |

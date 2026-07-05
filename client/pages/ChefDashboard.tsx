@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation, Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Bell,
@@ -107,7 +107,10 @@ import { useOwnDocuments, useSubmitChefDocuments } from "@/hooks/useOwnDocuments
 import { useChefAnalytics } from "@/hooks/useChefAnalytics";
 import type { BookingStatus } from "@shared/booking";
 import { resolveProfileCompletion } from "@shared/profileCompletion";
-import { canAddAvailabilitySlot } from "@shared/availabilityValidation";
+import {
+  canAddAvailabilitySlot,
+  AvailabilityValidationError,
+} from "@shared/availabilityValidation";
 import { BookingStatusFilterBar } from "@/components/booking/BookingStatusFilterBar";
 import { VerificationResources } from "@/components/chef/VerificationResources";
 import { BOOKING_STATUS_LABELS } from "@/lib/bookingTypes";
@@ -344,9 +347,8 @@ export default function ChefDashboard() {
   });
 
   // Weekly Schedule states
-  const [newDay, setNewDay] = useState("Monday");
-  const [newTime, setNewTime] = useState("09:00 AM - 12:00 PM");
   const [availabilitySuccess, setAvailabilitySuccess] = useState(false);
+  const availabilitySaveInFlight = useRef(false);
 
   // Settings states
   const [settingsData, setSettingsData] = useState({
@@ -424,28 +426,54 @@ export default function ChefDashboard() {
   const currentTab = getSubTab();
 
 
-  const handleAddAvailability = async () => {
-    const check = canAddAvailabilitySlot(availabilitySlots, newDay, newTime);
+  const refreshAvailabilitySlots = useCallback(async () => {
+    if (!chefProfileId) return;
+    const fetched = await AvailabilityService.getAvailability(chefProfileId);
+    setAvailabilitySlots(fetched);
+  }, [chefProfileId]);
+
+  const handleAvailabilitySaveError = useCallback(
+    async (err: unknown, fallbackMessage: string) => {
+      if (err instanceof AvailabilityValidationError) {
+        toast.error(err.message);
+        return;
+      }
+      toast.error(err instanceof Error ? err.message : fallbackMessage);
+      await refreshAvailabilitySlots();
+    },
+    [refreshAvailabilitySlots],
+  );
+
+  const handleAddAvailability = async (day: string, time: string) => {
+    if (!chefProfileId) {
+      toast.error("Chef profile is still loading. Try again in a moment.");
+      return;
+    }
+    if (availabilitySaveInFlight.current) return;
+
+    const check = canAddAvailabilitySlot(availabilitySlots, day, time);
     if (check.ok === false) {
       toast.error(check.message);
       return;
     }
 
-    const exist = availabilitySlots.find((s) => s.day === newDay);
+    const exist = availabilitySlots.find((s) => s.day === day);
     let updated: AvailabilitySlot[] = [];
     if (exist) {
       updated = availabilitySlots.map((s) => {
-        if (s.day === newDay) {
-          return { ...s, timeSlots: [...s.timeSlots, newTime] };
+        if (s.day === day) {
+          return { ...s, timeSlots: [...s.timeSlots, time] };
         }
         return s;
       });
     } else {
       updated = [
         ...availabilitySlots,
-        { day: newDay, timeSlots: [newTime], recurring: true },
+        { day, timeSlots: [time], recurring: true },
       ];
     }
+
+    availabilitySaveInFlight.current = true;
     try {
       await AvailabilityService.saveAvailability(chefProfileId, updated);
       setAvailabilitySlots(updated);
@@ -455,9 +483,9 @@ export default function ChefDashboard() {
       setAvailabilitySuccess(true);
       setTimeout(() => setAvailabilitySuccess(false), 2500);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not save availability.",
-      );
+      await handleAvailabilitySaveError(err, "Could not save availability.");
+    } finally {
+      availabilitySaveInFlight.current = false;
     }
   };
 
@@ -465,6 +493,10 @@ export default function ChefDashboard() {
     day: string,
     slotIndex: number,
   ) => {
+    if (!chefProfileId) return;
+    if (availabilitySaveInFlight.current) return;
+
+    const previous = availabilitySlots;
     const updated = availabilitySlots
       .map((s) => {
         if (s.day === day) {
@@ -476,11 +508,20 @@ export default function ChefDashboard() {
         return s;
       })
       .filter((s) => s.timeSlots.length > 0);
-    setAvailabilitySlots(updated);
-    await AvailabilityService.saveAvailability(chefProfileId, updated);
-    await queryClient.invalidateQueries({
-      queryKey: availabilityQueryKeys.byChef(chefProfileId),
-    });
+
+    availabilitySaveInFlight.current = true;
+    try {
+      await AvailabilityService.saveAvailability(chefProfileId, updated);
+      setAvailabilitySlots(updated);
+      await queryClient.invalidateQueries({
+        queryKey: availabilityQueryKeys.byChef(chefProfileId),
+      });
+    } catch (err) {
+      setAvailabilitySlots(previous);
+      await handleAvailabilitySaveError(err, "Could not update availability.");
+    } finally {
+      availabilitySaveInFlight.current = false;
+    }
   };
 
   const handleProfileSave = async (e: React.FormEvent) => {
@@ -1454,9 +1495,7 @@ export default function ChefDashboard() {
             <AvailabilityManager
               availabilitySlots={availabilitySlots}
               onAddSlot={(day, time) => {
-                setNewDay(day);
-                setNewTime(time);
-                handleAddAvailability();
+                void handleAddAvailability(day, time);
               }}
               onDeleteSlot={handleDeleteAvailabilitySlot}
               successMessage={availabilitySuccess}

@@ -39,4 +39,8 @@ describe("availability validation", () => {
       ]),
     ).not.toThrow();
   });
+
+  it("allows clearing all availability (empty save payload)", () => {
+    expect(() => validateAvailabilitySlots([])).not.toThrow();
+  });
 });

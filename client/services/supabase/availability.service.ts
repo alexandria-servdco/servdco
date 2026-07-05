@@ -3,7 +3,6 @@ import type { Json } from "@/lib/supabase/types";
 import { SupabaseQueryError } from "./fallback";
 import {
   validateAvailabilitySlots,
-  AvailabilityValidationError,
 } from "@shared/availabilityValidation";
 
 export const availabilityQueryKeys = {
@@ -45,6 +44,19 @@ function parseTimeSlots(value: Json): string[] {
   return value.filter((slot): slot is string => typeof slot === "string");
 }
 
+/** Remove exact duplicate labels while preserving order (repairs legacy/corrupt rows). */
+function dedupeTimeSlots(slots: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const slot of slots) {
+    const normalized = slot.trim();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(normalized);
+  }
+  return out;
+}
+
 export const AvailabilitySupabaseService = {
   async getAvailability(chefProfileId: string): Promise<AvailabilitySlot[]> {
     const client = getSupabaseClient();
@@ -62,7 +74,7 @@ export const AvailabilitySupabaseService = {
 
     return data.map((row) => ({
       day: dayIndexToName(row.day_of_week),
-      timeSlots: parseTimeSlots(row.time_slots),
+      timeSlots: dedupeTimeSlots(parseTimeSlots(row.time_slots)),
       recurring: row.recurring,
     }));
   },
@@ -71,14 +83,14 @@ export const AvailabilitySupabaseService = {
     chefProfileId: string,
     slots: AvailabilitySlot[],
   ): Promise<boolean> {
-    try {
-      validateAvailabilitySlots(slots);
-    } catch (err) {
-      if (err instanceof AvailabilityValidationError) {
-        throw new SupabaseQueryError(err.message);
-      }
-      throw err;
-    }
+    const normalizedSlots = slots
+      .map((slot) => ({
+        ...slot,
+        timeSlots: dedupeTimeSlots(slot.timeSlots),
+      }))
+      .filter((slot) => slot.timeSlots.length > 0);
+
+    validateAvailabilitySlots(normalizedSlots);
 
     const client = getSupabaseClient();
     if (!client) throw new SupabaseQueryError("Supabase client unavailable");
@@ -95,7 +107,7 @@ export const AvailabilitySupabaseService = {
       (existing ?? []).map((row) => [row.day_of_week, row.id]),
     );
 
-    for (const slot of slots) {
+    for (const slot of normalizedSlots) {
       const dayIndex = dayNameToIndex(slot.day);
       const payload = {
         chef_profile_id: chefProfileId,

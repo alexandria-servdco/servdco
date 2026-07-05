@@ -50,6 +50,17 @@ export async function initSentry(): Promise<void> {
       replaysSessionSampleRate: 0,
       replaysOnErrorSampleRate: 0,
       beforeSend(event) {
+        const exceptionType = event.exception?.values?.[0]?.type;
+        const exceptionMessage = event.exception?.values?.[0]?.value ?? "";
+        if (
+          exceptionType === "AvailabilityValidationError" ||
+          exceptionMessage.includes("already exists on") ||
+          exceptionMessage.includes("overlaps with") ||
+          exceptionMessage.includes("Cannot exceed")
+        ) {
+          return null;
+        }
+
         const request = event.request;
         if (request?.data && typeof request.data === "object") {
           request.data = scrubSensitiveRecord(

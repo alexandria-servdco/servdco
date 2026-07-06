@@ -17,7 +17,7 @@ describe("transferFunding", () => {
       `servdco_cook_transfer_${transferId}`,
     );
     expect(cookTransferIdempotencyKey(transferId, true)).toBe(
-      `servdco_cook_transfer_st_${transferId}`,
+      `servdco_cook_transfer_st2_${transferId}`,
     );
     expect(cookTransferIdempotencyKey(transferId, false)).not.toBe(
       cookTransferIdempotencyKey(transferId, true),

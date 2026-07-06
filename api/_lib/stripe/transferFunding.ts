@@ -21,12 +21,14 @@ export function tipTransferGroup(bookingId: string): string {
  * Idempotency key for cook transfers.
  * Charge-linked transfers use a distinct namespace so prior failed creates
  * (without source_transaction) are not replayed from Stripe idempotency cache.
+ * "st2" — params changed (transfer_group removed when charge-linked); old
+ * st-keyed requests were cached by Stripe with the previous parameter shape.
  */
 export function cookTransferIdempotencyKey(
   transferId: string,
   chargeLinked = false,
 ): string {
-  const namespace = chargeLinked ? "cook_transfer_st" : "cook_transfer";
+  const namespace = chargeLinked ? "cook_transfer_st2" : "cook_transfer";
   return stripeIdempotencyKey(namespace, transferId);
 }
 

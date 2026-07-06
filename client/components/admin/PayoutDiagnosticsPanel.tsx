@@ -66,10 +66,11 @@ export function PayoutDiagnosticsPanel({
     setSyncing(true);
     try {
       const result = await StripeAdminService.syncConnectAccount(chefProfileId);
-      setDiagnostics((prev) => ({
-        ...(prev ?? {}),
+      const fresh = await StripeAdminService.getConnectDiagnostics(chefProfileId);
+      setDiagnostics({
+        ...fresh,
         lastManualSync: result,
-      }));
+      });
       toast.success("Stripe Connect sync completed");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sync failed");

@@ -24,7 +24,7 @@ describe("transferFunding", () => {
     );
   });
 
-  it("builds Stripe transfer params with source_transaction and transfer_group", () => {
+  it("builds Stripe transfer params with source_transaction only (no transfer_group)", () => {
     const params = buildCookTransferCreateParams({
       amountCents: 3480,
       stripeAccountId: "acct_1TneBCADnz2Uvqsw",
@@ -39,7 +39,6 @@ describe("transferFunding", () => {
       amount: 3480,
       currency: "usd",
       destination: "acct_1TneBCADnz2Uvqsw",
-      transfer_group: bookingTransferGroup(bookingId),
       source_transaction: chargeId,
       metadata: {
         transfer_id: transferId,
@@ -48,6 +47,22 @@ describe("transferFunding", () => {
         chef_profile_id: "3da4b4c1-d7de-443b-9d43-dc574107413b",
       },
     });
+    expect(params.transfer_group).toBeUndefined();
+  });
+
+  it("uses transfer_group when transfer is not charge-linked", () => {
+    const params = buildCookTransferCreateParams({
+      amountCents: 3480,
+      stripeAccountId: "acct_1TneBCADnz2Uvqsw",
+      transferId,
+      paymentId: "892e08e7-6c29-4f1a-8c24-0d18e8c126ba",
+      bookingId,
+      chefProfileId: "3da4b4c1-d7de-443b-9d43-dc574107413b",
+      sourceChargeId: null,
+    });
+
+    expect(params.transfer_group).toBe(bookingTransferGroup(bookingId));
+    expect(params.source_transaction).toBeUndefined();
   });
 
   it("uses stable transfer group helpers", () => {

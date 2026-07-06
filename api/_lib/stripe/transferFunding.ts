@@ -85,7 +85,6 @@ export function buildCookTransferCreateParams(params: {
     amount: params.amountCents,
     currency: "usd",
     destination: params.stripeAccountId,
-    transfer_group: bookingTransferGroup(params.bookingId),
     metadata: {
       transfer_id: params.transferId,
       payment_id: params.paymentId,
@@ -95,7 +94,10 @@ export function buildCookTransferCreateParams(params: {
   };
 
   if (params.sourceChargeId) {
+    // Charge already belongs to the checkout PaymentIntent transfer_group.
     createParams.source_transaction = params.sourceChargeId;
+  } else {
+    createParams.transfer_group = bookingTransferGroup(params.bookingId);
   }
 
   return createParams;

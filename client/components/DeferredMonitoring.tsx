@@ -1,12 +1,9 @@
 import { useEffect } from "react";
-import { initAnalytics } from "@/lib/analytics";
 import { initSentry } from "@/lib/monitoring/sentry";
 
 /** Defer non-critical monitoring until the browser is idle. */
 export function DeferredMonitoring() {
   useEffect(() => {
-    initAnalytics();
-
     const bootSentry = () => {
       void initSentry();
     };

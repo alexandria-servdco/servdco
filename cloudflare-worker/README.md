@@ -71,10 +71,6 @@ pnpm run deploy
 npx wrangler tail
 ```
 
-Full production guide: [`../docs/CLOUDFLARE_WORKER_DEPLOYMENT.md`](../docs/CLOUDFLARE_WORKER_DEPLOYMENT.md)
-
-Manual deployment steps only: [`../docs/CLOUDFLARE_DEPLOYMENT.md`](../docs/CLOUDFLARE_DEPLOYMENT.md)
-
 ## Endpoints
 
 | Method | Path | Auth | Purpose |

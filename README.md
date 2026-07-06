@@ -1,127 +1,149 @@
-# ServdCo Private Chef Platform
+# ServdCo
 
-A premium, React-based Single Page Application (SPA) marketplace that connects verified private chefs with customers looking for bespoke in-home dining experiences.
+ServdCo is a production-grade marketplace platform that connects families with private chefs for in-home dining experiences.
 
-## Architecture Overview
+This repository showcases a production-grade marketplace platform that I designed and developed for a private client. The production infrastructure and repository ownership have since been transferred to the client, while this repository is maintained as a portfolio showcasing the implementation and architecture.
 
-The ServdCo platform utilizes a modern frontend-heavy SPA architecture to ensure extremely fast page loads, snappy interactions, and stateful dashboard management without full page refreshes. 
+**Production website:** [https://servdco.com](https://servdco.com)
+
+**Portfolio repository:** [https://github.com/kartik-singhhh03/servdco-saas](https://github.com/kartik-singhhh03/servdco-saas)
+
+---
+
+## Overview
+
+The platform delivers a full end-to-end marketplace experience — from chef discovery and booking through payments, messaging, reviews, and ongoing subscription management. It is built as a modern React SPA with serverless APIs, a Supabase-backed data layer with row-level security, and Stripe Connect for chef payouts.
 
 ### Tech Stack
-- **Frontend Framework**: React 18
-- **Routing**: React Router 6 (SPA mode)
-- **State Management**: Zustand (for lightweight global UI and session state)
-- **Styling**: TailwindCSS 3 + Radix UI primitives + Custom Glassmorphism tokens
-- **Build Tool**: Vite
-- **Icons**: Lucide React
-- **Uploads**: Cloudinary Unsigned (MVP stage)
 
-## Local Development Setup
+| Layer | Technologies |
+|-------|-------------|
+| Frontend | React 18, TypeScript, Vite, TailwindCSS, Radix UI |
+| Backend | Serverless APIs (Vercel), Express (local dev) |
+| Database | Supabase, PostgreSQL |
+| Payments | Stripe Connect, Stripe Checkout |
+| Email | Resend |
+| Observability | Sentry, Google Analytics 4 |
+| Infrastructure | Cloudflare (Workers Cron, Turnstile) |
 
-To run the application locally, you must use `pnpm`.
+### Major Features
 
-1. **Install Dependencies**
+- **Authentication** — Email/password and OAuth via Supabase Auth
+- **Family & Chef dashboards** — Role-specific workflows and profile management
+- **Booking workflow** — Request, confirm, complete, and cancel in-home dining bookings
+- **Messaging** — Family ↔ chef conversations with admin oversight
+- **Reviews** — Post-booking ratings and feedback
+- **Notifications** — In-app and email notification system
+- **Stripe Connect payouts** — Express accounts, transfers, and payout history for chefs
+- **Premium subscriptions** — Recurring family membership via Stripe Billing
+- **Availability management** — Chef scheduling and booking slot control
+- **Admin dashboard** — Platform operations, user management, and settings
+- **Realtime updates** — Live data sync via Supabase Realtime
+- **Secure RLS architecture** — Row-level security policies across all user-facing tables
+
+---
+
+## Development Repository
+
+This repository represents the development version of the platform.
+
+The production deployment, infrastructure, domain ownership, and operational repository have been transferred to the client.
+
+**Production website:** [https://servdco.com](https://servdco.com)
+
+This repository is maintained solely as a portfolio demonstrating my software engineering work.
+
+---
+
+## About
+
+**Designed and developed by:**
+
+**Kartik Singh**  
+Full Stack Software Engineer
+
+---
+
+## Installation
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+
+- [pnpm](https://pnpm.io/)
+- A Supabase project (for auth and database)
+- Stripe account (for payments — test mode for local development)
+
+### Setup
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/kartik-singhhh03/servdco-saas.git
+   cd servdco-saas
+   ```
+
+2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
 
-2. **Environment Variables**
-   Copy the template and fill in your values locally only:
+3. **Configure environment variables**
+
+   Copy the template and fill in your values locally:
+
    ```bash
    cp .env.example .env.local
    ```
-   Never commit `.env.local` — it is gitignored. See `.env.example` for the full list.
 
-3. **Start Development Server**
+   Never commit `.env.local` — it is gitignored. See `.env.example` for the full variable list.
+
+4. **Apply database migrations** (optional — requires Supabase CLI)
+
+   ```bash
+   supabase login
+   supabase link --project-ref <YOUR_PROJECT_REF>
+   supabase db push
+   ```
+
+   See [`supabase/README.md`](supabase/README.md) for migration details.
+
+5. **Start the development server**
+
    ```bash
    pnpm dev
    ```
-   The Vite dev server will typically start on `http://localhost:8080`.
 
-## Cloudinary Upload Integration
+   The app runs at [http://localhost:8080](http://localhost:8080).
 
-For the MVP, file and image uploads bypass a traditional backend and upload directly from the browser to Cloudinary via unsigned presets.
+### Other Commands
 
-**To configure your Cloudinary account:**
-1. Go to your Cloudinary Console -> Settings -> Upload.
-2. Scroll to **Upload presets** and click "Add upload preset".
-3. Change the **Signing Mode** to **Unsigned**.
-4. Set the preset name and paste it into `VITE_CLOUDINARY_UPLOAD_PRESET`.
-5. (Optional) Set up incoming transformation rules to automatically compress images and generate `f_auto,q_auto` optimized thumbnails.
+| Command | Description |
+|---------|-------------|
+| `pnpm build` | Production build |
+| `pnpm preview` | Preview production build locally |
+| `pnpm typecheck` | TypeScript validation |
+| `pnpm test` | Run Vitest unit tests |
 
-*See `client/services/upload.service.ts` and `useFileUpload.ts` for implementation details.*
+### Cloudflare Cron Worker
 
-## Future PHP Backend Integration Approach
+Scheduled reconciliation (payments, transfers, subscriptions) runs via a Cloudflare Workers Cron scheduler. See [`cloudflare-worker/README.md`](cloudflare-worker/README.md) for setup and deployment.
 
-Currently, the application relies on mock services (e.g., `BookingService`, `AuthService`, `ChefService`) returning simulated static data or interacting with `localStorage`. 
+---
 
-To integrate this frontend with the planned PHP backend:
-1. **Update API Layers**: Navigate to `client/services/` and swap out the mocked Promises with standard `fetch()` or `axios` calls pointing to your PHP REST endpoints.
-2. **Remove LocalStorage Sync**: Modules like `useAdminStore.ts` and `usePlatformStore.ts` currently persist to `localStorage`. Update these Zustand stores to fetch initial state from a `/api/settings` PHP route instead.
-3. **Secure Uploads**: Transition Cloudinary uploads from *unsigned* to *signed*. The frontend should request a signature payload from the PHP backend before submitting files to Cloudinary, ensuring users cannot upload malicious files or bypass quota limits.
+## Project Structure
 
-## Project Structure & Conventions
-
-- `client/pages/`: Contains monolithic route entry points (e.g., `AdminDashboard.tsx`, `ChefDashboard.tsx`). 
-- `client/components/`: Modular, reusable UI chunks. Highly segmented for performance.
-  - `admin/`: Extracted lazy-loaded components for the Admin Dashboard.
-  - `chef/`: Extracted components for the Chef dashboard.
-  - `ui/`: Core design system elements (buttons, inputs, empty states, skeletons).
-- `client/store/`: Zustand global stores. Only used when prop-drilling becomes excessive (e.g., notifications, platform fees).
-- `client/services/`: The API abstraction layer. This is where you will inject PHP backend hooks.
-
-## GitHub + Vercel Deployment
-
-### Safe push checklist
-
-- Commit `.env.example` only (placeholders, no secrets)
-- Never commit `.env.local`, `.env`, or `.vercel/`
-- The `api/` folder must be in the repo — Vercel uses it for Stripe serverless routes
-
-```bash
-git add .
-git status   # confirm .env.local is NOT listed
-git commit -m "your message"
-git push origin main
+```
+client/           # React SPA (pages, components, services, stores)
+server/           # Express server (local dev integration)
+api/              # Vercel serverless API routes (Stripe, contact, cron)
+shared/           # Types and utilities shared by client and server
+supabase/         # Database migrations and scripts
+cloudflare-worker/ # Scheduled cron worker
 ```
 
-### Vercel project settings
+---
 
-| Setting | Value |
-|---------|-------|
-| Framework | Vite |
-| Build Command | `pnpm run build` |
-| Output Directory | `dist` |
-| Install Command | `pnpm install` |
+## License
 
-Connect the GitHub repo in Vercel, then add environment variables (see `.env.example`). After the first deploy with `api/` included, verify:
-
-- `POST https://your-app.vercel.app/api/stripe/webhook` returns **400** (missing signature), not **405** or HTML
-- Vercel Cron → `/api/stripe/transfers/process` runs hourly
-
-### Local production build
-
-```bash
-pnpm build
-```
-
-Output is in `dist/`.
-
-## Cloudflare Cron Worker
-
-Scheduled reconciliation (payments, transfers, subscriptions every 15 minutes) runs
-via a **pure HTTP scheduler** in `cloudflare-worker/`. The Worker calls existing
-Vercel API routes with `Authorization: Bearer CRON_SECRET` — it never touches
-Stripe, Supabase, or the database directly.
-
-```bash
-cd cloudflare-worker
-npm install
-npm run typecheck
-npm run build      # dry-run deploy
-npx wrangler secret put CRON_SECRET
-npm run deploy
-```
-
-- **Health check:** `GET https://servdco-cron.<subdomain>.workers.dev/health`
-- **Full guide:** [`docs/CLOUDFLARE_WORKER_DEPLOYMENT.md`](docs/CLOUDFLARE_WORKER_DEPLOYMENT.md)
-- **Rollback:** disable the cron trigger in Cloudflare dashboard, or roll back to a prior deployment — no app code changes required.
+This project is proprietary. Source code is provided for portfolio review purposes only.

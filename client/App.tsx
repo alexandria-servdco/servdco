@@ -12,6 +12,7 @@ import { GlobalErrorBoundary } from "@/components/errors/GlobalErrorBoundary";
 import { RouteErrorBoundary } from "@/components/errors/RouteErrorBoundary";
 import { validateClientStartup } from "@/lib/env/validateStartup";
 import { PageMetaManager } from "@/components/seo/PageMetaManager";
+import { UrlQueryHygiene } from "@/components/UrlQueryHygiene";
 import { DeferredMonitoring } from "@/components/DeferredMonitoring";
 import { cn } from "@/lib/utils";
 
@@ -141,6 +142,7 @@ const App = () => (
           <Sonner theme="dark" richColors closeButton position="top-center" />
           <BrowserRouter>
             <DeferredMonitoring />
+            <UrlQueryHygiene />
             <PageMetaManager />
             <OfflineBanner />
             <a

@@ -140,7 +140,7 @@ export default function Terms() {
     <LegalLayout
       title="Terms of Service"
       subtitle="Please review these platform rules and guidelines before creating your ServdCo account."
-      lastUpdated="June 12, 2026"
+      lastUpdated="July 7, 2026"
       activeDocName="Terms of Service"
       sidebarContent={sidebarContent}
     >
@@ -187,6 +187,18 @@ export default function Terms() {
           <p className="text-sm leading-relaxed">
             <strong>Cooks are Independent Contractors:</strong> You acknowledge that Cooks listed on the platform are self-employed independent business operators. They are not employees, agents, or joint venturers of ServdCo. ServdCo does not direct, oversee, or control the cooking methodology, ingredient selection, or specific menu execution details beyond enforcing basic certification audits.
           </p>
+          <div className="space-y-3 pt-2">
+            <h3 className="text-lg font-bold text-white">Indemnification</h3>
+            <p className="text-sm leading-relaxed">
+              Cooks agree to indemnify, defend, and hold harmless Servd Co., its officers, and affiliates from any claims, damages, losses, or legal expenses arising out of or related to the Cook&apos;s own acts, errors, omissions, or negligence in the preparation, handling, or service of food during a scheduled booking. This indemnification does not apply to claims arising from Servd Co.&apos;s own negligence or misconduct, or from conditions of the client&apos;s kitchen or equipment outside the Cook&apos;s control.
+            </p>
+          </div>
+          <div className="space-y-3 pt-2">
+            <h3 className="text-lg font-bold text-white">Independent Contractor Tax Status</h3>
+            <p className="text-sm leading-relaxed">
+              <strong>Tax Responsibility:</strong> Cooks acknowledge and agree that, as independent contractors, they are solely responsible for reporting and paying all applicable federal, state, and local taxes on income earned through the Servd Co. platform. Cooks will receive an IRS Form 1099-NEC (or applicable equivalent) reflecting earnings paid through Stripe, where required by law. Servd Co. does not withhold taxes, provide employee benefits, workers&apos; compensation coverage, or unemployment insurance for Cooks.
+            </p>
+          </div>
         </section>
 
         <section id="kitchen-safety" className="scroll-mt-24 space-y-3">
@@ -197,6 +209,9 @@ export default function Terms() {
           <ul className="list-disc pl-6 space-y-2 text-sm text-[#A8A8A8]">
             <li><strong>Client Obligations:</strong> Family clients must provide their scheduled cook with access to a clean, fully sanitary, and hazard-free kitchen space with functional equipment (oven, cooktop, sinks, and primary utility structures).</li>
             <li><strong>Cook Obligations:</strong> Vetted cooks must maintain active food hygiene certifications (e.g., ServSafe), handle, cook, and store ingredients under standard health parameters, and sanitize food preparation zones thoroughly before departing.</li>
+            <li>
+              <strong>Mandatory Liability Insurance:</strong> All Cooks must maintain active food liability insurance naming Servd Co. as an additional insured party prior to profile activation and throughout their time on the platform. Acceptable coverage may be obtained through Servd Co.&apos;s partner FLIP or an equivalent provider of the Cook&apos;s choosing, subject to Servd Co.&apos;s approval. Failure to maintain active coverage will result in immediate suspension of the Cook&apos;s profile until proof of renewed coverage is provided.
+            </li>
           </ul>
         </section>
 
@@ -207,6 +222,9 @@ export default function Terms() {
           </p>
           <p className="text-sm leading-relaxed">
             When a family client schedules a meal prep service, a payment authorization hold is placed on their designated credit card. Payments are released and transferred to the independent cook's bank connection only upon successful completion of the scheduled service date. You agree to comply with Stripe's Services Agreement as integrated into the checkout flow.
+          </p>
+          <p className="text-sm leading-relaxed">
+            <strong>Fee Structure:</strong> Servd Co. retains a service fee equal to 13% of each completed booking, with the remaining 87% paid to the Cook via Stripe. Family clients are charged a separate flat convenience fee of $5 per booking, which is retained by Servd Co. and is not deducted from the Cook&apos;s earnings. Servd Co. reserves the right to modify this fee structure with reasonable advance notice to all users.
           </p>
         </section>
 
@@ -227,7 +245,7 @@ export default function Terms() {
             ServdCo is not liable for direct, indirect, incidental, or consequential damages resulting from kitchen services, food handling, cook execution, client home environments, or transaction outages. 
           </p>
           <p className="text-sm leading-relaxed">
-            <strong>Liability Insurance:</strong> Active marketplace cooks are encouraged to hold comprehensive liability protection through recognized carriers (such as FLIP platform partner programs) to safeguard against accidental property damage or ingestion concerns. ServdCo's maximum cumulative liability to any user shall not exceed the total transaction value paid for the booking in dispute.
+            ServdCo&apos;s maximum cumulative liability to any user shall not exceed the total transaction value paid for the booking in dispute.
           </p>
         </section>
 
@@ -275,6 +293,9 @@ export default function Terms() {
             <li>Misleading onboarding declarations (expired certificates, unverified IDs).</li>
             <li>Continuous client cancellations or abusive behaviors.</li>
           </ul>
+          <p className="text-sm leading-relaxed pt-2">
+            <strong>Appeals Process:</strong> Users whose accounts are suspended or terminated under this section may submit a written appeal to the Servd Co. Legal Desk within 14 days of the suspension notice. Servd Co. will review appeals in good faith but retains sole discretion over reinstatement decisions. Suspensions related to safety violations, fraud, or abusive behavior are not eligible for expedited reinstatement pending investigation.
+          </p>
         </section>
 
         <section id="governing-law" className="scroll-mt-24 space-y-3">

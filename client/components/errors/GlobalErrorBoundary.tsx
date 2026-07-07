@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { logger } from "@/lib/logger";
 import { ErrorFallback } from "@/components/errors/ErrorFallback";
+import { reloadOnceOnStaleChunk } from "@/lib/staleChunkRecovery";
 
 interface Props {
   children: ReactNode;
@@ -19,6 +20,9 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
+    const reloaded = reloadOnceOnStaleChunk(error);
+    if (reloaded) return;
+
     logger.trackError(error, {
       domain: "GlobalErrorBoundary",
       componentStack: info.componentStack,

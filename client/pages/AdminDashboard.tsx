@@ -442,13 +442,22 @@ export default function AdminDashboard({
     if (!region) return;
 
     try {
-      await api.updateRegionSettings(id, {
-        is_active: !region.is_active,
-        is_waitlist: !region.is_active ? false : region.is_waitlist,
+      // Lifecycle is source of truth: sets status and syncs is_active / is_waitlist.
+      const nextActive = !region.is_active;
+      const status = nextActive ? "active" : "paused";
+      const { SecurityApi } = await import("@/lib/securityApi");
+      await SecurityApi.applyRegionLifecycle({
+        regionId: id,
+        status,
+        ...(nextActive
+          ? { allow_bookings: true, allow_payments: true }
+          : {}),
+        refresh_waitlist: nextActive,
       });
       await reloadData({ silent: true });
     } catch (err) {
       console.error(err);
+      toast.error("Failed to update region status.");
     }
   };
 
@@ -504,59 +513,32 @@ export default function AdminDashboard({
           r.state.toLowerCase() === request.state.trim().toLowerCase(),
       );
 
+      const { SecurityApi } = await import("@/lib/securityApi");
+
       if (action === "approve") {
         if (!existing) await api.initializeState(stateCode, stateName);
-        await api.updateRegionSettings(stateCode, {
-          is_active: true,
-          is_waitlist: false,
-          city: request.city,
-        });
-        setRegions((prev) => {
-          const idx = prev.findIndex(
-            (r) =>
-              r.id === stateCode ||
-              r.state.toLowerCase() === request.state.trim().toLowerCase(),
-          );
-          if (idx < 0) return prev;
-          const next = [...prev];
-          next[idx] = {
-            ...next[idx],
-            is_active: true,
-            is_waitlist: false,
-            city: request.city,
-          };
-          return next;
+        await api.updateRegionSettings(stateCode, { city: request.city });
+        await SecurityApi.applyRegionLifecycle({
+          regionId: stateCode,
+          status: "active",
+          allow_bookings: true,
+          allow_payments: true,
+          refresh_waitlist: true,
         });
         toast.success(`${request.city}, ${stateName} approved for launch`);
       } else if (action === "queue") {
         if (!existing) await api.initializeState(stateCode, stateName);
-        await api.updateRegionSettings(stateCode, {
-          is_active: false,
-          is_waitlist: true,
-          city: request.city,
-        });
-        setRegions((prev) => {
-          const idx = prev.findIndex(
-            (r) =>
-              r.id === stateCode ||
-              r.state.toLowerCase() === request.state.trim().toLowerCase(),
-          );
-          if (idx < 0) return prev;
-          const next = [...prev];
-          next[idx] = {
-            ...next[idx],
-            is_active: false,
-            is_waitlist: true,
-            city: request.city,
-          };
-          return next;
+        await api.updateRegionSettings(stateCode, { city: request.city });
+        await SecurityApi.applyRegionLifecycle({
+          regionId: stateCode,
+          status: "waitlist",
         });
         toast.success(`${request.city}, ${stateName} queued on waitlist`);
       } else {
         if (existing) {
-          await api.updateRegionSettings(stateCode, {
-            is_active: false,
-            is_waitlist: false,
+          await SecurityApi.applyRegionLifecycle({
+            regionId: stateCode,
+            status: "coming_soon",
           });
         }
         toast.message(`Region review declined for ${request.city}`);
